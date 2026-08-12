@@ -1,0 +1,22 @@
+# Local environments and generated files
+.venv/
+__pycache__/
+*.pyc
+tmp/
+outputs/
+
+# Other workspace experiments kept outside this game repository
+.codex
+.codex/
+data/
+docs/
+scripts/
+index.dataset.html
+tests/*.py
+tests/__pycache__/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,21 @@
+{
+  "name": "버블타임 75 — 세탁소 운영 게임",
+  "short_name": "버블타임 75",
+  "description": "오염과 매장 사건을 처리하며 75초 동안 세탁소를 운영하는 타임어택 게임",
+  "lang": "ko-KR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f7f2e6",
+  "theme_color": "#123c43",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

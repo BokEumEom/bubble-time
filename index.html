@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#123c43" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta
+      name="description"
+      content="도구를 골라 세탁소를 청소하고 손님을 관리하는 75초 타임어택 게임"
+    />
+    <title>버블타임 75 — 세탁소 운영 게임</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icon.svg" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./game-config.js" defer></script>
+    <script src="./script.js" defer></script>
+  </head>
+  <body>
+    <div class="noise" aria-hidden="true"></div>
+
+    <main class="game-shell">
+      <header class="topbar">
+        <div class="brand" aria-label="버블타임 75">
+          <span class="brand-bubbles" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="brand-copy"><strong>버블타임</strong><small>LAUNDRY · 75</small></span>
+        </div>
+
+        <div class="hud" aria-label="게임 현황">
+          <div class="hud-card timer-card" id="timer-card">
+            <span class="hud-icon">◷</span>
+            <span><small>남은 시간</small><strong id="time-value">75</strong></span>
+          </div>
+          <div class="hud-card">
+            <span class="hud-icon">₩</span>
+            <span><small>매출 점수</small><strong id="score-value">0</strong></span>
+          </div>
+          <div class="hud-card best-card">
+            <span class="hud-icon">★</span>
+            <span><small>최고 기록</small><strong><b id="best-score-value">0</b><em id="best-rank-value">–</em></strong></span>
+          </div>
+          <div class="hud-card refund-card">
+            <span class="hud-icon">↩</span>
+            <span><small>환불</small><strong><b id="refund-value">0</b>건</strong></span>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <button class="round-control settings-button" id="settings-button" type="button" aria-label="게임 설정 열기">
+            <span aria-hidden="true">⚙</span>
+          </button>
+          <button class="round-control sound-button" id="sound-button" type="button" aria-label="배경음과 효과음 켜기" aria-pressed="false">
+            <span aria-hidden="true">♪</span>
+          </button>
+          <button class="round-control pause-button" id="pause-button" type="button" aria-label="게임 일시정지" disabled>
+            <span aria-hidden="true">Ⅱ</span>
+          </button>
+        </div>
+      </header>
+
+      <section class="mission-strip" aria-live="polite">
+        <div class="mission-copy">
+          <span class="live-dot"></span>
+          <strong>오늘의 도전</strong>
+          <span id="daily-challenge-text">오염 12개 청소하기</span>
+          <em id="daily-challenge-progress">0 / 12</em>
+        </div>
+        <div class="mission-status">
+          <div class="combo-meter" id="combo-meter" aria-label="현재 콤보와 점수 배율">
+            <span>COMBO</span><strong id="combo-value">0</strong><em id="combo-multiplier">×1.0</em>
+          </div>
+          <div class="satisfaction-meter" id="satisfaction-meter" aria-label="현재 손님 만족도">
+            <span aria-hidden="true">♥</span><small>만족도</small><strong id="satisfaction-value">100%</strong>
+          </div>
+          <div class="queue-meter" aria-label="현재 대기 손님">
+            <span>대기 손님</span>
+            <div class="guest-pips" id="guest-pips" aria-hidden="true">
+              <i></i><i></i><i></i><i></i><i></i><i></i>
+            </div>
+            <strong><b id="queue-value">0</b> / 6</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="play-area" id="play-area" aria-label="세탁소 게임 화면">
+        <aside class="street-side" aria-label="세탁소 밖 대기 공간">
+          <div class="street-sign">
+            <span>WAITING</span>
+            <strong>대기 줄</strong>
+          </div>
+          <div class="queue-lane" id="queue-lane">
+            <div class="empty-queue" id="empty-queue">
+              <span>☀</span>
+              <p>손님이 오고 있어요</p>
+            </div>
+          </div>
+          <div class="sidewalk" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div class="street-planter" aria-hidden="true">♣</div>
+        </aside>
+
+        <section class="shop" id="shop">
+          <div class="awning" aria-hidden="true">
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          </div>
+
+          <div class="shop-header">
+            <div>
+              <span class="open-sign">OPEN</span>
+              <h1>상쾌한 빨래방</h1>
+            </div>
+            <p><span></span>셀프 런드리</p>
+          </div>
+          <div class="weather-layer" id="weather-layer" aria-hidden="true"></div>
+
+          <div class="shop-floor" id="shop-floor">
+            <section class="machine-zone washer-zone" aria-labelledby="washer-heading">
+              <div class="zone-heading">
+                <div><span class="zone-icon">●</span><h2 id="washer-heading">세탁기</h2></div>
+                <strong>WASHER · 6</strong>
+              </div>
+              <div class="machine-grid" id="washer-grid"></div>
+            </section>
+
+            <div class="center-aisle" aria-hidden="true">
+              <div class="bench"><span></span><i></i><i></i></div>
+              <div class="rug">BUBBLE<br />TIME</div>
+              <div class="plant">♣</div>
+            </div>
+
+            <section class="machine-zone dryer-zone" aria-labelledby="dryer-heading">
+              <div class="zone-heading">
+                <div><span class="zone-icon">◎</span><h2 id="dryer-heading">건조기</h2></div>
+                <strong>DRYER · 6</strong>
+              </div>
+              <div class="machine-grid" id="dryer-grid"></div>
+            </section>
+
+            <div class="doorway" id="doorway" aria-hidden="true">
+              <span>IN</span>
+              <i></i>
+            </div>
+
+            <div class="moving-guests" id="moving-guests" aria-hidden="true"></div>
+
+            <div class="event-facilities">
+              <button class="detergent-station" id="detergent-station" type="button" aria-label="세제 탱크, 현재 100퍼센트">
+                <span class="facility-icon">▰</span><span><small>세제 탱크</small><strong id="detergent-level">100%</strong></span><i><b id="detergent-gauge"></b></i>
+              </button>
+              <button class="breaker-panel" id="breaker-panel" type="button" aria-label="전기 차단기">
+                <span class="facility-icon">ϟ</span><span><small>전기</small><strong>차단기</strong></span><i></i>
+              </button>
+            </div>
+            <div class="power-overlay" id="power-overlay" aria-hidden="true"><span>정전 발생</span></div>
+          </div>
+        </section>
+
+        <div class="event-alert" id="event-alert" role="status" aria-live="assertive" hidden>
+          <span id="event-alert-icon">!</span><div><small>STORE EVENT</small><strong id="event-alert-title">매장 사건 발생</strong><p id="event-alert-copy"></p></div>
+        </div>
+
+        <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="false"></div>
+        <div class="score-pop-region" id="score-pop-region" aria-hidden="true"></div>
+      </section>
+
+      <section class="tool-dock" aria-labelledby="tool-heading">
+        <div class="tool-guide">
+          <span class="step-number">1</span>
+          <span><small>먼저</small><strong id="tool-heading">청소 도구 선택</strong></span>
+          <span class="guide-arrow">→</span>
+          <span class="step-number">2</span>
+          <span><small>그다음</small><strong>오염 또는 손님 터치</strong></span>
+        </div>
+
+        <div class="tools" id="tools" role="toolbar" aria-label="청소 도구">
+          <button class="tool selected" type="button" data-tool="squeegee" aria-pressed="true">
+            <span class="tool-key">1</span>
+            <span class="tool-art squeegee-art" aria-hidden="true"><i></i></span>
+            <span class="tool-text"><strong>스퀴지</strong><small><i class="dirt-dot limescale"></i>물때 제거</small></span>
+          </button>
+          <button class="tool" type="button" data-tool="duster" aria-pressed="false">
+            <span class="tool-key">2</span>
+            <span class="tool-art duster-art" aria-hidden="true"><i></i></span>
+            <span class="tool-text"><strong>먼지털이</strong><small><i class="dirt-dot dust"></i>먼지 제거</small></span>
+          </button>
+          <button class="tool" type="button" data-tool="basket" aria-pressed="false">
+            <span class="tool-key">3</span>
+            <span class="tool-art basket-art" aria-hidden="true"><i></i></span>
+            <span class="tool-text"><strong>빨래 바구니</strong><small><i class="dirt-dot laundry"></i>놓고 간 빨래</small></span>
+          </button>
+          <button class="tool secret-tool" type="button" data-tool="spray" aria-pressed="false">
+            <span class="tool-key">4</span>
+            <span class="tool-art spray-art" aria-hidden="true"><i></i></span>
+            <span class="tool-text"><strong>얼룩 제거제</strong><small><i class="dirt-dot stain"></i>수상한 손님?</small></span>
+          </button>
+          <button class="tool event-tool" type="button" data-tool="wrench" aria-pressed="false">
+            <span class="tool-key">5</span>
+            <span class="tool-art wrench-art" aria-hidden="true"><i></i></span>
+            <span class="tool-text"><strong>정비 렌치</strong><small><i class="dirt-dot breakdown"></i>기계 고장 수리</small></span>
+          </button>
+          <button class="tool event-tool" type="button" data-tool="detergent" aria-pressed="false">
+            <span class="tool-key">6</span>
+            <span class="tool-art detergent-art" aria-hidden="true"><i></i></span>
+            <span class="tool-text"><strong>세제 보충통</strong><small><i class="dirt-dot detergent"></i>세제 채우기</small></span>
+          </button>
+        </div>
+
+        <div class="selected-tool" id="selected-tool">
+          <small>선택한 도구</small>
+          <strong><span>↗</span><b id="selected-tool-name">스퀴지</b></strong>
+        </div>
+      </section>
+    </main>
+
+    <div class="modal-backdrop open" id="intro-modal" role="dialog" aria-modal="true" aria-labelledby="intro-title">
+      <section class="modal intro-card">
+        <div class="modal-kicker">75 SECOND SHIFT</div>
+        <div class="intro-illustration" aria-hidden="true">
+          <div class="mini-machine"><span></span><i></i></div>
+          <div class="bubble-cluster"><i></i><i></i><i></i><i></i></div>
+          <div class="intro-worker"><span>•‿•</span></div>
+        </div>
+        <h2 id="intro-title">오늘도 깨끗하게,<br /><em>버블타임 75!</em></h2>
+        <p>기계 속 오염을 알맞은 도구로 처리하고<br />몰려오는 손님의 환불을 막아주세요.</p>
+        <div class="intro-rules">
+          <span><b>12</b><small>관리할 기계</small></span>
+          <i></i>
+          <span><b>6</b><small>대기 한계</small></span>
+          <i></i>
+          <span><b>75</b><small>영업 시간</small></span>
+        </div>
+        <div class="best-record-line" id="intro-best-record">
+          <span>★ 최고 완주 기록</span>
+          <strong><b id="intro-best-score">0</b>점 · <em id="intro-best-rank">–</em>등급</strong>
+        </div>
+        <div class="daily-challenge-card" id="intro-daily-card">
+          <span class="daily-icon">☀</span>
+          <span><small>오늘의 도전</small><strong id="intro-daily-title">오염 12개 청소하기</strong></span>
+          <em id="intro-daily-progress">0 / 12</em>
+        </div>
+        <div class="progression-actions">
+          <span class="wallet-display"><small>보유 수익</small><strong>◈ <b id="wallet-value">0</b></strong></span>
+          <button id="shop-button" type="button"><span>⚙</span><strong>업그레이드</strong><small id="upgrade-summary">기계 0 · 도구 0</small></button>
+          <button id="achievements-button" type="button"><span>♛</span><strong>업적</strong><small><b id="achievement-count">0</b> / 7</small></button>
+          <button id="codex-button" type="button"><span>▤</span><strong>도감</strong><small><b id="codex-count">3</b> / 23</small></button>
+          <button id="decor-button" type="button"><span>✿</span><strong>매장 꾸미기</strong><small id="decor-summary">기본 매장</small></button>
+        </div>
+        <button class="primary-button" id="start-button" type="button">
+          <span>영업 준비하기</span><b>→</b>
+        </button>
+        <div class="intro-utility-actions">
+          <button id="tutorial-button" type="button"><span>▶</span>실습 튜토리얼</button>
+          <button id="intro-settings-button" type="button"><span>⚙</span>설정</button>
+          <button id="help-button" type="button"><span>?</span>도움말</button>
+          <button id="updates-button" type="button"><span>NEW</span>업데이트</button>
+          <button class="install-button" id="intro-install-button" type="button" hidden><span>＋</span>앱 설치</button>
+        </div>
+        <small class="keyboard-hint">도구는 숫자키 1–6으로도 선택할 수 있어요</small>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" id="prep-modal" role="dialog" aria-modal="true" aria-labelledby="prep-title" aria-hidden="true">
+      <section class="modal prep-card">
+        <button class="modal-close" id="prep-close-button" type="button" aria-label="영업 준비 닫기">×</button>
+        <div class="modal-kicker">SHIFT BRIEFING</div>
+        <h2 id="prep-title">오늘 영업을 준비하세요</h2>
+        <p>운영 계획과 업그레이드, 이번 주 목표를 확인한 뒤 시작합니다.</p>
+        <fieldset class="shift-plans" id="shift-plans">
+          <legend>운영 계획 선택</legend>
+          <label data-difficulty="calm"><input type="radio" name="difficulty" value="calm" /><span><b>여유 영업</b><small>느린 손님 · 적은 사건</small><em>★</em></span></label>
+          <label class="selected" data-difficulty="standard"><input type="radio" name="difficulty" value="standard" checked /><span><b>표준 영업</b><small>기본 밸런스</small><em>★★</em></span></label>
+          <label data-difficulty="rush"><input type="radio" name="difficulty" value="rush" /><span><b>피크 타임</b><small>빠른 손님 · 잦은 사건</small><em>★★★</em></span></label>
+        </fieldset>
+        <div class="prep-summary">
+          <article><small>위험도</small><strong id="prep-risk">보통</strong></article>
+          <article><small>예상 사건</small><strong><b id="prep-event-count">6</b>회</strong></article>
+          <article><small>기계 강화</small><strong>Lv.<b id="prep-machine-level">0</b></strong></article>
+          <article><small>도구 강화</small><strong>Lv.<b id="prep-tool-level">0</b></strong></article>
+        </div>
+        <div class="prep-challenges">
+          <section><div><small>TODAY</small><strong id="prep-daily-title">오염 12개 청소하기</strong></div><em id="prep-daily-progress">0 / 12</em></section>
+          <section><div><small>WEEKLY PACE</small><strong>이번 주 영업 페이스</strong></div><em><b id="prep-active-days">0</b> / 5일</em></section>
+        </div>
+        <div class="shift-condition-card" id="shift-condition-card">
+          <span id="prep-condition-icon">☂</span><div><small>TODAY'S STORE CONDITION</small><strong id="prep-condition-title">비 오는 세탁일</strong><p id="prep-condition-copy">물때가 자주 생기고 손님이 조금 더 찾아옵니다.</p></div><em><small>WEEKLY EVENT</small><b id="prep-weekly-rule">설비 점검 주간</b></em>
+        </div>
+        <div class="weekly-goal-list" id="prep-weekly-goals" aria-label="이번 주 목표"></div>
+        <button class="primary-button" id="confirm-start-button" type="button"><span>이 계획으로 영업 시작</span><b>▶</b></button>
+        <small class="keyboard-hint">Enter로 시작 · Esc로 준비 화면 닫기</small>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" id="shop-modal" role="dialog" aria-modal="true" aria-labelledby="shop-title" aria-hidden="true">
+      <section class="modal progression-modal shop-card">
+        <button class="modal-close" id="shop-close-button" type="button" aria-label="업그레이드 상점 닫기">×</button>
+        <div class="modal-kicker">LAUNDRY LAB</div>
+        <h2 id="shop-title">가게 업그레이드</h2>
+        <p>영업 수익으로 다음 영업부터 적용되는 설비를 강화하세요.</p>
+        <div class="shop-wallet"><span>보유 수익</span><strong>◈ <b id="shop-wallet-value">0</b></strong></div>
+        <div class="upgrade-list">
+          <article class="upgrade-card" data-upgrade="machine">
+            <span class="upgrade-art machine-upgrade-art">◎</span>
+            <div><small>MACHINE</small><h3>고속 모터</h3><p>기계 작업 시간 레벨당 8% 단축</p></div>
+            <div class="level-pips" aria-label="고속 모터 레벨"><i></i><i></i><i></i></div>
+            <button class="upgrade-buy-button" id="buy-machine-upgrade" type="button"><span>강화</span><strong>◈ <b>90</b></strong></button>
+          </article>
+          <article class="upgrade-card" data-upgrade="tool">
+            <span class="upgrade-art tool-upgrade-art">✦</span>
+            <div><small>TOOLS</small><h3>프로 청소 키트</h3><p>청소 점수 +12% · 콤보 여유 +0.35초</p></div>
+            <div class="level-pips" aria-label="프로 청소 키트 레벨"><i></i><i></i><i></i></div>
+            <button class="upgrade-buy-button" id="buy-tool-upgrade" type="button"><span>강화</span><strong>◈ <b>80</b></strong></button>
+          </article>
+        </div>
+        <small class="keyboard-hint">최대 레벨은 3이며 구매 내역은 이 브라우저에 저장됩니다.</small>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" id="achievements-modal" role="dialog" aria-modal="true" aria-labelledby="achievements-title" aria-hidden="true">
+      <section class="modal progression-modal achievements-card">
+        <button class="modal-close" id="achievements-close-button" type="button" aria-label="업적 목록 닫기">×</button>
+        <div class="modal-kicker">COLLECTION</div>
+        <h2 id="achievements-title">업적과 오늘의 도전</h2>
+        <p>새 업적을 달성하면 가게 업그레이드에 쓸 수익을 받습니다.</p>
+        <div class="daily-detail" id="daily-detail">
+          <span>☀</span><div><small>오늘의 도전</small><strong id="achievement-daily-title">오염 12개 청소하기</strong><i><b id="achievement-daily-bar"></b></i></div><em id="achievement-daily-progress">0 / 12</em>
+        </div>
+        <div class="achievement-list" id="achievement-list"></div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" id="codex-modal" role="dialog" aria-modal="true" aria-labelledby="codex-title" aria-hidden="true">
+      <section class="modal progression-modal codex-card">
+        <button class="modal-close" id="codex-close-button" type="button" aria-label="도감 닫기">×</button>
+        <div class="modal-kicker">LAUNDRY INDEX</div>
+        <h2 id="codex-title">버블타임 도감</h2>
+        <p>영업 중 직접 만난 손님과 사건은 자세한 정보가 해금됩니다.</p>
+        <div class="codex-progress"><span>발견 진행도</span><strong><b id="codex-progress-count">3</b> / 23</strong><i><b id="codex-progress-bar"></b></i></div>
+        <div class="codex-tabs" role="tablist" aria-label="도감 분류">
+          <button class="active" type="button" role="tab" aria-selected="true" data-codex-tab="customers">손님</button>
+          <button type="button" role="tab" aria-selected="false" data-codex-tab="dirt">오염</button>
+          <button type="button" role="tab" aria-selected="false" data-codex-tab="events">사건</button>
+          <button type="button" role="tab" aria-selected="false" data-codex-tab="upgrades">업그레이드</button>
+          <button type="button" role="tab" aria-selected="false" data-codex-tab="achievements">업적</button>
+        </div>
+        <div class="codex-grid" id="codex-grid" role="tabpanel"></div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" id="decor-modal" role="dialog" aria-modal="true" aria-labelledby="decor-title" aria-hidden="true">
+      <section class="modal progression-modal decor-card">
+        <button class="modal-close" id="decor-close-button" type="button" aria-label="매장 꾸미기 닫기">×</button>
+        <div class="modal-kicker">STORE ATELIER</div>
+        <h2 id="decor-title">매장 꾸미기</h2>
+        <p>수익으로 장식을 모으고 원하는 분위기로 매장을 바꿔보세요. 성능에는 영향을 주지 않습니다.</p>
+        <div class="decor-wallet"><span>보유 수익</span><strong>◈ <b id="decor-wallet-value">0</b></strong><em id="decor-owned-count">4 / 9 보유</em></div>
+        <div class="decor-preview" id="decor-preview"><span class="preview-sign">OPEN</span><i></i><b></b><em>미리 보기</em></div>
+        <div class="decor-tabs" role="tablist" aria-label="꾸미기 분류">
+          <button class="active" type="button" role="tab" aria-selected="true" data-decor-tab="sign">간판</button>
+          <button type="button" role="tab" aria-selected="false" data-decor-tab="floor">바닥</button>
+          <button type="button" role="tab" aria-selected="false" data-decor-tab="wall">벽지</button>
+          <button type="button" role="tab" aria-selected="false" data-decor-tab="plant">화분</button>
+        </div>
+        <div class="decor-grid" id="decor-grid" role="tabpanel"></div>
+      </section>
+    </div>
+
+    <div class="tutorial-overlay" id="tutorial-overlay" hidden>
+      <section class="tutorial-coach" role="dialog" aria-modal="false" aria-labelledby="tutorial-step-title">
+        <div class="tutorial-progress"><span>TUTORIAL</span><i><b id="tutorial-progress-bar"></b></i><em><b id="tutorial-step-number">1</b> / 6</em></div>
+        <div class="tutorial-copy"><span id="tutorial-step-icon">💧</span><div><small id="tutorial-step-kicker">기본 청소</small><h2 id="tutorial-step-title">물때를 닦아볼까요?</h2><p id="tutorial-step-copy">스퀴지를 선택하고 반짝이는 세탁기를 눌러주세요.</p></div></div>
+        <div class="tutorial-actions"><button id="tutorial-exit-button" type="button">튜토리얼 종료</button><button id="tutorial-finish-button" type="button" hidden>보상 받고 돌아가기</button></div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title" aria-hidden="true">
+      <section class="modal progression-modal settings-card">
+        <button class="modal-close" id="settings-close-button" type="button" aria-label="설정 닫기">×</button>
+        <div class="modal-kicker">GAME SETTINGS</div>
+        <h2 id="settings-title">게임 설정</h2>
+        <p>소리와 화면 효과를 내 환경에 맞게 조정할 수 있습니다.</p>
+        <div class="settings-list">
+          <label class="range-setting" for="bgm-volume"><span><b>배경음</b><small>영업 중 재생되는 음악</small></span><input id="bgm-volume" type="range" min="0" max="100" step="5" value="45" /><output id="bgm-volume-value">45%</output></label>
+          <label class="range-setting" for="sfx-volume"><span><b>효과음</b><small>청소·사건·버튼 소리</small></span><input id="sfx-volume" type="range" min="0" max="100" step="5" value="70" /><output id="sfx-volume-value">70%</output></label>
+          <label class="toggle-setting"><span><b>진동 피드백</b><small>지원되는 모바일 기기에서 사용</small></span><input id="vibration-setting" type="checkbox" checked /><i aria-hidden="true"></i></label>
+          <label class="toggle-setting"><span><b>화면 흔들림</b><small>실수와 긴급 사건 강조</small></span><input id="screen-shake-setting" type="checkbox" checked /><i aria-hidden="true"></i></label>
+          <label class="toggle-setting"><span><b>모션 줄이기</b><small>반복 애니메이션과 이동 효과 최소화</small></span><input id="reduced-motion-setting" type="checkbox" /><i aria-hidden="true"></i></label>
+          <label class="toggle-setting"><span><b>색각 보조 표시</b><small>오염 이름과 필요한 도구를 함께 표시</small></span><input id="color-assist-setting" type="checkbox" /><i aria-hidden="true"></i></label>
+        </div>
+        <div class="device-actions">
+          <button id="fullscreen-button" type="button"><span>⛶</span><b>전체 화면</b><small>모바일에서 더 넓게 플레이</small></button>
+          <button class="install-button" id="settings-install-button" type="button" disabled><span>＋</span><b>앱 설치</b><small id="install-status">브라우저 메뉴에서도 설치 가능</small></button>
+        </div>
+        <div class="save-data-row"><span><small>저장 데이터</small><strong id="save-version-label">DATA v4 · 자동 저장</strong></span><div><button id="export-data-button" type="button">내보내기</button><button id="import-data-button" type="button">가져오기</button><button class="danger" id="reset-data-button" type="button">초기화</button></div></div>
+        <input id="import-data-input" type="file" accept="application/json,.json" hidden />
+        <p class="save-data-status" id="save-data-status" role="status" aria-live="polite">최고 기록과 진행 정보는 이 브라우저에 자동 저장됩니다.</p>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" id="help-modal" role="dialog" aria-modal="true" aria-labelledby="help-title" aria-hidden="true">
+      <section class="modal progression-modal help-card">
+        <button class="modal-close" id="help-close-button" type="button" aria-label="도움말 닫기">×</button>
+        <div class="modal-kicker">HOW TO PLAY</div>
+        <h2 id="help-title">점장 업무 안내</h2>
+        <p>선택한 도구와 눌러야 할 대상을 빠르게 연결하세요.</p>
+        <div class="help-sections">
+          <article><span>1</span><div><h3>기본 청소</h3><p>물때는 스퀴지, 먼지는 먼지털이, 남은 빨래는 바구니로 처리합니다. 얼룩 손님에게는 제거제를 사용하세요.</p></div></article>
+          <article><span>2</span><div><h3>매장 사건</h3><p>고장은 렌치, 세제 부족은 보충통을 선택해 대상을 누릅니다. 정전은 매장 아래쪽 차단기를 바로 누르세요.</p></div></article>
+          <article><span>3</span><div><h3>영업 목표</h3><p>75초 동안 대기 손님이 6명에 도달하지 않게 관리하세요. 더러운 기계가 작업을 마치면 환불이 발생합니다.</p></div></article>
+          <article><span>4</span><div><h3>키보드·모바일</h3><p>숫자키 1–6으로 도구를 고르고 P 또는 Esc로 일시정지합니다. 모바일에서는 버튼을 직접 터치하세요.</p></div></article>
+        </div>
+        <button class="primary-button help-tutorial-button" id="help-tutorial-button" type="button"><span>실습 튜토리얼 다시 시작</span><b>▶</b></button>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" id="updates-modal" role="dialog" aria-modal="true" aria-labelledby="updates-title" aria-hidden="true">
+      <section class="modal progression-modal updates-card">
+        <button class="modal-close" id="updates-close-button" type="button" aria-label="업데이트 안내 닫기">×</button>
+        <div class="modal-kicker">VERSION <span id="app-version-label">2.3.0</span></div>
+        <h2 id="updates-title">완성도 업데이트</h2>
+        <p>2026.08 · 매장 운영 정보를 더 명확하고 편안하게 다듬었습니다.</p>
+        <div class="update-list">
+          <article><span>LEARN</span><div><h3>6단계 실습 튜토리얼</h3><p>실제 매장에서 기본 오염, 고장, 정전과 세제 보충을 직접 연습합니다.</p></div></article>
+          <article><span>DECOR</span><div><h3>매장 꾸미기</h3><p>수익으로 간판·바닥·벽지·화분을 구입하고 원하는 조합으로 장착합니다.</p></div></article>
+          <article><span>VARIETY</span><div><h3>매일 달라지는 영업</h3><p>비·주말 행사·점검일, 주간 사건 규칙, 위생 검사와 희귀 평론가 손님을 추가했습니다.</p></div></article>
+          <article><span>SAVE v4</span><div><h3>진행 정보 확장</h3><p>튜토리얼 완료와 보상, 보유 장식과 장착 조합까지 안전하게 자동 저장합니다.</p></div></article>
+        </div>
+      </section>
+    </div>
+
+    <div class="app-update-banner" id="app-update-banner" role="status" hidden>
+      <span>↻</span><div><strong>새 버전이 준비됐어요</strong><small>진행 데이터는 그대로 유지됩니다.</small></div><button id="apply-update-button" type="button">지금 적용</button><button id="dismiss-update-button" type="button" aria-label="업데이트 알림 닫기">×</button>
+    </div>
+
+    <div class="modal-backdrop" id="pause-modal" role="dialog" aria-modal="true" aria-labelledby="pause-title" aria-hidden="true">
+      <section class="modal pause-card">
+        <div class="pause-icon" aria-hidden="true"><i></i><i></i></div>
+        <div class="modal-kicker">BREAK TIME</div>
+        <h2 id="pause-title">잠시 쉬어갈까요?</h2>
+        <p>시간과 손님, 기계 상태가 그대로 멈춰 있어요.</p>
+        <div class="pause-summary">
+          <span><small>남은 시간</small><strong><b id="pause-time">75</b>초</strong></span>
+          <span><small>현재 점수</small><strong id="pause-score">0</strong></span>
+        </div>
+        <button class="primary-button" id="resume-button" type="button"><span>계속 영업하기</span><b>▶</b></button>
+        <button class="text-button" id="pause-restart-button" type="button">처음부터 다시 시작</button>
+        <small class="keyboard-hint">P 또는 Esc 키로도 계속할 수 있어요</small>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" id="result-modal" role="dialog" aria-modal="true" aria-labelledby="result-title" aria-hidden="true">
+      <section class="modal result-card">
+        <div class="result-badge" id="result-badge">영업 완료</div>
+        <div class="result-face" id="result-face" aria-hidden="true">✦</div>
+        <h2 id="result-title">오늘 영업, 성공!</h2>
+        <p id="result-message">75초 동안 가게를 멋지게 지켜냈어요.</p>
+        <div class="new-record-banner" id="new-record-banner" hidden><span>★</span><strong>새로운 최고 기록!</strong></div>
+        <div class="shift-earnings"><span>이번 영업 수익</span><strong>+ ◈ <b id="result-coins">0</b></strong><small>보유 <b id="result-wallet">0</b></small></div>
+        <div class="achievement-unlock-banner" id="achievement-unlock-banner" hidden><span>♛</span><strong id="achievement-unlock-text">새 업적 달성!</strong></div>
+        <div class="result-stats">
+          <div><small>최종 점수</small><strong id="result-score">0</strong></div>
+          <div><small>청소 완료</small><strong><b id="result-cleaned">0</b>건</strong></div>
+          <div><small>환불</small><strong><b id="result-refunds">0</b>건</strong></div>
+          <div><small>받은 손님</small><strong><b id="result-served">0</b>명</strong></div>
+        </div>
+        <div class="result-performance">
+          <div><span>⚡</span><small>최고 콤보</small><strong><b id="result-max-combo">0</b> COMBO</strong></div>
+          <div><span>◷</span><small>평균 대기</small><strong><b id="result-average-wait">0.0</b>초</strong></div>
+          <div><span>♥</span><small>만족 손님</small><strong><b id="result-happy-rate">100</b>%</strong></div>
+        </div>
+        <div class="result-guest-types">
+          <span><i>⚡</i><small>성격 급한</small><strong id="result-impatient">0</strong></span>
+          <span><i>★</i><small>단골</small><strong id="result-regular">0</strong></span>
+          <span><i>▦</i><small>대량 세탁</small><strong id="result-bulk">0</strong></span>
+        </div>
+        <section class="result-analysis" aria-labelledby="result-analysis-title">
+          <div class="result-analysis-heading"><span>SHIFT REPORT</span><h3 id="result-analysis-title">오늘의 영업 분석</h3></div>
+          <div class="result-analysis-grid">
+            <span><small>평균 사건 대응</small><strong id="result-event-response">–</strong></span>
+            <span><small>가장 놓친 오염</small><strong id="result-missed-dirt">없음</strong></span>
+            <span><small>주요 환불 원인</small><strong id="result-refund-cause">환불 없음</strong></span>
+            <span><small>최고 대기 인원</small><strong><b id="result-peak-queue">0</b>명</strong></span>
+          </div>
+          <p class="result-advice"><span>TIP</span><strong id="result-advice">오염을 빠르게 처리해 콤보를 이어가 보세요.</strong></p>
+        </section>
+        <div class="result-rank">
+          <span>오늘의 등급 · <b id="result-difficulty">표준 영업</b></span><strong id="result-rank">S</strong><p id="rank-copy">빨래방의 전설</p>
+        </div>
+        <button class="primary-button" id="restart-button" type="button"><span>한 번 더 영업하기</span><b>↻</b></button>
+        <div class="result-secondary-actions">
+          <button id="result-shop-button" type="button">⚙ 업그레이드</button>
+          <button id="result-achievements-button" type="button">♛ 업적 보기</button>
+          <button id="result-codex-button" type="button">▤ 도감 보기</button>
+          <button id="result-settings-button" type="button">⚙ 환경 설정</button>
+          <button id="result-decor-button" type="button">✿ 매장 꾸미기</button>
+        </div>
+      </section>
+    </div>
+
+    <template id="machine-template">
+      <button class="machine" type="button">
+        <span class="machine-top"><b></b><i></i><i></i></span>
+        <span class="machine-body">
+          <span class="machine-door">
+            <span class="laundry-spin"><i></i><i></i><i></i></span>
+            <span class="door-shine"></span>
+          </span>
+          <span class="contamination"><b></b><small></small></span>
+          <span class="machine-fault"><b>⚙</b><small>기계 고장</small></span>
+          <span class="busy-guest" aria-hidden="true"><i></i></span>
+        </span>
+        <span class="machine-label"><b></b><small>비어 있음</small></span>
+        <span class="cycle-bar"><i></i></span>
+      </button>
+    </template>
+
+    <template id="guest-template">
+      <button class="guest" type="button">
+        <span class="guest-type-badge"></span>
+        <span class="guest-bubble"></span>
+        <span class="guest-head"><i class="hair"></i><i class="face">•ᴗ•</i></span>
+        <span class="guest-body"><i class="shirt-stain"></i></span>
+        <span class="guest-legs"><i></i><i></i></span>
+        <span class="guest-patience"><i></i></span>
+      </button>
+    </template>
+  </body>
+</html>
