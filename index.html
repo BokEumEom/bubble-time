@@ -87,6 +87,10 @@
         </div>
       </section>
 
+      <section class="shift-objectives-hud" id="shift-objectives-hud" aria-label="이번 영업 목표" aria-live="polite" hidden>
+        <span>SHIFT GOALS</span><div id="shift-objectives-hud-list"></div>
+      </section>
+
       <section class="play-area" id="play-area" aria-label="세탁소 게임 화면">
         <aside class="street-side" aria-label="세탁소 밖 대기 공간">
           <div class="street-sign">
@@ -279,7 +283,7 @@
       <section class="modal prep-card">
         <button class="modal-close" id="prep-close-button" type="button" aria-label="영업 준비 닫기">×</button>
         <div class="modal-kicker">SHIFT BRIEFING</div>
-        <h2 id="prep-title">오늘 영업을 준비하세요</h2>
+        <h2 id="prep-title" tabindex="-1">오늘 영업을 준비하세요</h2>
         <p>운영 계획과 업그레이드, 이번 주 목표를 확인한 뒤 시작합니다.</p>
         <fieldset class="shift-plans" id="shift-plans">
           <legend>운영 계획 선택</legend>
@@ -297,6 +301,10 @@
           <section><div><small>TODAY</small><strong id="prep-daily-title">오염 12개 청소하기</strong></div><em id="prep-daily-progress">0 / 12</em></section>
           <section><div><small>WEEKLY PACE</small><strong>이번 주 영업 페이스</strong></div><em><b id="prep-active-days">0</b> / 5일</em></section>
         </div>
+        <section class="shift-objective-briefing" aria-labelledby="shift-objective-title">
+          <div><small>BONUS MISSION</small><h3 id="shift-objective-title">이번 영업 추가 목표</h3><p>완료한 목표마다 추가 수익과 점장 XP를 받습니다.</p></div>
+          <div class="shift-objective-list" id="shift-objective-list"></div>
+        </section>
         <div class="shift-condition-card" id="shift-condition-card">
           <span id="prep-condition-icon">☂</span><div><small>TODAY'S STORE CONDITION</small><strong id="prep-condition-title">비 오는 세탁일</strong><p id="prep-condition-copy">물때가 자주 생기고 손님이 조금 더 찾아옵니다.</p></div><em><small>WEEKLY EVENT</small><b id="prep-weekly-rule">설비 점검 주간</b></em>
         </div>
@@ -431,7 +439,7 @@
           <button id="fullscreen-button" type="button"><span>⛶</span><b>전체 화면</b><small>모바일에서 더 넓게 플레이</small></button>
           <button class="install-button" id="settings-install-button" type="button" disabled><span>＋</span><b>앱 설치</b><small id="install-status">브라우저 메뉴에서도 설치 가능</small></button>
         </div>
-        <div class="save-data-row"><span><small>저장 데이터</small><strong id="save-version-label">DATA v5 · 자동 저장</strong></span><div><button id="export-data-button" type="button">내보내기</button><button id="import-data-button" type="button">가져오기</button><button class="danger" id="reset-data-button" type="button">초기화</button></div></div>
+        <div class="save-data-row"><span><small>저장 데이터</small><strong id="save-version-label">DATA v6 · 자동 저장</strong></span><div><button id="export-data-button" type="button">내보내기</button><button id="import-data-button" type="button">가져오기</button><button class="danger" id="reset-data-button" type="button">초기화</button></div></div>
         <input id="import-data-input" type="file" accept="application/json,.json" hidden />
         <p class="save-data-status" id="save-data-status" role="status" aria-live="polite">최고 기록과 진행 정보는 이 브라우저에 자동 저장됩니다.</p>
       </section>
@@ -456,14 +464,14 @@
     <div class="modal-backdrop" id="updates-modal" role="dialog" aria-modal="true" aria-labelledby="updates-title" aria-hidden="true">
       <section class="modal progression-modal updates-card">
         <button class="modal-close" id="updates-close-button" type="button" aria-label="업데이트 안내 닫기">×</button>
-        <div class="modal-kicker">VERSION <span id="app-version-label">2.4.0</span></div>
+        <div class="modal-kicker">VERSION <span id="app-version-label">2.5.0</span></div>
         <h2 id="updates-title">완성도 업데이트</h2>
         <p>2026.08 · 매장 운영 정보를 더 명확하고 편안하게 다듬었습니다.</p>
         <div class="update-list">
-          <article><span>FAIR</span><div><h3>사건 사전 예고</h3><p>모든 매장 사건을 2~3초 먼저 알려 대응 계획을 세울 수 있습니다.</p></div></article>
-          <article><span>LEVEL</span><div><h3>점장 레벨과 명성</h3><p>영업 성과로 경험치와 명성을 얻고 장식과 콘텐츠를 순차 해금합니다.</p></div></article>
-          <article><span>OFFICE</span><div><h3>관리 화면과 기록실</h3><p>화면 간 바로 전환되는 관리 내비게이션과 최근 10회 영업 분석을 추가했습니다.</p></div></article>
-          <article><span>A11Y v5</span><div><h3>접근성과 온보딩</h3><p>고대비·글자 크기·키보드 탐색과 신규 점장 중심의 첫 플레이 흐름을 보강했습니다.</p></div></article>
+          <article><span>GOALS</span><div><h3>영업별 보너스 목표</h3><p>매 영업마다 두 가지 추가 목표가 바뀌며 수익과 점장 XP 보상을 제공합니다.</p></div></article>
+          <article><span>RETRY</span><div><h3>빠른 재도전 흐름</h3><p>같은 조건 재도전, 새 목표, 다음 난이도와 해금 콘텐츠로 바로 이동할 수 있습니다.</p></div></article>
+          <article><span>FX</span><div><h3>성과별 전용 연출</h3><p>S등급·무환불·레벨업 순간에 서로 다른 축하 애니메이션과 사운드가 재생됩니다.</p></div></article>
+          <article><span>QA v6</span><div><h3>자동 UI 회귀 검사</h3><p>온보딩, 관리 화면, 일시정지 설정, 결과 흐름과 모바일 레이아웃을 자동 확인합니다.</p></div></article>
         </div>
       </section>
     </div>
@@ -489,15 +497,20 @@
     </div>
 
     <div class="modal-backdrop" id="result-modal" role="dialog" aria-modal="true" aria-labelledby="result-title" aria-hidden="true">
+      <div class="result-celebration" id="result-celebration" aria-hidden="true"></div>
       <section class="modal result-card">
         <div class="result-badge" id="result-badge">영업 완료</div>
         <div class="result-face" id="result-face" aria-hidden="true">✦</div>
-        <h2 id="result-title">오늘 영업, 성공!</h2>
+        <h2 id="result-title" tabindex="-1">오늘 영업, 성공!</h2>
         <p id="result-message">75초 동안 가게를 멋지게 지켜냈어요.</p>
         <div class="new-record-banner" id="new-record-banner" hidden><span>★</span><strong>새로운 최고 기록!</strong></div>
         <div class="shift-earnings"><span>이번 영업 수익</span><strong>+ ◈ <b id="result-coins">0</b></strong><small>보유 <b id="result-wallet">0</b></small></div>
-        <div class="result-manager-progress"><span>점장 성장</span><strong>+<b id="result-xp">0</b> XP</strong><em id="result-reputation">명성 +0</em></div>
+        <div class="result-manager-progress"><span>점장 성장</span><strong>+<b id="result-xp">0</b> XP</strong><em id="result-reputation">명성 +0</em><small id="result-next-level">다음 레벨까지 180 XP</small></div>
         <div class="achievement-unlock-banner" id="achievement-unlock-banner" hidden><span>♛</span><strong id="achievement-unlock-text">새 업적 달성!</strong></div>
+        <section class="result-objectives" aria-labelledby="result-objectives-title">
+          <div><span>BONUS GOALS</span><h3 id="result-objectives-title">추가 목표 결과</h3><em id="result-objective-reward">보상 ◈ 0 · 0 XP</em></div>
+          <div id="result-objective-list"></div>
+        </section>
         <div class="result-stats">
           <div><small>최종 점수</small><strong id="result-score">0</strong></div>
           <div><small>청소 완료</small><strong><b id="result-cleaned">0</b>건</strong></div>
@@ -527,7 +540,12 @@
         <div class="result-rank">
           <span>오늘의 등급 · <b id="result-difficulty">표준 영업</b></span><strong id="result-rank">S</strong><p id="rank-copy">빨래방의 전설</p>
         </div>
-        <button class="primary-button" id="restart-button" type="button"><span>한 번 더 영업하기</span><b>↻</b></button>
+        <div class="result-retry-actions">
+          <button class="primary-button" id="restart-button" type="button"><span>같은 조건으로 재도전</span><b>↻</b></button>
+          <button id="new-plan-button" type="button"><span>새 목표로 준비</span><b>◆</b></button>
+          <button id="next-difficulty-button" type="button"><span>다음 난이도 도전</span><b>↑</b></button>
+        </div>
+        <button class="result-unlock-button" id="result-unlock-button" type="button" hidden><span>★ 새로 해금된 콘텐츠 보기</span><b>→</b></button>
         <div class="result-secondary-actions">
           <button id="result-shop-button" type="button">⚙ 업그레이드</button>
           <button id="result-achievements-button" type="button">♛ 업적 보기</button>

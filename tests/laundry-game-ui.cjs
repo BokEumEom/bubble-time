@@ -1,0 +1,247 @@
+"use strict";
+
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const http = require("node:http");
+const os = require("node:os");
+const path = require("node:path");
+const { spawn } = require("node:child_process");
+
+const root = path.resolve(__dirname, "..");
+const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+const browserCandidates = [
+  process.env.BROWSER_PATH,
+  "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+  "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+  "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+  "/usr/bin/google-chrome",
+  "/usr/bin/chromium",
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+].filter(Boolean);
+const browserPath = browserCandidates.find((candidate) => fs.existsSync(candidate));
+
+if (!browserPath) throw new Error("Chrome 또는 Edge를 찾지 못했습니다. BROWSER_PATH를 지정해 주세요.");
+if (typeof WebSocket !== "function") throw new Error("UI 회귀 검사는 WebSocket을 제공하는 Node.js 22 이상이 필요합니다.");
+
+const contentTypes = {
+  ".html": "text/html; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".webmanifest": "application/manifest+json",
+};
+
+const server = http.createServer((request, response) => {
+  const pathname = decodeURIComponent(new URL(request.url, "http://localhost").pathname);
+  const relative = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
+  const target = path.resolve(root, relative);
+  if (!target.startsWith(`${root}${path.sep}`) || !fs.existsSync(target) || !fs.statSync(target).isFile()) {
+    response.writeHead(404).end("Not found");
+    return;
+  }
+  response.writeHead(200, { "content-type": contentTypes[path.extname(target)] || "application/octet-stream", "cache-control": "no-store" });
+  fs.createReadStream(target).pipe(response);
+});
+
+let browserProcess;
+let socket;
+let profileDirectory;
+let messageSequence = 0;
+const pending = new Map();
+
+function cdp(method, params = {}) {
+  return new Promise((resolve, reject) => {
+    const id = ++messageSequence;
+    pending.set(id, { resolve, reject });
+    socket.send(JSON.stringify({ id, method, params }));
+  });
+}
+
+async function evaluate(expression) {
+  const response = await cdp("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true });
+  if (response.exceptionDetails) throw new Error(response.exceptionDetails.text || "Browser evaluation failed");
+  return response.result.value;
+}
+
+async function waitFor(expression, timeout = 7000) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeout) {
+    if (await evaluate(`Boolean(${expression})`)) return;
+    await wait(80);
+  }
+  throw new Error(`UI 대기 시간 초과: ${expression}`);
+}
+
+async function connectToBrowser(port) {
+  let pages = [];
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    try {
+      pages = await fetch(`http://127.0.0.1:${port}/json/list`).then((response) => response.json());
+      if (pages.length) break;
+    } catch (error) {
+      // Browser is still starting.
+    }
+    await wait(100);
+  }
+  const page = pages.find((entry) => entry.type === "page");
+  if (!page) throw new Error("헤드리스 브라우저 탭에 연결하지 못했습니다.");
+  socket = new WebSocket(page.webSocketDebuggerUrl);
+  socket.addEventListener("message", (event) => {
+    const message = JSON.parse(event.data);
+    if (!message.id || !pending.has(message.id)) return;
+    const operation = pending.get(message.id);
+    pending.delete(message.id);
+    if (message.error) operation.reject(new Error(message.error.message));
+    else operation.resolve(message.result);
+  });
+  await new Promise((resolve, reject) => {
+    socket.addEventListener("open", resolve, { once: true });
+    socket.addEventListener("error", reject, { once: true });
+  });
+}
+
+async function run() {
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  const appUrl = `http://127.0.0.1:${address.port}/`;
+  profileDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "bubble-time-ui-"));
+  browserProcess = spawn(browserPath, [
+    "--headless=new",
+    "--disable-gpu",
+    "--no-first-run",
+    "--no-default-browser-check",
+    "--disable-background-networking",
+    "--remote-debugging-port=0",
+    `--user-data-dir=${profileDirectory}`,
+    "--window-size=1280,1000",
+    appUrl,
+  ], { stdio: "ignore", windowsHide: true });
+
+  const portFile = path.join(profileDirectory, "DevToolsActivePort");
+  for (let attempt = 0; attempt < 100 && !fs.existsSync(portFile); attempt += 1) await wait(100);
+  if (!fs.existsSync(portFile)) throw new Error("브라우저 디버깅 포트가 열리지 않았습니다.");
+  const port = Number(fs.readFileSync(portFile, "utf8").split(/\r?\n/)[0]);
+  await connectToBrowser(port);
+  await cdp("Runtime.enable");
+  await cdp("Page.enable");
+  await waitFor("document.readyState === 'complete' && typeof state !== 'undefined'");
+
+  const firstScreen = await evaluate(`({
+    intro: document.querySelector('#intro-modal').classList.contains('open'),
+    start: document.querySelector('#start-button').innerText,
+    skipVisible: !document.querySelector('#skip-onboarding-button').hidden
+  })`);
+  assert.equal(firstScreen.intro, true, "첫 화면이 열려야 합니다.");
+  assert.match(firstScreen.start, /실습부터 시작하기/, "첫 이용자는 실습으로 안내해야 합니다.");
+  assert.equal(firstScreen.skipVisible, true, "튜토리얼 건너뛰기 선택지가 필요합니다.");
+
+  await evaluate("document.querySelector('#skip-onboarding-button').click()");
+  await waitFor("document.querySelector('#prep-modal').classList.contains('open')");
+  await waitFor("document.querySelectorAll('#shift-objective-list article').length === 2");
+  await wait(180);
+  assert.equal(await evaluate("document.querySelector('#prep-modal .modal').scrollTop"), 0, "준비 화면은 맨 위에서 시작해야 합니다.");
+  assert.equal(await evaluate("document.querySelectorAll('#shift-objective-list article').length"), 2, "영업 목표 두 개가 표시되어야 합니다.");
+
+  await evaluate(`
+    state.progression.tutorial.completed = true;
+    state.progression.onboarding.firstShiftComplete = true;
+    updateProgressionUi();
+    closePrepModal();
+    document.querySelector('#manager-button').click();
+  `);
+  await waitFor("document.querySelector('#stats-modal').classList.contains('open')");
+  assert.equal(await evaluate("document.querySelectorAll('#stats-modal .management-nav button').length"), 6, "관리 화면 여섯 개가 연결되어야 합니다.");
+  await evaluate("document.querySelector('#stats-modal [data-management-target=\"codex-modal\"]').click()");
+  await waitFor("document.querySelector('#codex-modal').classList.contains('open')");
+  await wait(350);
+  await evaluate("document.querySelector('#codex-modal [data-management-target=\"settings-modal\"]').click()");
+  await waitFor("document.querySelector('#settings-modal').classList.contains('open')");
+
+  await evaluate(`
+    closeProgressionModal(els.settingsModal);
+    state.shiftObjectives = [shiftObjectiveById('clean_6'), shiftObjectiveById('refundless')];
+    startGame();
+    document.querySelector('#settings-button').click();
+  `);
+  await waitFor("document.querySelector('#settings-modal').classList.contains('during-shift')");
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('#settings-modal .management-nav')).display"), "none", "영업 중 설정에서는 관리 탭을 숨겨야 합니다.");
+  await evaluate("document.querySelector('#settings-close-button').click()");
+  await waitFor("document.querySelector('#pause-modal').classList.contains('open')");
+
+  await evaluate(`
+    resumeGame();
+    state.score = 4200;
+    state.refunds = 0;
+    state.cleaned = 8;
+    state.served = 8;
+    state.maxCombo = 7;
+    state.happyGuests = 8;
+    state.satisfactionCount = 8;
+    state.satisfactionTotal = 760;
+    endGame(true, 'time');
+  `);
+  await waitFor("document.querySelector('#result-modal').classList.contains('open')");
+  await wait(420);
+  assert.equal(await evaluate("document.querySelector('#result-modal .modal').scrollTop"), 0, "결과 화면은 맨 위에서 시작해야 합니다.");
+  const resultScreen = await evaluate(`({
+    objectives: document.querySelectorAll('#result-objective-list article').length,
+    completed: document.querySelectorAll('#result-objective-list article.completed').length,
+    retry: document.querySelector('#restart-button').innerText,
+    next: document.querySelector('#next-difficulty-button').innerText,
+    celebration: document.querySelectorAll('#result-celebration i').length,
+    levelUp: document.querySelector('.result-card').classList.contains('level-up'),
+    unlockVisible: !document.querySelector('#result-unlock-button').hidden
+  })`);
+  assert.deepEqual(resultScreen.objectives, 2, "결과에 목표 두 개가 표시되어야 합니다.");
+  assert.deepEqual(resultScreen.completed, 2, "충족한 목표는 완료 처리되어야 합니다.");
+  assert.match(resultScreen.retry, /같은 조건/, "같은 조건 재도전 버튼이 필요합니다.");
+  assert.match(resultScreen.next, /피크 타임/, "다음 난이도를 제안해야 합니다.");
+  assert.ok(resultScreen.celebration >= 24, "성과 축하 입자가 표시되어야 합니다.");
+  assert.equal(resultScreen.levelUp, true, "첫 우수 영업은 레벨업 연출을 보여야 합니다.");
+  assert.equal(resultScreen.unlockVisible, true, "새 해금 콘텐츠 이동 버튼이 필요합니다.");
+
+  const retryIds = await evaluate("state.lastShiftPlan.objectiveIds.join(',')");
+  await evaluate("document.querySelector('#restart-button').click()");
+  await waitFor("state.running === true && !document.querySelector('#result-modal').classList.contains('open')");
+  assert.equal(await evaluate("state.shiftObjectives.map((item) => item.id).join(',')"), retryIds, "재도전은 같은 목표를 유지해야 합니다.");
+  await evaluate("resetGame(); state.progression.onboarding.firstShiftComplete = true; updateProgressionUi(); openProgressionModal(els.statsModal)");
+  await waitFor("document.querySelector('#stats-modal').classList.contains('open')");
+  await cdp("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  const mobileNavigation = await evaluate(`({
+    columns: getComputedStyle(document.querySelector('#stats-modal .management-nav')).gridTemplateColumns.split(' ').length,
+    buttons: [...document.querySelectorAll('#stats-modal .management-nav button')].filter((button) => button.offsetWidth > 0).length
+  })`);
+  assert.equal(mobileNavigation.columns, 3, "모바일 관리 메뉴는 세 열이어야 합니다.");
+  assert.equal(mobileNavigation.buttons, 6, "모바일에서도 관리 메뉴 여섯 개가 보여야 합니다.");
+
+  await evaluate(`
+    localStorage.setItem('bubbleTime75.progression.v1', JSON.stringify({ schemaVersion: 5, stats: { shifts: 1 }, preferences: {}, tutorial: { completed: true } }));
+    location.reload();
+  `);
+  await waitFor("document.readyState === 'complete' && typeof state !== 'undefined'");
+  const migrated = await evaluate("({ version: state.progression.schemaVersion, objectives: state.progression.stats.objectives })");
+  assert.equal(migrated.version, 6, "v5 저장 데이터는 v6으로 이전되어야 합니다.");
+  assert.equal(migrated.objectives, 0, "이전 데이터의 목표 통계 기본값은 0이어야 합니다.");
+
+  console.log("자동 UI 회귀 검사를 통과했습니다.");
+}
+
+run().catch((error) => {
+  console.error(error.stack || error.message);
+  process.exitCode = 1;
+}).finally(async () => {
+  if (socket?.readyState === WebSocket.OPEN) socket.close();
+  if (browserProcess && !browserProcess.killed) browserProcess.kill();
+  await new Promise((resolve) => server.close(resolve));
+  if (profileDirectory && path.resolve(profileDirectory).startsWith(path.resolve(os.tmpdir()))) {
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      try {
+        fs.rmSync(profileDirectory, { recursive: true, force: true });
+        break;
+      } catch (error) {
+        await wait(100);
+      }
+    }
+  }
+});

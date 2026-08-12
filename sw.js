@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "bubble-time-v2.4.0-r1";
+const CACHE_NAME = "bubble-time-v2.5.0-r1";
 const APP_SHELL = [
   "./",
   "./index.html",

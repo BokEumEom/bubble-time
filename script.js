@@ -6,8 +6,8 @@ const MAX_QUEUE = CONFIG.maxQueue;
 const STORAGE_KEY = "bubbleTime75.bestRecord.v1";
 const PROGRESSION_KEY = "bubbleTime75.progression.v1";
 const SEEN_VERSION_KEY = "bubbleTime75.seenVersion";
-const APP_VERSION = "2.4.0";
-const DATA_SCHEMA_VERSION = 5;
+const APP_VERSION = "2.5.0";
+const DATA_SCHEMA_VERSION = 6;
 
 const DIFFICULTIES = {
   calm: { label: "여유 영업", risk: "낮음", guestInterval: 1.18, patience: 1.28, cycle: 0.94, dirtInterval: 1.2, eventInterval: 1.22, groupBonus: -1, dirtyBonus: -2 },
@@ -126,6 +126,15 @@ const DAILY_CHALLENGES = [
   { id: "happy_10", kind: "happy", title: "만족 손님 10명 만들기", target: 10 },
 ];
 
+const SHIFT_OBJECTIVES = [
+  { id: "clean_6", icon: "✦", title: "오염 6개 청소", copy: "오염을 발견하는 즉시 정리하세요.", kind: "cleaned", target: 6, coins: 35, xp: 20 },
+  { id: "combo_6", icon: "⚡", title: "6콤보 달성", copy: "오염 발생 후 빠르게 이어서 청소하세요.", kind: "combo", target: 6, coins: 40, xp: 25 },
+  { id: "happy_6", icon: "♥", title: "만족 손님 6명", copy: "깨끗한 빈 기계를 꾸준히 확보하세요.", kind: "happy", target: 6, coins: 40, xp: 25 },
+  { id: "fast_event", icon: "ϟ", title: "사건 3초 내 해결", copy: "사건 예고를 보고 필요한 위치를 준비하세요.", kind: "fastEvent", target: 1, coins: 45, xp: 30 },
+  { id: "refundless", icon: "↩", title: "환불 없이 완주", copy: "오염된 기계가 손님을 받지 않도록 관리하세요.", kind: "refundless", target: 1, coins: 55, xp: 35, endOnly: true },
+  { id: "queue_control", icon: "♟", title: "대기 3명 이하 완주", copy: "단체 손님 전후로 빈 기계를 확보하세요.", kind: "queueControl", target: 1, coins: 50, xp: 30, endOnly: true },
+];
+
 const EVENT_INFO = {
   breakdown: { icon: "⚙", title: "기계 고장!", copy: "정비 렌치를 선택하고 고장 난 기계를 눌러 수리하세요." },
   blackout: { icon: "ϟ", title: "매장 정전!", copy: "기계가 모두 멈췄어요. 매장 차단기를 눌러 전기를 복구하세요." },
@@ -181,6 +190,13 @@ const state = {
   shiftCoins: 0,
   shiftXp: 0,
   shiftReputation: 0,
+  shiftObjectives: [],
+  objectiveResults: [],
+  objectiveRewardCoins: 0,
+  objectiveRewardXp: 0,
+  lastShiftPlan: null,
+  resultUnlockTarget: null,
+  resultLeveledUp: false,
   activeEvent: null,
   eventDeck: [],
   lastEventType: null,
@@ -347,6 +363,14 @@ const els = {
   screenReaderLive: document.querySelector("#screen-reader-live"),
   highContrastSetting: document.querySelector("#high-contrast-setting"),
   textSizeSetting: document.querySelector("#text-size-setting"),
+  shiftObjectivesHud: document.querySelector("#shift-objectives-hud"),
+  shiftObjectivesHudList: document.querySelector("#shift-objectives-hud-list"),
+  shiftObjectiveList: document.querySelector("#shift-objective-list"),
+  resultObjectiveList: document.querySelector("#result-objective-list"),
+  resultCelebration: document.querySelector("#result-celebration"),
+  newPlanButton: document.querySelector("#new-plan-button"),
+  nextDifficultyButton: document.querySelector("#next-difficulty-button"),
+  resultUnlockButton: document.querySelector("#result-unlock-button"),
   weatherLayer: document.querySelector("#weather-layer"),
 };
 
@@ -384,7 +408,7 @@ function createMachines() {
   });
 }
 
-function resetGame() {
+function resetGame(options = {}) {
   clearGameTimers();
   stopBgm();
   state.running = false;
@@ -406,6 +430,11 @@ function resetGame() {
   state.shiftCoins = 0;
   state.shiftXp = 0;
   state.shiftReputation = 0;
+  state.objectiveResults = [];
+  state.objectiveRewardCoins = 0;
+  state.objectiveRewardXp = 0;
+  state.resultUnlockTarget = null;
+  state.resultLeveledUp = false;
   state.activeEvent = null;
   state.eventDeck = [];
   state.lastEventType = null;
@@ -421,7 +450,7 @@ function resetGame() {
   state.tutorialActive = false;
   state.tutorialStep = 0;
   state.firstShiftHintStep = 0;
-  state.condition = currentStoreCondition();
+  state.condition = options.condition || currentStoreCondition();
   state.queue = [];
   state.guestSequence = 0;
   state.startedAt = 0;
@@ -441,6 +470,10 @@ function resetGame() {
   els.eventAlert.hidden = true;
   hideEventForecast();
   els.firstShiftGuide.hidden = true;
+  els.shiftObjectivesHud.hidden = true;
+  els.resultCelebration.innerHTML = "";
+  els.resultCelebration.className = "result-celebration";
+  els.resultCard.classList.remove("rank-s", "spotless", "level-up");
   els.tutorialOverlay.hidden = true;
   els.pauseModal.classList.remove("open");
   els.pauseModal.setAttribute("aria-hidden", "true");
@@ -455,8 +488,9 @@ function resetGame() {
   applyStoreCondition();
 }
 
-function startGame() {
-  resetGame();
+function startGame(options = {}) {
+  if (!state.shiftObjectives.length) prepareShiftObjectives(true);
+  resetGame({ condition: options.condition });
   state.running = true;
   state.startedAt = performance.now();
   els.pauseButton.disabled = false;
@@ -465,6 +499,7 @@ function startGame() {
   els.resultModal.setAttribute("aria-hidden", "true");
   playTone(520, 0.08, "sine", 0.05);
   showToast("영업 시작! 오염 표시를 잘 살펴보세요.", "good", "✦", 1700);
+  renderShiftObjectiveHud();
   scheduleGameLoops(true);
   startBgm();
   showFirstShiftGuide("오염 아이콘을 확인한 뒤 같은 도구를 선택하세요", 0);
@@ -578,6 +613,60 @@ function exitTutorial() {
   window.setTimeout(() => els.tutorialButton.focus(), 100);
 }
 
+function shiftObjectiveById(id) {
+  return SHIFT_OBJECTIVES.find((objective) => objective.id === id);
+}
+
+function prepareShiftObjectives(force = false) {
+  if (!force && state.shiftObjectives.length) return;
+  const liveObjectives = shuffle(SHIFT_OBJECTIVES.filter((objective) => !objective.endOnly));
+  const remaining = shuffle(SHIFT_OBJECTIVES.filter((objective) => objective.id !== liveObjectives[0].id));
+  state.shiftObjectives = [liveObjectives[0], remaining[0]];
+  state.objectiveResults = [];
+}
+
+function shiftObjectiveProgress(objective, success = null) {
+  const values = {
+    cleaned: state.cleaned,
+    combo: state.maxCombo,
+    happy: state.happyGuests,
+    fastEvent: state.eventResponseTimes.filter((item) => item.ms <= 3000).length,
+    refundless: success === true && state.refunds === 0 ? 1 : 0,
+    queueControl: success === true && state.peakQueue <= 3 ? 1 : 0,
+  };
+  return Math.min(objective.target, Math.max(0, Number(values[objective.kind]) || 0));
+}
+
+function shiftObjectiveStatus(objective, success = null) {
+  const progress = shiftObjectiveProgress(objective, success);
+  const completed = progress >= objective.target;
+  let label = `${progress} / ${objective.target}`;
+  if (objective.kind === "refundless" && success === null) label = state.refunds === 0 ? "유지 중" : "실패";
+  if (objective.kind === "queueControl" && success === null) label = state.peakQueue <= 3 ? "유지 중" : "실패";
+  if (success !== null && objective.endOnly) label = completed ? "완료" : "실패";
+  return { objective, progress, completed, label };
+}
+
+function evaluateShiftObjectives(success) {
+  state.objectiveResults = state.shiftObjectives.map((objective) => shiftObjectiveStatus(objective, success));
+  state.objectiveRewardCoins = state.objectiveResults.reduce((sum, result) => sum + (result.completed ? result.objective.coins : 0), 0);
+  state.objectiveRewardXp = state.objectiveResults.reduce((sum, result) => sum + (result.completed ? result.objective.xp : 0), 0);
+}
+
+function renderShiftObjectiveBriefing() {
+  els.shiftObjectiveList.innerHTML = state.shiftObjectives.map((objective) => `<article><span>${objective.icon}</span><div><strong>${objective.title}</strong><small>${objective.copy}</small></div><em>◈ ${objective.coins}<small>+${objective.xp} XP</small></em></article>`).join("");
+}
+
+function renderShiftObjectiveHud() {
+  const visible = state.running && !state.tutorialActive && state.shiftObjectives.length > 0;
+  els.shiftObjectivesHud.hidden = !visible;
+  if (!visible) return;
+  els.shiftObjectivesHudList.innerHTML = state.shiftObjectives.map((objective) => {
+    const status = shiftObjectiveStatus(objective);
+    return `<span class="${status.completed ? "completed" : status.label === "실패" ? "failed" : ""}"><i>${objective.icon}</i><b>${objective.title}</b><em>${status.completed ? "완료" : status.label}</em></span>`;
+  }).join("");
+}
+
 function updatePrepUi() {
   ensureCurrentDaily();
   ensureCurrentWeekly();
@@ -604,12 +693,14 @@ function updatePrepUi() {
   document.querySelector("#prep-condition-title").textContent = state.condition.title;
   document.querySelector("#prep-condition-copy").textContent = state.condition.copy;
   document.querySelector("#prep-weekly-rule").textContent = currentWeeklyEventRule().label;
+  renderShiftObjectiveBriefing();
   renderWeeklyGoals();
 }
 
-function openPrepModal(fromRestart = false) {
+function openPrepModal(fromRestart = false, rerollObjectives = true) {
   state.lastFocusedElement = document.activeElement;
   if (state.running || fromRestart) resetGame();
+  prepareShiftObjectives(rerollObjectives || !state.shiftObjectives.length);
   state.returnModal = els.resultModal.classList.contains("open") ? "result-modal" : "intro-modal";
   [els.introModal, els.resultModal, els.pauseModal].forEach((modal) => {
     modal.classList.remove("open");
@@ -618,7 +709,10 @@ function openPrepModal(fromRestart = false) {
   els.prepModal.classList.add("open");
   els.prepModal.setAttribute("aria-hidden", "false");
   updatePrepUi();
-  window.setTimeout(() => els.confirmStartButton.focus(), 120);
+  window.setTimeout(() => {
+    els.prepModal.querySelector(".modal").scrollTop = 0;
+    document.querySelector("#prep-title").focus({ preventScroll: true });
+  }, 120);
 }
 
 function closePrepModal() {
@@ -631,6 +725,7 @@ function closePrepModal() {
 }
 
 function confirmPreparedShift() {
+  prepareShiftObjectives(false);
   state.progression.preferences.lastDifficulty = state.difficulty;
   saveProgression();
   els.prepModal.classList.remove("open");
@@ -1416,6 +1511,7 @@ function updateHud() {
   els.satisfactionMeter.classList.toggle("warning", satisfaction < 80);
   els.satisfactionMeter.classList.toggle("danger", satisfaction < 60);
   updateQueueVisuals();
+  renderShiftObjectiveHud();
 }
 
 function changeScore(amount) {
@@ -1556,7 +1652,15 @@ function endGame(success, reason) {
 
   const finalSuccess = success && state.queue.length < MAX_QUEUE;
   const rank = getRank(finalSuccess);
-  const unlockedAchievements = finalizeProgression(finalSuccess, rank, reason);
+  evaluateShiftObjectives(finalSuccess);
+  state.lastShiftPlan = {
+    difficulty: state.difficulty,
+    condition: state.condition?.id || null,
+    objectiveIds: state.shiftObjectives.map((objective) => objective.id),
+  };
+  const progressionResult = finalizeProgression(finalSuccess, rank, reason);
+  const unlockedAchievements = progressionResult.achievements;
+  state.resultLeveledUp = progressionResult.currentLevel.level > progressionResult.previousLevel;
   const isNewRecord = saveBestRecord(finalSuccess, rank);
   const card = els.resultCard;
   card.classList.toggle("failed", !finalSuccess);
@@ -1582,23 +1686,120 @@ function endGame(success, reason) {
   document.querySelector("#result-wallet").textContent = state.progression.wallet.toLocaleString("ko-KR");
   document.querySelector("#result-xp").textContent = String(state.shiftXp);
   document.querySelector("#result-reputation").textContent = `명성 ${state.shiftReputation >= 0 ? "+" : ""}${state.shiftReputation}`;
+  const nextLevel = nextManagerLevel();
+  document.querySelector("#result-next-level").textContent = nextLevel ? `다음 레벨까지 ${Math.max(0, nextLevel.xp - state.progression.manager.xp)} XP` : "최고 점장 레벨 달성";
   document.querySelector("#result-impatient").textContent = String(state.typeCounts.impatient);
   document.querySelector("#result-regular").textContent = String(state.typeCounts.regular);
   document.querySelector("#result-bulk").textContent = String(state.typeCounts.bulk);
   document.querySelector("#result-difficulty").textContent = DIFFICULTIES[state.difficulty].label;
+  renderResultObjectives();
   updateResultAnalysis();
   const unlockBanner = document.querySelector("#achievement-unlock-banner");
   unlockBanner.hidden = unlockedAchievements.length === 0;
   document.querySelector("#achievement-unlock-text").textContent = unlockedAchievements.length
     ? `${unlockedAchievements.map((item) => item.title).join(" · ")} 달성!`
     : "새 업적 달성!";
+  configureResultActions(progressionResult, isNewRecord);
   updateRecordUi();
   updateProgressionUi();
   els.resultModal.classList.add("open");
   els.resultModal.setAttribute("aria-hidden", "false");
-  if (finalSuccess) playSuccessJingle();
-  else playRefundSound();
-  window.setTimeout(() => els.restartButton.focus(), 350);
+  playResultCelebration({ finalSuccess, rank, isNewRecord, progressionResult });
+  window.setTimeout(() => {
+    els.resultCard.scrollTop = 0;
+    document.querySelector("#result-title").focus({ preventScroll: true });
+  }, 350);
+}
+
+function renderResultObjectives() {
+  const completedCount = state.objectiveResults.filter((result) => result.completed).length;
+  els.resultObjectiveList.innerHTML = state.objectiveResults.map((result) => `<article class="${result.completed ? "completed" : "failed"}"><span>${result.completed ? "✓" : "×"}</span><div><strong>${result.objective.title}</strong><small>${result.completed ? `◈ ${result.objective.coins} · +${result.objective.xp} XP` : "다음 영업에서 다시 도전"}</small></div><em>${result.completed ? "완료" : result.label}</em></article>`).join("");
+  document.querySelector("#result-objective-reward").textContent = `${completedCount} / ${state.objectiveResults.length} 완료 · 보상 ◈ ${state.objectiveRewardCoins} · ${state.objectiveRewardXp} XP`;
+}
+
+function configureResultActions(progressionResult, isNewRecord) {
+  const difficultyOrder = ["calm", "standard", "rush"];
+  const nextDifficulty = difficultyOrder[difficultyOrder.indexOf(state.difficulty) + 1] || null;
+  els.nextDifficultyButton.hidden = !nextDifficulty;
+  if (nextDifficulty) els.nextDifficultyButton.querySelector("span").textContent = `${DIFFICULTIES[nextDifficulty].label} 도전`;
+
+  state.resultUnlockTarget = null;
+  if (progressionResult.currentLevel.level > progressionResult.previousLevel) {
+    const decorLevel = [2, 3, 4].includes(progressionResult.currentLevel.level);
+    state.resultUnlockTarget = decorLevel ? "decor-modal" : "stats-modal";
+    els.resultUnlockButton.querySelector("span").textContent = `★ Lv.${progressionResult.currentLevel.level} 해금 콘텐츠 보기`;
+  } else if (progressionResult.achievements.length) {
+    state.resultUnlockTarget = "achievements-modal";
+    els.resultUnlockButton.querySelector("span").textContent = `♛ 새 업적 ${progressionResult.achievements.length}개 보기`;
+  } else if (isNewRecord) {
+    state.resultUnlockTarget = "stats-modal";
+    els.resultUnlockButton.querySelector("span").textContent = "▥ 최고 기록 흐름 보기";
+  }
+  els.resultUnlockButton.hidden = !state.resultUnlockTarget;
+}
+
+function retrySameShift() {
+  const plan = state.lastShiftPlan;
+  if (!plan) {
+    openPrepModal(true, false);
+    return;
+  }
+  state.difficulty = DIFFICULTIES[plan.difficulty] ? plan.difficulty : "standard";
+  state.shiftObjectives = plan.objectiveIds.map(shiftObjectiveById).filter(Boolean);
+  const condition = plan.condition && STORE_CONDITIONS[plan.condition] ? { id: plan.condition, ...STORE_CONDITIONS[plan.condition] } : currentStoreCondition();
+  startGame({ condition });
+}
+
+function openFreshShiftPlan(higherDifficulty = false) {
+  if (higherDifficulty) {
+    const order = ["calm", "standard", "rush"];
+    state.difficulty = order[Math.min(order.length - 1, order.indexOf(state.difficulty) + 1)] || "standard";
+  }
+  openPrepModal(true, true);
+}
+
+function openResultUnlock() {
+  if (!state.resultUnlockTarget) return;
+  const target = document.querySelector(`#${state.resultUnlockTarget}`);
+  if (target) openProgressionModal(target);
+}
+
+function playResultCelebration({ finalSuccess, rank, isNewRecord, progressionResult }) {
+  const spotless = finalSuccess && state.refunds === 0;
+  const levelUp = progressionResult.currentLevel.level > progressionResult.previousLevel;
+  const sRank = finalSuccess && rank.letter === "S";
+  els.resultCard.classList.toggle("rank-s", sRank);
+  els.resultCard.classList.toggle("spotless", spotless);
+  els.resultCard.classList.toggle("level-up", levelUp);
+  els.resultCelebration.classList.toggle("active", finalSuccess);
+  els.resultCelebration.classList.toggle("rank-s", sRank);
+  els.resultCelebration.classList.toggle("level-up", levelUp);
+
+  if (finalSuccess) {
+    const colors = ["#ffd65a", "#57d3bd", "#ff765e", "#8ad8e8", "#ffffff"];
+    els.resultCelebration.innerHTML = Array.from({ length: levelUp || sRank ? 38 : 24 }, (_, index) => `<i style="--celebrate-x:${5 + Math.random() * 90}%;--celebrate-delay:${Math.random() * .65}s;--celebrate-drift:${-45 + Math.random() * 90}px;--celebrate-color:${colors[index % colors.length]}"></i>`).join("");
+  }
+
+  if (levelUp) {
+    document.querySelector("#result-face").textContent = "↑";
+    playLevelUpJingle();
+    announce(`점장 레벨 ${progressionResult.currentLevel.level} 달성. 새 콘텐츠가 해금되었습니다.`);
+  } else if (sRank) {
+    document.querySelector("#result-badge").textContent = "S RANK · PERFECT SHIFT";
+    document.querySelector("#result-face").textContent = "★";
+    playSGradeJingle();
+    announce("S등급 영업을 달성했습니다.");
+  } else if (spotless) {
+    document.querySelector("#result-face").textContent = "✧";
+    playSpotlessJingle();
+    announce("환불 없는 깨끗한 영업을 달성했습니다.");
+  } else if (finalSuccess) {
+    playSuccessJingle();
+  } else {
+    playRefundSound();
+  }
+  if (isNewRecord && !levelUp && !sRank) scheduleTimeout(playSecretJingle, 420);
+  if (finalSuccess) vibrate(levelUp || sRank ? [30, 35, 45, 35, 70] : [24, 30, 42]);
 }
 
 function mostFrequentEntry(counts) {
@@ -1755,7 +1956,7 @@ function defaultProgression() {
     schemaVersion: DATA_SCHEMA_VERSION,
     wallet: 0,
     upgrades: { machine: 0, tool: 0 },
-    stats: { shifts: 0, cleaned: 0, served: 0, happy: 0, regular: 0, bulk: 0, impatient: 0, earnings: 0, maxCombo: 0 },
+    stats: { shifts: 0, cleaned: 0, served: 0, happy: 0, regular: 0, bulk: 0, impatient: 0, earnings: 0, maxCombo: 0, objectives: 0 },
     achievements: [],
     discovery: { customers: ["normal"], dirt: [], events: [], upgrades: ["machine", "tool"] },
     preferences: {
@@ -1805,6 +2006,9 @@ function migrateProgressionData(saved) {
       hintsDismissed: (Number(stats.shifts) || 0) > 0,
     };
     migrated.recentShifts = [];
+  }
+  if (version < 6) {
+    migrated.stats = { ...(saved.stats || {}), objectives: Math.max(0, Number(saved.stats?.objectives) || 0) };
   }
   migrated.schemaVersion = Math.max(version, DATA_SCHEMA_VERSION);
   return migrated;
@@ -1865,6 +2069,8 @@ function loadProgression() {
         condition: Object.hasOwn(STORE_CONDITIONS, item?.condition) ? item.condition : null,
         xp: Math.max(0, Number(item?.xp) || 0),
         reputation: Number(item?.reputation) || 0,
+        objectivesCompleted: Math.max(0, Number(item?.objectivesCompleted) || 0),
+        objectiveCount: Math.max(0, Number(item?.objectiveCount) || 0),
       })) : [],
       decor: { ...fallback.decor, ...(saved.decor || {}), equipped: { ...fallback.decor.equipped, ...(saved.decor?.equipped || {}) } },
     };
@@ -2137,6 +2343,8 @@ function recordShiftHistory(success, rank, reason) {
     condition: state.condition?.id || null,
     xp: state.shiftXp,
     reputation: state.shiftReputation,
+    objectivesCompleted: state.objectiveResults.filter((result) => result.completed).length,
+    objectiveCount: state.objectiveResults.length,
   };
   state.progression.recentShifts = [entry, ...state.progression.recentShifts].slice(0, 10);
 }
@@ -2149,7 +2357,8 @@ function finalizeProgression(success, rank, reason) {
     state.served * CONFIG.economy.servedCoins
       + state.happyGuests * CONFIG.economy.happyCoins
       + (success ? CONFIG.economy.successBonus : 0)
-      - state.refunds * CONFIG.economy.refundPenalty,
+      - state.refunds * CONFIG.economy.refundPenalty
+      + state.objectiveRewardCoins,
   );
   progression.wallet += state.shiftCoins;
   progression.stats.shifts += success ? 1 : 0;
@@ -2161,8 +2370,9 @@ function finalizeProgression(success, rank, reason) {
   progression.stats.impatient += state.typeCounts.impatient;
   progression.stats.earnings += state.shiftCoins;
   progression.stats.maxCombo = Math.max(progression.stats.maxCombo, state.maxCombo);
+  progression.stats.objectives += state.objectiveResults.filter((result) => result.completed).length;
   const rankXp = { S: 75, A: 55, B: 35, C: 20, F: 5 }[rank.letter] || 0;
-  state.shiftXp = 25 + state.cleaned * 4 + state.served * 5 + state.maxCombo * 2 + (success ? 60 : 10) + rankXp;
+  state.shiftXp = 25 + state.cleaned * 4 + state.served * 5 + state.maxCombo * 2 + (success ? 60 : 10) + rankXp + state.objectiveRewardXp;
   state.shiftReputation = reputationDelta(success, rank);
   progression.manager.xp += state.shiftXp;
   progression.manager.reputation = Math.max(0, progression.manager.reputation + state.shiftReputation);
@@ -2178,7 +2388,7 @@ function finalizeProgression(success, rank, reason) {
     showToast(`점장 Lv.${currentLevel.level} 달성 · ${currentLevel.title}`, "secret", "★", 2600);
     announce(`점장 레벨 ${currentLevel.level}, ${currentLevel.title}을 달성했습니다.`);
   }
-  return newlyUnlocked;
+  return { achievements: newlyUnlocked, previousLevel, currentLevel };
 }
 
 function achievementIsComplete(id, success) {
@@ -2311,7 +2521,8 @@ function renderShiftHistory() {
       const date = new Date(item.timestamp);
       const dateLabel = Number.isNaN(date.getTime()) ? "최근" : new Intl.DateTimeFormat("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(date);
       const difficulty = DIFFICULTIES[item.difficulty]?.label || "표준 영업";
-      return `<article class="${item.success ? "success" : "failed"}"><span>${item.success ? item.rank : "F"}</span><div><strong>${item.success ? "영업 완주" : "대기 초과"}</strong><small>${dateLabel} · ${difficulty}</small></div><em><b>${(Number(item.score) || 0).toLocaleString("ko-KR")}</b>점<small>환불 ${Number(item.refunds) || 0} · +${Number(item.xp) || 0} XP</small></em></article>`;
+      const objectiveCopy = Number(item.objectiveCount) ? ` · 목표 ${Number(item.objectivesCompleted) || 0}/${Number(item.objectiveCount)}` : "";
+      return `<article class="${item.success ? "success" : "failed"}"><span>${item.success ? item.rank : "F"}</span><div><strong>${item.success ? "영업 완주" : "대기 초과"}</strong><small>${dateLabel} · ${difficulty}${objectiveCopy}</small></div><em><b>${(Number(item.score) || 0).toLocaleString("ko-KR")}</b>점<small>환불 ${Number(item.refunds) || 0} · +${Number(item.xp) || 0} XP</small></em></article>`;
     }).join("")
     : "<p class=\"history-empty\">아직 저장된 영업 기록이 없습니다.</p>";
 
@@ -2796,6 +3007,26 @@ function playSuccessJingle() {
   });
 }
 
+function playSpotlessJingle() {
+  [659.25, 783.99, 987.77, 1174.66].forEach((tone, index) => {
+    playTone(tone, 0.24, index % 2 ? "triangle" : "sine", 0.034, index * 0.1);
+  });
+}
+
+function playSGradeJingle() {
+  [523.25, 659.25, 783.99, 1046.5, 1318.51].forEach((tone, index) => {
+    playTone(tone, 0.28, index < 3 ? "triangle" : "sine", 0.04, index * 0.09);
+  });
+  playTone(261.63, 0.72, "sine", 0.018, 0.12);
+}
+
+function playLevelUpJingle() {
+  [392, 523.25, 659.25, 783.99, 1046.5].forEach((tone, index) => {
+    playTone(tone, 0.22, "square", 0.024, index * 0.085);
+    playTone(tone * 1.5, 0.18, "sine", 0.018, index * 0.085 + 0.04);
+  });
+}
+
 function playSecretJingle() {
   [520, 660, 780, 1040].forEach((tone, index) => {
     playTone(tone, 0.14, "sine", 0.038, index * 0.09);
@@ -2833,8 +3064,11 @@ els.tutorialButton.addEventListener("click", startTutorial);
 els.helpTutorialButton.addEventListener("click", startTutorial);
 els.tutorialExitButton.addEventListener("click", exitTutorial);
 els.tutorialFinishButton.addEventListener("click", exitTutorial);
-els.restartButton.addEventListener("click", () => openPrepModal(true));
-els.pauseRestartButton.addEventListener("click", () => openPrepModal(true));
+els.restartButton.addEventListener("click", retrySameShift);
+els.newPlanButton.addEventListener("click", () => openFreshShiftPlan(false));
+els.nextDifficultyButton.addEventListener("click", () => openFreshShiftPlan(true));
+els.resultUnlockButton.addEventListener("click", openResultUnlock);
+els.pauseRestartButton.addEventListener("click", () => openPrepModal(true, false));
 els.confirmStartButton.addEventListener("click", confirmPreparedShift);
 els.prepCloseButton.addEventListener("click", closePrepModal);
 els.shiftPlans.forEach((plan) => {
@@ -2994,6 +3228,7 @@ window.addEventListener("appinstalled", () => {
 });
 
 if ("serviceWorker" in navigator) {
+  const hadActiveServiceWorker = Boolean(navigator.serviceWorker.controller);
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").then((registration) => {
       if (registration.waiting) showAppUpdate(registration);
@@ -3006,6 +3241,7 @@ if ("serviceWorker" in navigator) {
     }).catch(() => document.documentElement.classList.add("service-worker-unavailable"));
   });
   navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadActiveServiceWorker) return;
     if (state.reloadForUpdate) return;
     state.reloadForUpdate = true;
     window.location.reload();

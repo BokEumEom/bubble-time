@@ -40,6 +40,13 @@ const manifest = JSON.parse(read("manifest.webmanifest"));
   "skip-onboarding-button",
   "high-contrast-setting",
   "text-size-setting",
+  "shift-objective-list",
+  "shift-objectives-hud",
+  "result-objective-list",
+  "new-plan-button",
+  "next-difficulty-button",
+  "result-unlock-button",
+  "result-celebration",
 ].forEach((id) => assert.match(html, new RegExp(`id=["']${id}["']`), `${id} UI가 필요합니다.`));
 
 assert.equal(manifest.display, "standalone", "PWA는 독립 실행형으로 열려야 합니다.");
@@ -48,7 +55,7 @@ assert.ok(manifest.icons.some((icon) => icon.purpose.includes("maskable")), "마
 ["index.html", "styles.css", "game-config.js", "script.js", "manifest.webmanifest", "icon.svg"]
   .forEach((asset) => assert.match(worker, new RegExp(asset.replace(".", "\\.")), `${asset}이 오프라인 캐시에 포함되어야 합니다.`));
 
-assert.match(script, /DATA_SCHEMA_VERSION\s*=\s*5/, "저장 데이터 스키마 버전 5가 필요합니다.");
+assert.match(script, /DATA_SCHEMA_VERSION\s*=\s*6/, "저장 데이터 스키마 버전 6이 필요합니다.");
 assert.match(script, /migrateProgressionData/, "기존 저장 데이터 마이그레이션 함수가 필요합니다.");
 assert.match(script, /resultAdvice/, "영업 결과 맞춤 조언 함수가 필요합니다.");
 assert.match(script, /weeklyDefinitionsFor/, "주간 목표 생성 함수가 필요합니다.");
@@ -65,6 +72,10 @@ assert.match(script, /showEventForecast/, "사건 사전 예고 함수가 필요
 assert.match(script, /managerLevelInfo/, "점장 레벨 계산 함수가 필요합니다.");
 assert.match(script, /recordShiftHistory/, "최근 영업 기록 함수가 필요합니다.");
 assert.match(script, /setupManagementNavigation/, "관리 화면 공통 탐색이 필요합니다.");
+assert.match(script, /prepareShiftObjectives/, "영업별 목표 배정 함수가 필요합니다.");
+assert.match(script, /evaluateShiftObjectives/, "영업 목표 평가 함수가 필요합니다.");
+assert.match(script, /retrySameShift/, "같은 조건 재도전 함수가 필요합니다.");
+assert.match(script, /playResultCelebration/, "성과별 결과 연출 함수가 필요합니다.");
 assert.match(script, /MAX_QUEUE\s*-\s*1\s*-\s*state\.queue\.length/, "단체 손님 사건은 즉시 패배를 만들지 않아야 합니다.");
 assert.match(worker, /SKIP_WAITING/, "서비스 워커 업데이트 적용 메시지가 필요합니다.");
 assert.match(styles, /@media \(max-width: 520px\)/, "모바일 레이아웃 기준이 필요합니다.");
@@ -74,5 +85,7 @@ assert.match(styles, /\.tutorial-coach/, "튜토리얼 코치 스타일이 필�
 assert.match(styles, /\.decor-preview/, "매장 꾸미기 미리 보기 스타일이 필요합니다.");
 assert.match(styles, /\.high-contrast/, "고대비 화면 스타일이 필요합니다.");
 assert.match(styles, /\.management-nav/, "관리 화면 공통 탐색 스타일이 필요합니다.");
+assert.match(styles, /\.result-celebration/, "결과 축하 연출 스타일이 필요합니다.");
+assert.ok(fs.existsSync(path.join(root, "tests", "laundry-game-ui.cjs")), "자동 UI 회귀 검사 파일이 필요합니다.");
 
 console.log("출시 완성도 정적 검사를 통과했습니다.");
