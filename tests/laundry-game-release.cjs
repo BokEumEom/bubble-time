@@ -11,6 +11,11 @@ const script = read("script.js");
 const styles = read("styles.css");
 const worker = read("sw.js");
 const manifest = JSON.parse(read("manifest.webmanifest"));
+const pngSize = (file) => {
+  const buffer = fs.readFileSync(path.join(root, file));
+  assert.equal(buffer.toString("hex", 0, 8), "89504e470d0a1a0a", `${file}은 올바른 PNG여야 합니다.`);
+  return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
+};
 
 [
   "result-event-response",
@@ -47,15 +52,26 @@ const manifest = JSON.parse(read("manifest.webmanifest"));
   "next-difficulty-button",
   "result-unlock-button",
   "result-celebration",
+  "shift-modes",
+  "resume-shift-card",
+  "endless-cashout-button",
+  "share-result-button",
 ].forEach((id) => assert.match(html, new RegExp(`id=["']${id}["']`), `${id} UI가 필요합니다.`));
 
 assert.equal(manifest.display, "standalone", "PWA는 독립 실행형으로 열려야 합니다.");
 assert.equal(manifest.start_url, "./", "PWA 시작 주소는 배포 경로에 상대적이어야 합니다.");
 assert.ok(manifest.icons.some((icon) => icon.purpose.includes("maskable")), "마스커블 앱 아이콘이 필요합니다.");
-["index.html", "styles.css", "game-config.js", "script.js", "manifest.webmanifest", "icon.svg"]
+assert.ok(manifest.screenshots.some((item) => item.form_factor === "wide"), "와이드 PWA 설치 스크린샷이 필요합니다.");
+assert.ok(manifest.screenshots.some((item) => item.form_factor === "narrow"), "모바일 PWA 설치 스크린샷이 필요합니다.");
+["index.html", "styles.css", "game-config.js", "script.js", "manifest.webmanifest", "icon.svg", "icon-maskable.svg", "assets/icon-192.png", "assets/icon-512.png", "assets/icon-maskable-512.png", "assets/share-card.png", "assets/screenshot-wide.png", "assets/screenshot-mobile.png"]
   .forEach((asset) => assert.match(worker, new RegExp(asset.replace(".", "\\.")), `${asset}이 오프라인 캐시에 포함되어야 합니다.`));
 
-assert.match(script, /DATA_SCHEMA_VERSION\s*=\s*6/, "저장 데이터 스키마 버전 6이 필요합니다.");
+assert.match(script, /DATA_SCHEMA_VERSION\s*=\s*7/, "저장 데이터 스키마 버전 7이 필요합니다.");
+assert.match(script, /const GAME_MODES/, "네 가지 영업 모드 정의가 필요합니다.");
+assert.match(script, /saveShiftCheckpoint/, "영업 체크포인트 저장 함수가 필요합니다.");
+assert.match(script, /restoreShiftCheckpoint/, "영업 체크포인트 복구 함수가 필요합니다.");
+assert.match(script, /resultShareCanvas/, "결과 공유 카드 생성 함수가 필요합니다.");
+assert.doesNotMatch(`${html}\n${script}`, /\/api\/cloud|cloud-sync|leaderboard/i, "이번 버전에는 온라인 순위·클라우드 저장을 포함하지 않습니다.");
 assert.match(script, /migrateProgressionData/, "기존 저장 데이터 마이그레이션 함수가 필요합니다.");
 assert.match(script, /resultAdvice/, "영업 결과 맞춤 조언 함수가 필요합니다.");
 assert.match(script, /weeklyDefinitionsFor/, "주간 목표 생성 함수가 필요합니다.");
@@ -86,6 +102,17 @@ assert.match(styles, /\.decor-preview/, "매장 꾸미기 미리 보기 스타�
 assert.match(styles, /\.high-contrast/, "고대비 화면 스타일이 필요합니다.");
 assert.match(styles, /\.management-nav/, "관리 화면 공통 탐색 스타일이 필요합니다.");
 assert.match(styles, /\.result-celebration/, "결과 축하 연출 스타일이 필요합니다.");
+assert.match(styles, /\.shift-modes/, "영업 모드 선택 스타일이 필요합니다.");
 assert.ok(fs.existsSync(path.join(root, "tests", "laundry-game-ui.cjs")), "자동 UI 회귀 검사 파일이 필요합니다.");
+["icon-192.png", "icon-512.png", "icon-maskable-512.png", "share-card.png", "screenshot-wide.png", "screenshot-mobile.png"]
+  .forEach((asset) => assert.ok(fs.existsSync(path.join(root, "assets", asset)), `${asset} 파일이 필요합니다.`));
+Object.entries({
+  "assets/icon-192.png": [192, 192],
+  "assets/icon-512.png": [512, 512],
+  "assets/icon-maskable-512.png": [512, 512],
+  "assets/share-card.png": [1200, 630],
+  "assets/screenshot-wide.png": [1280, 720],
+  "assets/screenshot-mobile.png": [390, 844],
+}).forEach(([asset, [width, height]]) => assert.deepEqual(pngSize(asset), { width, height }, `${asset} 크기가 manifest와 일치해야 합니다.`));
 
 console.log("출시 완성도 정적 검사를 통과했습니다.");

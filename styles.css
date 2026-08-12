@@ -3503,3 +3503,40 @@ button:focus-visible {
   .history-list article > em { grid-column: 2; justify-items: start; }
   .select-setting { grid-template-columns: 1fr auto; }
 }
+
+/* v2.6 modes, recovery and release polish */
+.shift-modes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 14px 0 7px; padding: 0; border: 0; }
+.shift-modes legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.shift-modes label { position: relative; cursor: pointer; }
+.shift-modes input { position: absolute; opacity: 0; }
+.shift-modes label > span { min-height: 59px; display: grid; align-content: center; gap: 2px; padding: 8px 9px; border: 2px solid #dce6e2; border-radius: 11px; background: #f7faf8; transition: .16s ease; }
+.shift-modes label:hover > span { border-color: #9bcfc3; transform: translateY(-2px); }
+.shift-modes label.selected > span { border-color: var(--mint-dark); background: #e7f8f2; box-shadow: inset 0 -4px #b5e2d7; }
+.shift-modes input:focus-visible + span { outline: 3px solid rgba(37,154,139,.25); outline-offset: 2px; }
+.shift-modes b { font-size: 14px; }
+.shift-modes small { color: #748a82; font-size: 7px; font-weight: 800; }
+.shift-modes em { position: absolute; right: 7px; top: 6px; color: #b28317; font-size: 5px; font-style: normal; font-weight: 950; letter-spacing: .07em; }
+
+.resume-shift-card { position: relative; display: grid; grid-template-columns: 43px 1fr auto auto; align-items: center; gap: 9px; margin: 10px 0; padding: 10px; border: 2px solid #d9b33a; border-radius: 13px; background: #fff8dc; text-align: left; }
+.resume-shift-card[hidden] { display: none; }
+.resume-shift-card > span { width: 41px; height: 41px; display: grid; place-items: center; border-radius: 11px; background: var(--yellow); color: #79580d; font-size: 21px; }
+.resume-shift-card > div { min-width: 0; display: grid; gap: 2px; }
+.resume-shift-card small { color: #9b7414; font-size: 6px; font-weight: 950; letter-spacing: .1em; }
+.resume-shift-card strong { font-size: 10px; }
+.resume-shift-card p { margin: 0; color: #806c38; font-size: 7px; font-weight: 750; }
+.resume-shift-card button { min-height: 38px; padding: 7px 11px; border: 0; border-radius: 9px; background: var(--deep); color: white; cursor: pointer; font-size: 8px; font-weight: 950; }
+.resume-shift-card button:last-child { width: 32px; padding: 0; background: rgba(18,60,67,.1); color: var(--ink); font-size: 15px; }
+
+.endless-cashout-button { width: 100%; min-height: 45px; display: flex; align-items: center; justify-content: space-between; margin-top: 8px; padding: 9px 13px; border: 2px solid #d8b039; border-radius: 11px; background: #fff5c9; color: #72550f; cursor: pointer; font-size: 9px; font-weight: 950; }
+.endless-cashout-button[hidden] { display: none; }
+.endless-cashout-button b { font-size: 15px; }
+
+.hud-card.timer-card strong { min-width: 38px; white-space: nowrap; }
+
+@media (max-width: 520px) {
+  .shift-modes { grid-template-columns: repeat(2, 1fr); }
+  .shift-modes label > span { min-height: 54px; }
+  .resume-shift-card { grid-template-columns: 38px 1fr auto; }
+  .resume-shift-card > span { width: 36px; height: 36px; }
+  .resume-shift-card button:last-child { position: absolute; right: 4px; top: -34px; background: var(--deep); color: white; }
+}

@@ -29,6 +29,7 @@ const contentTypes = {
   ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".svg": "image/svg+xml",
+  ".png": "image/png",
   ".webmanifest": "application/manifest+json",
 };
 
@@ -142,6 +143,19 @@ async function run() {
   await wait(180);
   assert.equal(await evaluate("document.querySelector('#prep-modal .modal').scrollTop"), 0, "준비 화면은 맨 위에서 시작해야 합니다.");
   assert.equal(await evaluate("document.querySelectorAll('#shift-objective-list article').length"), 2, "영업 목표 두 개가 표시되어야 합니다.");
+  const modeOptions = await evaluate(`({
+    count: document.querySelectorAll('#shift-modes [data-mode]').length,
+    durations: Object.values(GAME_MODES).map((mode) => mode.seconds)
+  })`);
+  assert.equal(modeOptions.count, 4, "영업 모드 네 개가 모두 표시되어야 합니다.");
+  assert.deepEqual(modeOptions.durations, [45, 75, 120, null], "45초·75초·120초·무한 영업 시간이 정확해야 합니다.");
+
+  await evaluate("document.querySelector('[data-mode=quick] input').click()");
+  const quickMode = await evaluate(`({ mode: state.mode, label: document.querySelector('#prep-mode').textContent, time: currentGameMode().seconds, objectives: state.shiftObjectives.map((item) => item.target) })`);
+  assert.equal(quickMode.mode, "quick", "45초 빠른 영업을 선택할 수 있어야 합니다.");
+  assert.equal(quickMode.time, 45, "빠른 영업은 45초여야 합니다.");
+  assert.match(quickMode.label, /45초/, "준비 요약에 선택한 모드가 표시되어야 합니다.");
+  await evaluate("document.querySelector('[data-mode=standard] input').click()");
 
   await evaluate(`
     state.progression.tutorial.completed = true;
@@ -171,6 +185,50 @@ async function run() {
 
   await evaluate(`
     resumeGame();
+    clearGameTimers();
+    const washer = state.machines.find((item) => item.id === 'washer-1');
+    makeDirty(washer, 'limescale');
+    selectTool('squeegee');
+    washer.el.click();
+    triggerRandomEvent('breakdown');
+    const broken = state.machines.find((item) => item.broken);
+    selectTool('wrench');
+    broken.el.click();
+    triggerRandomEvent('blackout');
+    document.querySelector('#breaker-panel').click();
+    triggerRandomEvent('detergent');
+    selectTool('detergent');
+    document.querySelector('#detergent-station').click();
+    clearGameTimers();
+  `);
+  const operations = await evaluate(`({ cleaned: state.cleaned, breakdown: state.eventsHandled.breakdown, blackout: state.eventsHandled.blackout, detergent: state.eventsHandled.detergent })`);
+  assert.equal(operations.cleaned, 1, "올바른 도구로 실제 오염을 청소해야 합니다.");
+  assert.equal(operations.breakdown, 1, "렌치로 고장 사건을 처리해야 합니다.");
+  assert.equal(operations.blackout, 1, "차단기로 정전을 복구해야 합니다.");
+  assert.equal(operations.detergent, 1, "보충통으로 세제 부족을 처리해야 합니다.");
+
+  await evaluate(`
+    const dryer = state.machines.find((item) => item.id === 'dryer-1');
+    makeDirty(dryer, 'dust');
+    enqueueGuest();
+    state.score = 1234;
+    state.elapsedSeconds = 22;
+    state.seconds = 53;
+    saveShiftCheckpoint();
+    location.reload();
+  `);
+  await waitFor("document.readyState === 'complete' && typeof state !== 'undefined' && !document.querySelector('#resume-shift-card').hidden");
+  await evaluate("document.querySelector('#resume-shift-button').click()");
+  await waitFor("state.running === true && state.paused === true && document.querySelector('#pause-modal').classList.contains('open')");
+  const restored = await evaluate(`({ score: state.score, queue: state.queue.length, dirt: state.machines.find((item) => item.id === 'dryer-1').dirt, mode: state.mode })`);
+  assert.equal(restored.score, 1234, "중단 전 점수를 복구해야 합니다.");
+  assert.equal(restored.queue, 1, "대기 손님을 복구해야 합니다.");
+  assert.equal(restored.dirt, "dust", "기계 오염을 복구해야 합니다.");
+  assert.equal(restored.mode, "standard", "선택한 영업 모드를 복구해야 합니다.");
+
+  await evaluate(`
+    resumeGame();
+    clearGameTimers();
     state.score = 4200;
     state.refunds = 0;
     state.cleaned = 8;
@@ -200,6 +258,8 @@ async function run() {
   assert.ok(resultScreen.celebration >= 24, "성과 축하 입자가 표시되어야 합니다.");
   assert.equal(resultScreen.levelUp, true, "첫 우수 영업은 레벨업 연출을 보여야 합니다.");
   assert.equal(resultScreen.unlockVisible, true, "새 해금 콘텐츠 이동 버튼이 필요합니다.");
+  assert.equal(await evaluate("resultShareCanvas().toDataURL('image/png').startsWith('data:image/png')"), true, "결과 공유 카드를 PNG로 만들 수 있어야 합니다.");
+  assert.equal(await evaluate("state.progression.records.standard.score"), 4200, "75초 최고 기록은 모드별로 저장되어야 합니다.");
 
   const retryIds = await evaluate("state.lastShiftPlan.objectiveIds.join(',')");
   await evaluate("document.querySelector('#restart-button').click()");
@@ -220,9 +280,19 @@ async function run() {
     location.reload();
   `);
   await waitFor("document.readyState === 'complete' && typeof state !== 'undefined'");
-  const migrated = await evaluate("({ version: state.progression.schemaVersion, objectives: state.progression.stats.objectives })");
-  assert.equal(migrated.version, 6, "v5 저장 데이터는 v6으로 이전되어야 합니다.");
+  const migrated = await evaluate("({ version: state.progression.schemaVersion, objectives: state.progression.stats.objectives, standardRecord: state.progression.records.standard.score, lastMode: state.progression.preferences.lastMode })");
+  assert.equal(migrated.version, 7, "v5 저장 데이터는 v7으로 이전되어야 합니다.");
   assert.equal(migrated.objectives, 0, "이전 데이터의 목표 통계 기본값은 0이어야 합니다.");
+  assert.equal(migrated.standardRecord, 4200, "기존 최고 기록은 75초 기본 모드 기록으로 이전되어야 합니다.");
+  assert.equal(migrated.lastMode, "standard", "이전 데이터는 75초 기본 영업을 유지해야 합니다.");
+
+  if (process.env.CAPTURE_PWA_ASSETS === "1") {
+    await evaluate("clearShiftCheckpoint(); updateCheckpointUi()");
+    await cdp("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+    await wait(250);
+    const screenshot = await cdp("Page.captureScreenshot", { format: "png", fromSurface: true, captureBeyondViewport: false });
+    fs.writeFileSync(path.join(root, "assets", "screenshot-mobile.png"), Buffer.from(screenshot.data, "base64"));
+  }
 
   console.log("자동 UI 회귀 검사를 통과했습니다.");
 }

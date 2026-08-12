@@ -9,12 +9,21 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta
       name="description"
-      content="도구를 골라 세탁소를 청소하고 손님을 관리하는 75초 타임어택 게임"
+      content="45초부터 무한 영업까지, 도구를 골라 세탁소를 청소하고 손님을 관리하는 타임어택 게임"
     />
-    <title>버블타임 75 — 세탁소 운영 게임</title>
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="ko_KR" />
+    <meta property="og:title" content="버블타임 — 세탁소 운영 게임" />
+    <meta property="og:description" content="청소 도구를 빠르게 골라 손님과 12대의 기계를 관리하세요." />
+    <meta property="og:image" content="./assets/share-card.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="버블타임 — 세탁소 운영 게임" />
+    <meta name="twitter:description" content="45초·75초·120초·무한 영업에 도전하세요." />
+    <meta name="twitter:image" content="./assets/share-card.png" />
+    <title>버블타임 — 세탁소 운영 게임</title>
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="./icon.svg" />
+    <link rel="apple-touch-icon" href="./assets/icon-192.png" />
     <link rel="stylesheet" href="./styles.css" />
     <script src="./game-config.js" defer></script>
     <script src="./script.js" defer></script>
@@ -26,15 +35,15 @@
 
     <main class="game-shell">
       <header class="topbar">
-        <div class="brand" aria-label="버블타임 75">
+        <div class="brand" aria-label="버블타임">
           <span class="brand-bubbles" aria-hidden="true"><i></i><i></i><i></i></span>
-          <span class="brand-copy"><strong>버블타임</strong><small>LAUNDRY · 75</small></span>
+          <span class="brand-copy"><strong>버블타임</strong><small>LAUNDRY · SHIFT</small></span>
         </div>
 
         <div class="hud" aria-label="게임 현황">
           <div class="hud-card timer-card" id="timer-card">
             <span class="hud-icon">◷</span>
-            <span><small>남은 시간</small><strong id="time-value">75</strong></span>
+            <span><small id="timer-label">남은 시간</small><strong id="time-value">75</strong></span>
           </div>
           <div class="hud-card">
             <span class="hud-icon">₩</span>
@@ -228,25 +237,28 @@
 
     <div class="modal-backdrop open" id="intro-modal" role="dialog" aria-modal="true" aria-labelledby="intro-title">
       <section class="modal intro-card">
-        <div class="modal-kicker">75 SECOND SHIFT</div>
+        <div class="modal-kicker">CHOOSE YOUR SHIFT</div>
         <div class="intro-illustration" aria-hidden="true">
           <div class="mini-machine"><span></span><i></i></div>
           <div class="bubble-cluster"><i></i><i></i><i></i><i></i></div>
           <div class="intro-worker"><span>•‿•</span></div>
         </div>
-        <h2 id="intro-title">오늘도 깨끗하게,<br /><em>버블타임 75!</em></h2>
+        <h2 id="intro-title">오늘도 깨끗하게,<br /><em>버블타임!</em></h2>
         <p>기계 속 오염을 알맞은 도구로 처리하고<br />몰려오는 손님의 환불을 막아주세요.</p>
         <div class="intro-rules">
           <span><b>12</b><small>관리할 기계</small></span>
           <i></i>
           <span><b>6</b><small>대기 한계</small></span>
           <i></i>
-          <span><b>75</b><small>영업 시간</small></span>
+          <span><b>4</b><small>영업 모드</small></span>
         </div>
         <div class="best-record-line" id="intro-best-record">
-          <span>★ 최고 완주 기록</span>
+          <span>★ <b id="intro-best-mode">75초 기본 영업</b> 최고 기록</span>
           <strong><b id="intro-best-score">0</b>점 · <em id="intro-best-rank">–</em>등급</strong>
         </div>
+        <section class="resume-shift-card" id="resume-shift-card" hidden>
+          <span>↻</span><div><small>AUTO RECOVERY</small><strong id="resume-shift-title">중단된 영업이 있어요</strong><p id="resume-shift-copy">남은 시간과 기계 상태를 그대로 복구할 수 있습니다.</p></div><button id="resume-shift-button" type="button">이어하기</button><button id="discard-shift-button" type="button" aria-label="중단된 영업 삭제">×</button>
+        </section>
         <button class="manager-card" id="manager-button" type="button">
           <span class="manager-badge" id="manager-badge">1</span>
           <span><small>점장 레벨 · <b id="manager-title">신입 점장</b></small><strong>Lv.<b id="manager-level">1</b> · 명성 <em id="manager-reputation">0</em></strong><i><b id="manager-xp-bar"></b></i></span>
@@ -285,6 +297,13 @@
         <div class="modal-kicker">SHIFT BRIEFING</div>
         <h2 id="prep-title" tabindex="-1">오늘 영업을 준비하세요</h2>
         <p>운영 계획과 업그레이드, 이번 주 목표를 확인한 뒤 시작합니다.</p>
+        <fieldset class="shift-modes" id="shift-modes">
+          <legend>영업 시간 선택</legend>
+          <label data-mode="quick"><input type="radio" name="mode" value="quick" /><span><b>45초</b><small>빠른 영업</small><em>QUICK</em></span></label>
+          <label class="selected" data-mode="standard"><input type="radio" name="mode" value="standard" checked /><span><b>75초</b><small>기본 영업</small><em>CLASSIC</em></span></label>
+          <label data-mode="extended"><input type="radio" name="mode" value="extended" /><span><b>120초</b><small>긴 영업</small><em>LONG</em></span></label>
+          <label data-mode="endless"><input type="radio" name="mode" value="endless" /><span><b>∞</b><small>무한 영업</small><em>ENDLESS</em></span></label>
+        </fieldset>
         <fieldset class="shift-plans" id="shift-plans">
           <legend>운영 계획 선택</legend>
           <label data-difficulty="calm"><input type="radio" name="difficulty" value="calm" /><span><b>여유 영업</b><small>느린 손님 · 적은 사건</small><em>★</em></span></label>
@@ -292,10 +311,10 @@
           <label data-difficulty="rush"><input type="radio" name="difficulty" value="rush" /><span><b>피크 타임</b><small>빠른 손님 · 잦은 사건</small><em>★★★</em></span></label>
         </fieldset>
         <div class="prep-summary">
+          <article><small>영업 모드</small><strong id="prep-mode">75초 기본</strong></article>
           <article><small>위험도</small><strong id="prep-risk">보통</strong></article>
           <article><small>예상 사건</small><strong><b id="prep-event-count">6</b>회</strong></article>
-          <article><small>기계 강화</small><strong>Lv.<b id="prep-machine-level">0</b></strong></article>
-          <article><small>도구 강화</small><strong>Lv.<b id="prep-tool-level">0</b></strong></article>
+          <article><small>설비 강화</small><strong>기계 <b id="prep-machine-level">0</b> · 도구 <b id="prep-tool-level">0</b></strong></article>
         </div>
         <div class="prep-challenges">
           <section><div><small>TODAY</small><strong id="prep-daily-title">오염 12개 청소하기</strong></div><em id="prep-daily-progress">0 / 12</em></section>
@@ -439,7 +458,7 @@
           <button id="fullscreen-button" type="button"><span>⛶</span><b>전체 화면</b><small>모바일에서 더 넓게 플레이</small></button>
           <button class="install-button" id="settings-install-button" type="button" disabled><span>＋</span><b>앱 설치</b><small id="install-status">브라우저 메뉴에서도 설치 가능</small></button>
         </div>
-        <div class="save-data-row"><span><small>저장 데이터</small><strong id="save-version-label">DATA v6 · 자동 저장</strong></span><div><button id="export-data-button" type="button">내보내기</button><button id="import-data-button" type="button">가져오기</button><button class="danger" id="reset-data-button" type="button">초기화</button></div></div>
+        <div class="save-data-row"><span><small>저장 데이터</small><strong id="save-version-label">DATA v7 · 자동 저장</strong></span><div><button id="export-data-button" type="button">내보내기</button><button id="import-data-button" type="button">가져오기</button><button class="danger" id="reset-data-button" type="button">초기화</button></div></div>
         <input id="import-data-input" type="file" accept="application/json,.json" hidden />
         <p class="save-data-status" id="save-data-status" role="status" aria-live="polite">최고 기록과 진행 정보는 이 브라우저에 자동 저장됩니다.</p>
       </section>
@@ -454,7 +473,7 @@
         <div class="help-sections">
           <article><span>1</span><div><h3>기본 청소</h3><p>물때는 스퀴지, 먼지는 먼지털이, 남은 빨래는 바구니로 처리합니다. 얼룩 손님에게는 제거제를 사용하세요.</p></div></article>
           <article><span>2</span><div><h3>매장 사건</h3><p>고장은 렌치, 세제 부족은 보충통을 선택해 대상을 누릅니다. 정전은 매장 아래쪽 차단기를 바로 누르세요.</p></div></article>
-          <article><span>3</span><div><h3>영업 목표</h3><p>75초 동안 대기 손님이 6명에 도달하지 않게 관리하세요. 더러운 기계가 작업을 마치면 환불이 발생합니다.</p></div></article>
+          <article><span>3</span><div><h3>영업 목표</h3><p>선택한 시간 동안 대기 손님이 6명에 도달하지 않게 관리하세요. 무한 영업은 일시정지 화면에서 정산할 수 있습니다.</p></div></article>
           <article><span>4</span><div><h3>키보드·모바일</h3><p>숫자키 1–6으로 도구를 고르고 P 또는 Esc로 일시정지합니다. 모바일에서는 버튼을 직접 터치하세요.</p></div></article>
         </div>
         <button class="primary-button help-tutorial-button" id="help-tutorial-button" type="button"><span>실습 튜토리얼 다시 시작</span><b>▶</b></button>
@@ -464,14 +483,14 @@
     <div class="modal-backdrop" id="updates-modal" role="dialog" aria-modal="true" aria-labelledby="updates-title" aria-hidden="true">
       <section class="modal progression-modal updates-card">
         <button class="modal-close" id="updates-close-button" type="button" aria-label="업데이트 안내 닫기">×</button>
-        <div class="modal-kicker">VERSION <span id="app-version-label">2.5.0</span></div>
+        <div class="modal-kicker">VERSION <span id="app-version-label">2.6.0</span></div>
         <h2 id="updates-title">완성도 업데이트</h2>
         <p>2026.08 · 매장 운영 정보를 더 명확하고 편안하게 다듬었습니다.</p>
         <div class="update-list">
-          <article><span>GOALS</span><div><h3>영업별 보너스 목표</h3><p>매 영업마다 두 가지 추가 목표가 바뀌며 수익과 점장 XP 보상을 제공합니다.</p></div></article>
-          <article><span>RETRY</span><div><h3>빠른 재도전 흐름</h3><p>같은 조건 재도전, 새 목표, 다음 난이도와 해금 콘텐츠로 바로 이동할 수 있습니다.</p></div></article>
-          <article><span>FX</span><div><h3>성과별 전용 연출</h3><p>S등급·무환불·레벨업 순간에 서로 다른 축하 애니메이션과 사운드가 재생됩니다.</p></div></article>
-          <article><span>QA v6</span><div><h3>자동 UI 회귀 검사</h3><p>온보딩, 관리 화면, 일시정지 설정, 결과 흐름과 모바일 레이아웃을 자동 확인합니다.</p></div></article>
+          <article><span>MODES</span><div><h3>네 가지 영업 모드</h3><p>45초·75초·120초와 직접 정산하는 무한 영업을 선택할 수 있습니다.</p></div></article>
+          <article><span>RECOVERY</span><div><h3>영업 자동 복구</h3><p>앱이 닫혀도 대기 손님, 기계 오염과 남은 시간을 이어서 복구합니다.</p></div></article>
+          <article><span>SHARE</span><div><h3>결과 카드 공유</h3><p>영업 점수와 등급을 담은 결과 카드를 이미지 또는 공유 문구로 전할 수 있습니다.</p></div></article>
+          <article><span>PWA · QA</span><div><h3>설치·공유·실전 검사</h3><p>앱 아이콘과 설치 화면, 결과 공유 카드와 실제 조작 자동 검사를 보강했습니다.</p></div></article>
         </div>
       </section>
     </div>
@@ -487,10 +506,11 @@
         <h2 id="pause-title">잠시 쉬어갈까요?</h2>
         <p>시간과 손님, 기계 상태가 그대로 멈춰 있어요.</p>
         <div class="pause-summary">
-          <span><small>남은 시간</small><strong><b id="pause-time">75</b>초</strong></span>
+          <span><small id="pause-time-label">남은 시간</small><strong id="pause-time">75초</strong></span>
           <span><small>현재 점수</small><strong id="pause-score">0</strong></span>
         </div>
         <button class="primary-button" id="resume-button" type="button"><span>계속 영업하기</span><b>▶</b></button>
+        <button class="endless-cashout-button" id="endless-cashout-button" type="button" hidden><span>현재 점수로 영업 정산</span><b>✓</b></button>
         <button class="text-button" id="pause-restart-button" type="button">처음부터 다시 시작</button>
         <small class="keyboard-hint">P 또는 Esc 키로도 계속할 수 있어요</small>
       </section>
@@ -544,6 +564,7 @@
           <button class="primary-button" id="restart-button" type="button"><span>같은 조건으로 재도전</span><b>↻</b></button>
           <button id="new-plan-button" type="button"><span>새 목표로 준비</span><b>◆</b></button>
           <button id="next-difficulty-button" type="button"><span>다음 난이도 도전</span><b>↑</b></button>
+          <button id="share-result-button" type="button"><span>결과 카드 공유</span><b>↗</b></button>
         </div>
         <button class="result-unlock-button" id="result-unlock-button" type="button" hidden><span>★ 새로 해금된 콘텐츠 보기</span><b>→</b></button>
         <div class="result-secondary-actions">

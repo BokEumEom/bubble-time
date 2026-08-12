@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">버블타임 마스커블 아이콘</title>
+  <rect width="512" height="512" fill="#123c43"/>
+  <circle cx="256" cy="256" r="196" fill="#1b7169"/>
+  <rect x="130" y="112" width="252" height="292" rx="42" fill="#fffaf0"/>
+  <path d="M130 154c0-23 19-42 42-42h168c23 0 42 19 42 42v42H130z" fill="#57c9b4"/>
+  <rect x="156" y="141" width="74" height="24" rx="10" fill="#123c43"/>
+  <circle cx="324" cy="153" r="14" fill="#ffd65a"/>
+  <circle cx="256" cy="294" r="91" fill="#d7ebe7" stroke="#123c43" stroke-width="18"/>
+  <circle cx="256" cy="294" r="63" fill="#245e62"/>
+  <path d="M202 288c27-40 56-52 87-27 17 14 35 13 56-2-4 58-34 92-89 92-38 0-64-21-77-54 8 0 16-3 23-9z" fill="#57c9b4"/>
+  <circle cx="229" cy="269" r="18" fill="#ffd65a"/>
+  <circle cx="274" cy="306" r="22" fill="#ff765e"/>
+  <circle cx="303" cy="269" r="15" fill="#fffaf0"/>
+</svg>

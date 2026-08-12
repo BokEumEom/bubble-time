@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "bubble-time-v2.5.0-r1";
+const CACHE_NAME = "bubble-time-v2.6.0-r1";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -8,7 +8,14 @@ const APP_SHELL = [
   "./game-config.js",
   "./script.js",
   "./manifest.webmanifest",
-  "./icon.svg"
+  "./icon.svg",
+  "./icon-maskable.svg",
+  "./assets/icon-192.png",
+  "./assets/icon-512.png",
+  "./assets/icon-maskable-512.png",
+  "./assets/share-card.png",
+  "./assets/screenshot-wide.png",
+  "./assets/screenshot-mobile.png"
 ];
 
 self.addEventListener("install", (event) => {

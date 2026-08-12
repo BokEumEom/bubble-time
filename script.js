@@ -5,9 +5,17 @@ const GAME_SECONDS = CONFIG.gameSeconds;
 const MAX_QUEUE = CONFIG.maxQueue;
 const STORAGE_KEY = "bubbleTime75.bestRecord.v1";
 const PROGRESSION_KEY = "bubbleTime75.progression.v1";
+const CHECKPOINT_KEY = "bubbleTime.shiftCheckpoint.v1";
 const SEEN_VERSION_KEY = "bubbleTime75.seenVersion";
-const APP_VERSION = "2.5.0";
-const DATA_SCHEMA_VERSION = 6;
+const APP_VERSION = "2.6.0";
+const DATA_SCHEMA_VERSION = 7;
+
+const GAME_MODES = {
+  quick: { label: "45초 빠른 영업", shortLabel: "45초", seconds: 45, objectiveScale: 0.75, rankScale: 0.72 },
+  standard: { label: "75초 기본 영업", shortLabel: "75초", seconds: 75, objectiveScale: 1, rankScale: 1 },
+  extended: { label: "120초 긴 영업", shortLabel: "120초", seconds: 120, objectiveScale: 1.45, rankScale: 1.48 },
+  endless: { label: "무한 영업", shortLabel: "∞ 무한", seconds: null, objectiveScale: 1.6, rankScale: 1 },
+};
 
 const DIFFICULTIES = {
   calm: { label: "여유 영업", risk: "낮음", guestInterval: 1.18, patience: 1.28, cycle: 0.94, dirtInterval: 1.2, eventInterval: 1.22, groupBonus: -1, dirtyBonus: -2 },
@@ -175,6 +183,8 @@ const state = {
   paused: false,
   pausedAt: 0,
   seconds: GAME_SECONDS,
+  elapsedSeconds: 0,
+  mode: "standard",
   score: 0,
   refunds: 0,
   cleaned: 0,
@@ -233,10 +243,13 @@ const state = {
   decorTab: "sign",
   condition: null,
   firstShiftHintStep: 0,
+  checkpointAvailable: false,
 };
 
 state.sound = state.progression.preferences.soundEnabled;
 state.difficulty = state.progression.preferences.lastDifficulty;
+state.mode = GAME_MODES[state.progression.preferences.lastMode] ? state.progression.preferences.lastMode : "standard";
+state.best = state.progression.records[state.mode];
 
 const els = {
   washerGrid: document.querySelector("#washer-grid"),
@@ -250,6 +263,7 @@ const els = {
   toolButtons: [...document.querySelectorAll(".tool")],
   selectedToolName: document.querySelector("#selected-tool-name"),
   time: document.querySelector("#time-value"),
+  timerLabel: document.querySelector("#timer-label"),
   timerCard: document.querySelector("#timer-card"),
   score: document.querySelector("#score-value"),
   bestScore: document.querySelector("#best-score-value"),
@@ -336,6 +350,7 @@ const els = {
   resetDataButton: document.querySelector("#reset-data-button"),
   prepCloseButton: document.querySelector("#prep-close-button"),
   shiftPlans: [...document.querySelectorAll("[data-difficulty]")],
+  shiftModes: [...document.querySelectorAll("[data-mode]")],
   prepWeeklyGoals: document.querySelector("#prep-weekly-goals"),
   exportDataButton: document.querySelector("#export-data-button"),
   importDataButton: document.querySelector("#import-data-button"),
@@ -368,6 +383,11 @@ const els = {
   shiftObjectiveList: document.querySelector("#shift-objective-list"),
   resultObjectiveList: document.querySelector("#result-objective-list"),
   resultCelebration: document.querySelector("#result-celebration"),
+  shareResultButton: document.querySelector("#share-result-button"),
+  endlessCashoutButton: document.querySelector("#endless-cashout-button"),
+  resumeShiftCard: document.querySelector("#resume-shift-card"),
+  resumeShiftButton: document.querySelector("#resume-shift-button"),
+  discardShiftButton: document.querySelector("#discard-shift-button"),
   newPlanButton: document.querySelector("#new-plan-button"),
   nextDifficultyButton: document.querySelector("#next-difficulty-button"),
   resultUnlockButton: document.querySelector("#result-unlock-button"),
@@ -414,7 +434,8 @@ function resetGame(options = {}) {
   state.running = false;
   state.paused = false;
   state.pausedAt = 0;
-  state.seconds = GAME_SECONDS;
+  state.seconds = activeShiftDuration() ?? 0;
+  state.elapsedSeconds = 0;
   state.score = 0;
   state.refunds = 0;
   state.cleaned = 0;
@@ -490,6 +511,7 @@ function resetGame(options = {}) {
 
 function startGame(options = {}) {
   if (!state.shiftObjectives.length) prepareShiftObjectives(true);
+  clearShiftCheckpoint();
   resetGame({ condition: options.condition });
   state.running = true;
   state.startedAt = performance.now();
@@ -501,6 +523,7 @@ function startGame(options = {}) {
   showToast("영업 시작! 오염 표시를 잘 살펴보세요.", "good", "✦", 1700);
   renderShiftObjectiveHud();
   scheduleGameLoops(true);
+  saveShiftCheckpoint();
   startBgm();
   showFirstShiftGuide("오염 아이콘을 확인한 뒤 같은 도구를 선택하세요", 0);
 }
@@ -617,11 +640,41 @@ function shiftObjectiveById(id) {
   return SHIFT_OBJECTIVES.find((objective) => objective.id === id);
 }
 
+function currentGameMode() {
+  return GAME_MODES[state.mode] || GAME_MODES.standard;
+}
+
+function activeShiftDuration() {
+  return currentGameMode().seconds;
+}
+
+function formatShiftTime(seconds) {
+  const safeSeconds = Math.max(0, Math.floor(Number(seconds) || 0));
+  if (safeSeconds < 60) return `${safeSeconds}초`;
+  return `${Math.floor(safeSeconds / 60)}:${String(safeSeconds % 60).padStart(2, "0")}`;
+}
+
+function scaledShiftObjective(objective, modeId = state.mode) {
+  if (!objective) return null;
+  const mode = GAME_MODES[modeId] || GAME_MODES.standard;
+  if (objective.endOnly) return { ...objective };
+  const target = Math.max(1, Math.round(objective.target * mode.objectiveScale));
+  const replaceTarget = (text) => text.replace(String(objective.target), String(target));
+  return {
+    ...objective,
+    target,
+    title: replaceTarget(objective.title),
+    copy: replaceTarget(objective.copy),
+    coins: Math.round(objective.coins * Math.max(0.8, mode.objectiveScale)),
+    xp: Math.round(objective.xp * Math.max(0.8, mode.objectiveScale)),
+  };
+}
+
 function prepareShiftObjectives(force = false) {
   if (!force && state.shiftObjectives.length) return;
   const liveObjectives = shuffle(SHIFT_OBJECTIVES.filter((objective) => !objective.endOnly));
   const remaining = shuffle(SHIFT_OBJECTIVES.filter((objective) => objective.id !== liveObjectives[0].id));
-  state.shiftObjectives = [liveObjectives[0], remaining[0]];
+  state.shiftObjectives = [liveObjectives[0], remaining[0]].map((objective) => scaledShiftObjective(objective));
   state.objectiveResults = [];
 }
 
@@ -673,8 +726,10 @@ function updatePrepUi() {
   state.condition = currentStoreCondition();
   applyStoreCondition();
   const difficulty = DIFFICULTIES[state.difficulty];
+  const mode = currentGameMode();
+  const planningSeconds = mode.seconds || 180;
   const averageEventInterval = ((CONFIG.events.intervalMin + CONFIG.events.intervalMax) / 2) * difficulty.eventInterval;
-  const expectedEvents = Math.max(1, Math.round((GAME_SECONDS * 1000 - CONFIG.events.initialDelay * difficulty.eventInterval) / averageEventInterval) + 1);
+  const expectedEvents = Math.max(1, Math.round((planningSeconds * 1000 - CONFIG.events.initialDelay * difficulty.eventInterval) / averageEventInterval) + 1);
   const dailyDefinition = currentDailyDefinition();
   const daily = state.progression.daily;
   els.shiftPlans.forEach((plan) => {
@@ -682,6 +737,12 @@ function updatePrepUi() {
     plan.classList.toggle("selected", selected);
     plan.querySelector("input").checked = selected;
   });
+  els.shiftModes.forEach((plan) => {
+    const selected = plan.dataset.mode === state.mode;
+    plan.classList.toggle("selected", selected);
+    plan.querySelector("input").checked = selected;
+  });
+  document.querySelector("#prep-mode").textContent = mode.label.replace(" 영업", "");
   document.querySelector("#prep-risk").textContent = difficulty.risk;
   document.querySelector("#prep-event-count").textContent = String(expectedEvents);
   document.querySelector("#prep-machine-level").textContent = String(state.progression.upgrades.machine);
@@ -699,7 +760,10 @@ function updatePrepUi() {
 
 function openPrepModal(fromRestart = false, rerollObjectives = true) {
   state.lastFocusedElement = document.activeElement;
-  if (state.running || fromRestart) resetGame();
+  if (state.running || fromRestart) {
+    clearShiftCheckpoint();
+    resetGame();
+  }
   prepareShiftObjectives(rerollObjectives || !state.shiftObjectives.length);
   state.returnModal = els.resultModal.classList.contains("open") ? "result-modal" : "intro-modal";
   [els.introModal, els.resultModal, els.pauseModal].forEach((modal) => {
@@ -727,6 +791,7 @@ function closePrepModal() {
 function confirmPreparedShift() {
   prepareShiftObjectives(false);
   state.progression.preferences.lastDifficulty = state.difficulty;
+  state.progression.preferences.lastMode = state.mode;
   saveProgression();
   els.prepModal.classList.remove("open");
   els.prepModal.setAttribute("aria-hidden", "true");
@@ -739,6 +804,7 @@ function scheduleGameLoops(initial = false) {
   scheduleInterval(tickClock, 250);
   scheduleInterval(processQueue, 420);
   scheduleInterval(updateCycles, 160);
+  scheduleInterval(saveShiftCheckpoint, 2000);
   scheduleTimeout(spawnGuest, (initial ? CONFIG.guest.initialDelay : 900) * difficulty.guestInterval * condition.guestInterval);
   scheduleTimeout(spawnDirt, (initial ? CONFIG.dirt.initialDelay : 1350) * difficulty.dirtInterval * condition.dirtInterval);
   if (!state.activeEvent) scheduleNextEvent((initial ? CONFIG.events.initialDelay : CONFIG.events.resumeDelay) * difficulty.eventInterval);
@@ -770,13 +836,196 @@ function clearGameTimers() {
   state.eventTimerScheduled = false;
 }
 
+function guestCheckpoint(guest, now = performance.now()) {
+  if (!guest) return null;
+  return {
+    id: guest.id,
+    type: guest.type,
+    stained: guest.stained,
+    cleaned: guest.cleaned,
+    shirt: guest.shirt,
+    skin: guest.skin,
+    hair: guest.hair,
+    waitedMs: Math.max(0, now - guest.arrivedAt),
+    patienceMs: guest.patienceMs,
+    cycleMultiplier: guest.cycleMultiplier,
+    rewardMultiplier: guest.rewardMultiplier,
+    satisfaction: guest.satisfaction || 0,
+  };
+}
+
+function saveShiftCheckpoint() {
+  if (!state.running || state.tutorialActive) return;
+  try {
+    const now = performance.now();
+    const checkpoint = {
+      version: 1,
+      savedAt: new Date().toISOString(),
+      mode: state.mode,
+      difficulty: state.difficulty,
+      condition: state.condition?.id || null,
+      objectiveIds: state.shiftObjectives.map((objective) => objective.id),
+      elapsedSeconds: state.elapsedSeconds,
+      remainingSeconds: activeShiftDuration() === null ? null : state.seconds,
+      score: state.score,
+      refunds: state.refunds,
+      cleaned: state.cleaned,
+      served: state.served,
+      combo: state.combo,
+      maxCombo: state.maxCombo,
+      totalWaitMs: state.totalWaitMs,
+      waitSamples: state.waitSamples,
+      satisfactionTotal: state.satisfactionTotal,
+      satisfactionCount: state.satisfactionCount,
+      happyGuests: state.happyGuests,
+      typeCounts: state.typeCounts,
+      eventsHandled: state.eventsHandled,
+      eventResponseTimes: state.eventResponseTimes,
+      dirtCleanCounts: state.dirtCleanCounts,
+      refundCauses: state.refundCauses,
+      peakQueue: state.peakQueue,
+      selectedTool: state.selectedTool,
+      guestSequence: state.guestSequence,
+      powerOut: state.powerOut,
+      detergentEmpty: state.detergentEmpty,
+      activeEvent: state.activeEvent ? { ...state.activeEvent, ageMs: Math.max(0, now - state.activeEvent.startedAt), startedAt: undefined } : null,
+      queue: state.queue.map((guest) => guestCheckpoint(guest, now)),
+      machines: state.machines.map((machine) => ({
+        id: machine.id,
+        dirt: machine.dirt,
+        dirtAgeMs: machine.dirt ? Math.max(0, now - machine.dirtCreatedAt) : 0,
+        broken: machine.broken,
+        brokenAgeMs: machine.broken ? Math.max(0, now - machine.brokenAt) : 0,
+        guest: guestCheckpoint(machine.guest, now),
+        cycleElapsedMs: machine.guest ? Math.max(0, now - machine.cycleStarted) : 0,
+        cycleDuration: machine.cycleDuration,
+      })),
+    };
+    localStorage.setItem(CHECKPOINT_KEY, JSON.stringify(checkpoint));
+    state.checkpointAvailable = true;
+  } catch (error) {
+    // 진행 저장 실패는 일반 저장 안내에서 한 번만 알립니다.
+  }
+}
+
+function readShiftCheckpoint() {
+  try {
+    const checkpoint = JSON.parse(localStorage.getItem(CHECKPOINT_KEY));
+    const age = Date.now() - new Date(checkpoint?.savedAt).getTime();
+    if (!checkpoint || checkpoint.version !== 1 || !GAME_MODES[checkpoint.mode] || !DIFFICULTIES[checkpoint.difficulty] || !Number.isFinite(age) || age < 0 || age > 12 * 60 * 60 * 1000) return null;
+    return checkpoint;
+  } catch (error) {
+    return null;
+  }
+}
+
+function clearShiftCheckpoint() {
+  try { localStorage.removeItem(CHECKPOINT_KEY); } catch (error) { /* 저장소가 막힌 환경 */ }
+  state.checkpointAvailable = false;
+  if (els.resumeShiftCard) els.resumeShiftCard.hidden = true;
+}
+
+function updateCheckpointUi() {
+  const checkpoint = readShiftCheckpoint();
+  state.checkpointAvailable = Boolean(checkpoint);
+  els.resumeShiftCard.hidden = !checkpoint;
+  if (!checkpoint) return;
+  const mode = GAME_MODES[checkpoint.mode];
+  const timeCopy = mode.seconds === null ? `${formatShiftTime(checkpoint.elapsedSeconds)} 경과` : `${Math.max(0, Number(checkpoint.remainingSeconds) || 0)}초 남음`;
+  document.querySelector("#resume-shift-title").textContent = `${mode.label} · ${DIFFICULTIES[checkpoint.difficulty].label}`;
+  document.querySelector("#resume-shift-copy").textContent = `${timeCopy} · ${Math.max(0, Number(checkpoint.score) || 0).toLocaleString("ko-KR")}점에서 이어합니다.`;
+}
+
+function restoreMachineCheckpoint(machine, saved, now) {
+  if (!saved) return;
+  if (DIRT_INFO[saved.dirt]) {
+    machine.dirt = saved.dirt;
+    machine.dirtCreatedAt = now - Math.max(0, Number(saved.dirtAgeMs) || 0);
+    const info = DIRT_INFO[machine.dirt];
+    machine.el.classList.add("dirty");
+    machine.el.dataset.dirt = machine.dirt;
+    machine.el.querySelector(".contamination b").textContent = info.icon;
+    machine.el.querySelector(".contamination small").textContent = dirtDisplayLabel(machine.dirt);
+    machine.el.querySelector(".machine-label small").textContent = info.name;
+  }
+  if (saved.broken) {
+    machine.broken = true;
+    machine.brokenAt = now - Math.max(0, Number(saved.brokenAgeMs) || 0);
+    machine.el.classList.add("broken");
+  }
+  if (saved.guest) {
+    machine.guest = makeGuest(saved.guest);
+    machine.cycleDuration = Math.max(1000, Number(saved.cycleDuration) || CONFIG.machine.cycleMin);
+    machine.cycleStarted = now - Math.min(machine.cycleDuration, Math.max(0, Number(saved.cycleElapsedMs) || 0));
+    machine.el.classList.add("busy");
+    machine.el.classList.toggle("bulk-cycle", machine.guest.type === "bulk");
+    machine.el.querySelector(".machine-label small").textContent = machine.guest.type === "bulk" ? "대량 세탁 중" : "작동 중";
+  }
+  machine.el.setAttribute("aria-label", machineAriaLabel(machine));
+}
+
+function restoreShiftCheckpoint() {
+  const checkpoint = readShiftCheckpoint();
+  if (!checkpoint) {
+    clearShiftCheckpoint();
+    showToast("복구할 영업 정보가 없어요.", "bad", "!", 1500);
+    return;
+  }
+  state.mode = checkpoint.mode;
+  state.difficulty = checkpoint.difficulty;
+  state.shiftObjectives = (checkpoint.objectiveIds || []).map((id) => scaledShiftObjective(shiftObjectiveById(id), state.mode)).filter(Boolean);
+  const condition = checkpoint.condition && STORE_CONDITIONS[checkpoint.condition] ? { id: checkpoint.condition, ...STORE_CONDITIONS[checkpoint.condition] } : currentStoreCondition();
+  resetGame({ condition });
+  const scalarKeys = ["score", "refunds", "cleaned", "served", "combo", "maxCombo", "totalWaitMs", "waitSamples", "satisfactionTotal", "satisfactionCount", "happyGuests", "peakQueue", "guestSequence"];
+  scalarKeys.forEach((key) => { state[key] = Math.max(0, Number(checkpoint[key]) || 0); });
+  state.elapsedSeconds = Math.max(0, Number(checkpoint.elapsedSeconds) || 0);
+  state.seconds = activeShiftDuration() === null ? state.elapsedSeconds : Math.max(1, Number(checkpoint.remainingSeconds) || activeShiftDuration());
+  state.typeCounts = { ...state.typeCounts, ...(checkpoint.typeCounts || {}) };
+  state.eventsHandled = { ...state.eventsHandled, ...(checkpoint.eventsHandled || {}) };
+  state.eventResponseTimes = Array.isArray(checkpoint.eventResponseTimes) ? checkpoint.eventResponseTimes.slice(0, 30) : [];
+  state.dirtCleanCounts = { ...state.dirtCleanCounts, ...(checkpoint.dirtCleanCounts || {}) };
+  state.refundCauses = { ...state.refundCauses, ...(checkpoint.refundCauses || {}) };
+  state.powerOut = Boolean(checkpoint.powerOut);
+  state.detergentEmpty = Boolean(checkpoint.detergentEmpty);
+  state.selectedTool = TOOL_INFO[checkpoint.selectedTool] ? checkpoint.selectedTool : "squeegee";
+  const now = performance.now();
+  state.startedAt = now - state.elapsedSeconds * 1000;
+  state.running = true;
+  state.paused = false;
+  state.queue = (checkpoint.queue || []).slice(0, MAX_QUEUE - 1).map((guest) => makeGuest(guest));
+  state.queue.forEach((guest) => els.queueLane.appendChild(guest.el));
+  const machineSnapshots = new Map((checkpoint.machines || []).map((machine) => [machine.id, machine]));
+  state.machines.forEach((machine) => restoreMachineCheckpoint(machine, machineSnapshots.get(machine.id), now));
+  if (checkpoint.activeEvent && EVENT_INFO[checkpoint.activeEvent.type]) state.activeEvent = { type: checkpoint.activeEvent.type, targetId: checkpoint.activeEvent.targetId || null, startedAt: now - Math.max(0, Number(checkpoint.activeEvent.ageMs) || 0) };
+  if (state.powerOut) {
+    els.powerOverlay.classList.add("active");
+    els.breakerPanel.classList.add("active");
+    document.querySelector("#shop").classList.add("blackout");
+  }
+  if (state.detergentEmpty) {
+    els.detergentLevel.textContent = "0%";
+    els.detergentGauge.style.width = "0%";
+    els.detergentStation.classList.add("empty", "target-ready");
+  }
+  [els.introModal, els.prepModal, els.resultModal].forEach((modal) => { modal.classList.remove("open"); modal.setAttribute("aria-hidden", "true"); });
+  els.emptyQueue.hidden = state.queue.length > 0;
+  els.pauseButton.disabled = false;
+  selectTool(state.selectedTool);
+  applyStoreCondition();
+  updateHud();
+  pauseGame(false);
+  showToast("중단된 영업을 복구했습니다.", "good", "↻", 1700);
+}
+
 function tickClock() {
   if (!state.running || state.paused) return;
   const elapsed = (performance.now() - state.startedAt) / 1000;
-  state.seconds = Math.max(0, Math.ceil(GAME_SECONDS - elapsed));
-  els.timerCard.classList.toggle("danger", state.seconds <= 10);
+  state.elapsedSeconds = Math.max(0, Math.floor(elapsed));
+  const duration = activeShiftDuration();
+  state.seconds = duration === null ? state.elapsedSeconds : Math.max(0, Math.ceil(duration - elapsed));
+  els.timerCard.classList.toggle("danger", duration !== null && state.seconds <= 10);
   updateHud();
-  if (elapsed >= GAME_SECONDS) endGame(true, "time");
+  if (duration !== null && elapsed >= duration) endGame(true, "time");
 }
 
 function scheduleNextEvent(delay = null) {
@@ -1040,7 +1289,8 @@ function playEventAlarm(type) {
 function spawnGuest() {
   if (!state.running || state.paused) return;
 
-  const progress = 1 - state.seconds / GAME_SECONDS;
+  const duration = activeShiftDuration();
+  const progress = duration === null ? Math.min(1, state.elapsedSeconds / 180) : 1 - state.seconds / duration;
   enqueueGuest();
 
   if (!state.running) return;
@@ -1067,16 +1317,17 @@ function enqueueGuest() {
   return guest;
 }
 
-function makeGuest() {
-  const id = ++state.guestSequence;
+function makeGuest(snapshot = null) {
+  const id = snapshot?.id ? Math.max(1, Number(snapshot.id)) : state.guestSequence + 1;
+  state.guestSequence = Math.max(state.guestSequence, id);
   const el = els.guestTemplate.content.firstElementChild.cloneNode(true);
-  const type = chooseCustomerType();
+  const type = CONFIG.customerTypes[snapshot?.type] ? snapshot.type : chooseCustomerType();
   const typeInfo = CONFIG.customerTypes[type];
-  const stained = Math.random() < CONFIG.guest.stainedChance;
-  const shirt = pick(GUEST_COLORS);
-  const skin = pick(SKIN_COLORS);
-  const hair = pick(HAIR_COLORS);
-  const arrivedAt = performance.now();
+  const stained = snapshot ? Boolean(snapshot.stained) : Math.random() < CONFIG.guest.stainedChance;
+  const shirt = GUEST_COLORS.includes(snapshot?.shirt) ? snapshot.shirt : pick(GUEST_COLORS);
+  const skin = SKIN_COLORS.includes(snapshot?.skin) ? snapshot.skin : pick(SKIN_COLORS);
+  const hair = HAIR_COLORS.includes(snapshot?.hair) ? snapshot.hair : pick(HAIR_COLORS);
+  const arrivedAt = performance.now() - Math.max(0, Number(snapshot?.waitedMs) || 0);
 
   discoverEntry("customers", type);
   if (stained) discoverEntry("dirt", "stain");
@@ -1088,6 +1339,7 @@ function makeGuest() {
   el.style.setProperty("--skin", skin);
   el.style.setProperty("--hair", hair);
   el.classList.toggle("stained", stained);
+  el.classList.toggle("sparkled", Boolean(snapshot?.cleaned));
   el.querySelector(".guest-type-badge").textContent = typeInfo.icon;
   el.querySelector(".guest-type-badge").setAttribute("title", typeInfo.label);
   el.querySelector(".guest-bubble").textContent = stained
@@ -1103,14 +1355,15 @@ function makeGuest() {
     el,
     type,
     stained,
-    cleaned: false,
+    cleaned: Boolean(snapshot?.cleaned),
     shirt,
     skin,
     hair,
     arrivedAt,
-    patienceMs: CONFIG.guest.patience * typeInfo.patience * DIFFICULTIES[state.difficulty].patience,
-    cycleMultiplier: typeInfo.cycle,
-    rewardMultiplier: typeInfo.reward,
+    patienceMs: Math.max(1000, Number(snapshot?.patienceMs) || CONFIG.guest.patience * typeInfo.patience * DIFFICULTIES[state.difficulty].patience),
+    cycleMultiplier: Number(snapshot?.cycleMultiplier) || typeInfo.cycle,
+    rewardMultiplier: Number(snapshot?.rewardMultiplier) || typeInfo.reward,
+    satisfaction: Math.max(0, Math.min(100, Number(snapshot?.satisfaction) || 0)),
   };
 }
 
@@ -1255,7 +1508,8 @@ function spawnDirt() {
     makeDirty(machine, pick(types));
   }
 
-  const progress = 1 - state.seconds / GAME_SECONDS;
+  const duration = activeShiftDuration();
+  const progress = duration === null ? Math.min(1, state.elapsedSeconds / 180) : 1 - state.seconds / duration;
   const base = CONFIG.dirt.spawnStart + (CONFIG.dirt.spawnEnd - CONFIG.dirt.spawnStart) * progress;
   const conditionInterval = state.condition?.dirtInterval || 1;
   const delay = Math.max(2500, (base + randomBetween(-CONFIG.dirt.spawnJitterEarly, CONFIG.dirt.spawnJitterLate)) * DIFFICULTIES[state.difficulty].dirtInterval * conditionInterval);
@@ -1498,7 +1752,9 @@ function updateQueueVisuals() {
 }
 
 function updateHud() {
-  els.time.textContent = String(state.seconds);
+  const endless = activeShiftDuration() === null;
+  els.timerLabel.textContent = endless ? "영업 경과" : "남은 시간";
+  els.time.textContent = endless ? formatShiftTime(state.elapsedSeconds) : String(state.seconds);
   els.score.textContent = state.score.toLocaleString("ko-KR");
   els.refunds.textContent = String(state.refunds);
   const multiplier = comboMultiplier();
@@ -1596,12 +1852,15 @@ function pauseGame(autoPaused = false) {
   if (!state.running || state.paused) return;
   state.paused = true;
   state.pausedAt = performance.now();
+  saveShiftCheckpoint();
   clearGameTimers();
   hideEventForecast();
   stopBgm();
   els.pauseButton.disabled = true;
-  els.pauseTime.textContent = String(state.seconds);
+  document.querySelector("#pause-time-label").textContent = activeShiftDuration() === null ? "영업 경과" : "남은 시간";
+  els.pauseTime.textContent = activeShiftDuration() === null ? formatShiftTime(state.elapsedSeconds) : `${state.seconds}초`;
   els.pauseScore.textContent = state.score.toLocaleString("ko-KR");
+  els.endlessCashoutButton.hidden = activeShiftDuration() !== null || state.elapsedSeconds < 30;
   els.pauseModal.classList.add("open");
   els.pauseModal.setAttribute("aria-hidden", "false");
   document.querySelector("#pause-title").textContent = autoPaused ? "자리를 비워 자동으로 멈췄어요" : "잠시 쉬어갈까요?";
@@ -1633,6 +1892,7 @@ function endGame(success, reason) {
   state.running = false;
   state.paused = false;
   clearGameTimers();
+  clearShiftCheckpoint();
   stopBgm();
   els.pauseButton.disabled = true;
   els.pauseModal.classList.remove("open");
@@ -1654,6 +1914,7 @@ function endGame(success, reason) {
   const rank = getRank(finalSuccess);
   evaluateShiftObjectives(finalSuccess);
   state.lastShiftPlan = {
+    mode: state.mode,
     difficulty: state.difficulty,
     condition: state.condition?.id || null,
     objectiveIds: state.shiftObjectives.map((objective) => objective.id),
@@ -1668,7 +1929,9 @@ function endGame(success, reason) {
   document.querySelector("#result-face").textContent = finalSuccess ? "✦" : "!";
   document.querySelector("#result-title").textContent = finalSuccess ? "오늘 영업, 성공!" : "대기 줄이 꽉 찼어요!";
   document.querySelector("#result-message").textContent = finalSuccess
-    ? "75초 동안 가게를 멋지게 지켜냈어요."
+    ? reason === "cashout"
+      ? `${formatShiftTime(state.elapsedSeconds)} 무한 영업을 안전하게 정산했어요.`
+      : `${currentGameMode().label}을 멋지게 완주했어요.`
     : reason === "queue"
       ? "대기 손님이 6명에 도달했어요. 더 빠르게 기계를 관리해 보세요."
       : "다시 한 번 도전해 보세요.";
@@ -1691,7 +1954,7 @@ function endGame(success, reason) {
   document.querySelector("#result-impatient").textContent = String(state.typeCounts.impatient);
   document.querySelector("#result-regular").textContent = String(state.typeCounts.regular);
   document.querySelector("#result-bulk").textContent = String(state.typeCounts.bulk);
-  document.querySelector("#result-difficulty").textContent = DIFFICULTIES[state.difficulty].label;
+  document.querySelector("#result-difficulty").textContent = `${currentGameMode().shortLabel} · ${DIFFICULTIES[state.difficulty].label}`;
   renderResultObjectives();
   updateResultAnalysis();
   const unlockBanner = document.querySelector("#achievement-unlock-banner");
@@ -1745,7 +2008,9 @@ function retrySameShift() {
     return;
   }
   state.difficulty = DIFFICULTIES[plan.difficulty] ? plan.difficulty : "standard";
-  state.shiftObjectives = plan.objectiveIds.map(shiftObjectiveById).filter(Boolean);
+  state.mode = GAME_MODES[plan.mode] ? plan.mode : "standard";
+  state.best = state.progression.records[state.mode];
+  state.shiftObjectives = plan.objectiveIds.map((id) => scaledShiftObjective(shiftObjectiveById(id), state.mode)).filter(Boolean);
   const condition = plan.condition && STORE_CONDITIONS[plan.condition] ? { id: plan.condition, ...STORE_CONDITIONS[plan.condition] } : currentStoreCondition();
   startGame({ condition });
 }
@@ -1839,8 +2104,10 @@ function resultAdvice(responseAverage, refundDirt, refundCount) {
 function getRank(success) {
   if (!success) return { letter: "F", copy: "다시 정리해 볼까요?" };
   const satisfaction = averageSatisfaction();
-  if (state.refunds === 0 && state.score >= 3600 && satisfaction >= 90 && state.maxCombo >= 6) return { letter: "S", copy: "빨래방의 전설" };
-  if (state.refunds <= 1 && state.score >= 2500 && satisfaction >= 82 && state.maxCombo >= 3) return { letter: "A", copy: "믿음직한 점장님" };
+  const mode = currentGameMode();
+  const elapsedScale = mode.seconds === null ? Math.max(0.55, state.elapsedSeconds / GAME_SECONDS) : mode.rankScale;
+  if (state.refunds === 0 && state.score >= 3600 * elapsedScale && satisfaction >= 90 && state.maxCombo >= Math.max(3, Math.round(6 * Math.min(1.35, elapsedScale)))) return { letter: "S", copy: "빨래방의 전설" };
+  if (state.refunds <= Math.max(1, Math.floor(elapsedScale)) && state.score >= 2500 * elapsedScale && satisfaction >= 82 && state.maxCombo >= 3) return { letter: "A", copy: "믿음직한 점장님" };
   if (state.refunds <= 3 && satisfaction >= 70) return { letter: "B", copy: "제법 능숙한 운영자" };
   return { letter: "C", copy: "오늘도 성장 중" };
 }
@@ -1863,7 +2130,9 @@ function saveBestRecord(success, rank) {
     achievedAt: new Date().toISOString(),
   };
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.best));
+    state.progression.records[state.mode] = state.best;
+    saveProgression();
+    if (state.mode === "standard") localStorage.setItem(STORAGE_KEY, JSON.stringify(state.best));
   } catch (error) {
     showToast("기록을 브라우저에 저장하지 못했어요.", "bad", "!", 1800);
   }
@@ -1871,11 +2140,13 @@ function saveBestRecord(success, rank) {
 }
 
 function updateRecordUi() {
+  state.best = state.progression.records[state.mode] || emptyBestRecord();
   const score = state.best.score.toLocaleString("ko-KR");
   els.bestScore.textContent = score;
   els.bestRank.textContent = state.best.rank;
   document.querySelector("#intro-best-score").textContent = score;
   document.querySelector("#intro-best-rank").textContent = state.best.rank;
+  document.querySelector("#intro-best-mode").textContent = currentGameMode().label;
   document.querySelector("#intro-best-record").classList.toggle("empty", state.best.score === 0);
 }
 
@@ -1951,6 +2222,19 @@ function freshWeeklyState() {
   };
 }
 
+function emptyBestRecord() {
+  return { score: 0, rank: "–", achievedAt: null };
+}
+
+function defaultModeRecords() {
+  return {
+    quick: emptyBestRecord(),
+    standard: loadBestRecord(),
+    extended: emptyBestRecord(),
+    endless: emptyBestRecord(),
+  };
+}
+
 function defaultProgression() {
   return {
     schemaVersion: DATA_SCHEMA_VERSION,
@@ -1970,6 +2254,7 @@ function defaultProgression() {
       highContrast: false,
       textSize: "normal",
       lastDifficulty: "standard",
+      lastMode: "standard",
     },
     daily: freshDailyState(),
     weekly: freshWeeklyState(),
@@ -1977,6 +2262,7 @@ function defaultProgression() {
     tutorial: { completed: false, rewarded: false },
     onboarding: { firstShiftComplete: false, hintsDismissed: false },
     manager: { xp: 0, reputation: 0 },
+    records: defaultModeRecords(),
     recentShifts: [],
     decor: {
       owned: ["sign_classic", "floor_classic", "wall_cream", "plant_green"],
@@ -2010,6 +2296,10 @@ function migrateProgressionData(saved) {
   if (version < 6) {
     migrated.stats = { ...(saved.stats || {}), objectives: Math.max(0, Number(saved.stats?.objectives) || 0) };
   }
+  if (version < 7) {
+    migrated.records = { ...defaultModeRecords(), ...(saved.records || {}) };
+    migrated.preferences = { ...(migrated.preferences || saved.preferences || {}), lastMode: saved.preferences?.lastMode || "standard" };
+  }
   migrated.schemaVersion = Math.max(version, DATA_SCHEMA_VERSION);
   return migrated;
 }
@@ -2028,6 +2318,7 @@ function normalizePreferences(saved, fallback) {
     highContrast: Boolean(source.highContrast),
     textSize: ["normal", "large", "largest"].includes(source.textSize) ? source.textSize : fallback.textSize,
     lastDifficulty: DIFFICULTIES[source.lastDifficulty] ? source.lastDifficulty : fallback.lastDifficulty,
+    lastMode: GAME_MODES[source.lastMode] ? source.lastMode : fallback.lastMode,
   };
 }
 
@@ -2054,10 +2345,11 @@ function loadProgression() {
         xp: Math.max(0, Number(saved.manager?.xp) || 0),
         reputation: Math.max(0, Number(saved.manager?.reputation) || 0),
       },
+      records: { ...fallback.records },
       recentShifts: Array.isArray(saved.recentShifts) ? saved.recentShifts.slice(0, 10).map((item) => ({
         timestamp: typeof item?.timestamp === "string" ? item.timestamp : new Date().toISOString(),
         success: Boolean(item?.success),
-        reason: ["time", "queue"].includes(item?.reason) ? item.reason : "time",
+        reason: ["time", "queue", "cashout"].includes(item?.reason) ? item.reason : "time",
         score: Math.max(0, Number(item?.score) || 0),
         rank: ["S", "A", "B", "C", "F"].includes(item?.rank) ? item.rank : "F",
         refunds: Math.max(0, Number(item?.refunds) || 0),
@@ -2066,6 +2358,8 @@ function loadProgression() {
         peakQueue: Math.max(0, Number(item?.peakQueue) || 0),
         satisfaction: Math.max(0, Math.min(100, Number(item?.satisfaction) || 0)),
         difficulty: DIFFICULTIES[item?.difficulty] ? item.difficulty : "standard",
+        mode: GAME_MODES[item?.mode] ? item.mode : "standard",
+        duration: Math.max(0, Number(item?.duration) || GAME_MODES[item?.mode]?.seconds || GAME_SECONDS),
         condition: Object.hasOwn(STORE_CONDITIONS, item?.condition) ? item.condition : null,
         xp: Math.max(0, Number(item?.xp) || 0),
         reputation: Number(item?.reputation) || 0,
@@ -2074,6 +2368,12 @@ function loadProgression() {
       })) : [],
       decor: { ...fallback.decor, ...(saved.decor || {}), equipped: { ...fallback.decor.equipped, ...(saved.decor?.equipped || {}) } },
     };
+    Object.keys(GAME_MODES).forEach((mode) => {
+      const record = saved.records?.[mode];
+      progression.records[mode] = record && Number.isFinite(Number(record.score))
+        ? { score: Math.max(0, Number(record.score) || 0), rank: ["S", "A", "B", "C", "F", "–"].includes(record.rank) ? record.rank : "–", achievedAt: typeof record.achievedAt === "string" ? record.achievedAt : null }
+        : fallback.records[mode];
+    });
     Object.keys(fallback.discovery).forEach((category) => {
       const validIds = CODEX_CONTENT[category].map((item) => item.id);
       const savedIds = Array.isArray(saved.discovery?.[category]) ? saved.discovery[category] : fallback.discovery[category];
@@ -2340,6 +2640,8 @@ function recordShiftHistory(success, rank, reason) {
     peakQueue: state.peakQueue,
     satisfaction: happyGuestRate(),
     difficulty: state.difficulty,
+    mode: state.mode,
+    duration: state.elapsedSeconds,
     condition: state.condition?.id || null,
     xp: state.shiftXp,
     reputation: state.shiftReputation,
@@ -2521,8 +2823,9 @@ function renderShiftHistory() {
       const date = new Date(item.timestamp);
       const dateLabel = Number.isNaN(date.getTime()) ? "최근" : new Intl.DateTimeFormat("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(date);
       const difficulty = DIFFICULTIES[item.difficulty]?.label || "표준 영업";
+      const mode = GAME_MODES[item.mode]?.shortLabel || "75초";
       const objectiveCopy = Number(item.objectiveCount) ? ` · 목표 ${Number(item.objectivesCompleted) || 0}/${Number(item.objectiveCount)}` : "";
-      return `<article class="${item.success ? "success" : "failed"}"><span>${item.success ? item.rank : "F"}</span><div><strong>${item.success ? "영업 완주" : "대기 초과"}</strong><small>${dateLabel} · ${difficulty}${objectiveCopy}</small></div><em><b>${(Number(item.score) || 0).toLocaleString("ko-KR")}</b>점<small>환불 ${Number(item.refunds) || 0} · +${Number(item.xp) || 0} XP</small></em></article>`;
+      return `<article class="${item.success ? "success" : "failed"}"><span>${item.success ? item.rank : "F"}</span><div><strong>${item.success ? "영업 완주" : "대기 초과"}</strong><small>${dateLabel} · ${mode} · ${difficulty}${objectiveCopy}</small></div><em><b>${(Number(item.score) || 0).toLocaleString("ko-KR")}</b>점<small>환불 ${Number(item.refunds) || 0} · +${Number(item.xp) || 0} XP</small></em></article>`;
     }).join("")
     : "<p class=\"history-empty\">아직 저장된 영업 기록이 없습니다.</p>";
 
@@ -2861,6 +3164,7 @@ function resetSavedData() {
   if (!accepted) return;
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem(PROGRESSION_KEY);
+  localStorage.removeItem(CHECKPOINT_KEY);
   window.location.reload();
 }
 
@@ -2899,10 +3203,78 @@ async function importSavedData(file) {
     els.saveDataStatus.textContent = "저장 데이터를 가져왔습니다. 화면을 다시 불러옵니다.";
     window.setTimeout(() => window.location.reload(), 450);
   } catch (error) {
-    els.saveDataStatus.textContent = "올바른 버블타임 75 저장 파일이 아닙니다.";
+    els.saveDataStatus.textContent = "올바른 버블타임 저장 파일이 아닙니다.";
     showToast("저장 파일을 읽지 못했어요.", "bad", "!", 1600);
   } finally {
     els.importDataInput.value = "";
+  }
+}
+
+
+function resultShareCanvas() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1200;
+  canvas.height = 630;
+  const context = canvas.getContext("2d");
+  const gradient = context.createLinearGradient(0, 0, 1200, 630);
+  gradient.addColorStop(0, "#123c43");
+  gradient.addColorStop(1, "#1d786f");
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, 1200, 630);
+  [90, 1090, 1020, 170, 930].forEach((x, index) => {
+    context.beginPath();
+    context.arc(x, 80 + index * 108, 34 + index * 7, 0, Math.PI * 2);
+    context.fillStyle = index % 2 ? "rgba(255,214,90,.18)" : "rgba(87,211,189,.2)";
+    context.fill();
+  });
+  context.fillStyle = "#ffd65a";
+  context.font = "900 34px system-ui, sans-serif";
+  context.fillText("BUBBLE TIME · SHIFT REPORT", 84, 90);
+  context.fillStyle = "#ffffff";
+  context.font = "900 72px system-ui, sans-serif";
+  context.fillText(`${currentGameMode().label} 완료!`, 84, 190);
+  context.fillStyle = "#d8f1eb";
+  context.font = "700 30px system-ui, sans-serif";
+  context.fillText(`${DIFFICULTIES[state.difficulty].label} · 환불 ${state.refunds}건 · 최고 ${state.maxCombo}콤보`, 88, 250);
+  context.fillStyle = "rgba(255,255,255,.1)";
+  context.fillRect(84, 315, 1032, 190);
+  context.fillStyle = "#ffffff";
+  context.font = "900 96px system-ui, sans-serif";
+  context.fillText(state.score.toLocaleString("ko-KR"), 125, 440);
+  context.fillStyle = "#a9cbc6";
+  context.font = "800 25px system-ui, sans-serif";
+  context.fillText("FINAL SCORE", 130, 480);
+  context.fillStyle = "#ffd65a";
+  context.font = "900 130px system-ui, sans-serif";
+  context.textAlign = "right";
+  context.fillText(document.querySelector("#result-rank").textContent || "–", 1060, 465);
+  context.textAlign = "left";
+  context.fillStyle = "#ffffff";
+  context.font = "800 27px system-ui, sans-serif";
+  context.fillText("bubble-time.vercel.app", 84, 570);
+  return canvas;
+}
+
+async function shareResult() {
+  const mode = currentGameMode().label;
+  const rank = document.querySelector("#result-rank").textContent;
+  const text = `버블타임 ${mode}에서 ${state.score.toLocaleString("ko-KR")}점 · ${rank}등급을 달성했어요!`;
+  const url = location.origin.startsWith("http") ? location.origin : "";
+  try {
+    const blob = await new Promise((resolve) => resultShareCanvas().toBlob(resolve, "image/png"));
+    const file = blob && typeof File === "function" ? new File([blob], "bubble-time-result.png", { type: "image/png" }) : null;
+    if (navigator.share && file && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
+      await navigator.share({ title: "버블타임 영업 결과", text, url, files: [file] });
+      return;
+    }
+    if (navigator.share) {
+      await navigator.share({ title: "버블타임 영업 결과", text, url });
+      return;
+    }
+    await navigator.clipboard.writeText(`${text}${url ? ` ${url}` : ""}`);
+    showToast("결과 문구를 클립보드에 복사했어요.", "good", "↗", 1800);
+  } catch (error) {
+    if (error?.name !== "AbortError") showToast("공유 기능을 사용할 수 없어 결과 화면을 유지합니다.", "bad", "!", 1800);
   }
 }
 
@@ -3077,8 +3449,23 @@ els.shiftPlans.forEach((plan) => {
     updatePrepUi();
   });
 });
+els.shiftModes.forEach((plan) => {
+  plan.querySelector("input").addEventListener("change", () => {
+    state.mode = GAME_MODES[plan.dataset.mode] ? plan.dataset.mode : "standard";
+    state.best = state.progression.records[state.mode];
+    prepareShiftObjectives(true);
+    updateRecordUi();
+    updatePrepUi();
+  });
+});
 els.pauseButton.addEventListener("click", () => pauseGame(false));
 els.resumeButton.addEventListener("click", resumeGame);
+els.endlessCashoutButton.addEventListener("click", () => endGame(true, "cashout"));
+els.resumeShiftButton.addEventListener("click", restoreShiftCheckpoint);
+els.discardShiftButton.addEventListener("click", () => {
+  if (window.confirm("중단된 영업 정보를 삭제할까요?")) clearShiftCheckpoint();
+});
+els.shareResultButton.addEventListener("click", shareResult);
 els.shopButton.addEventListener("click", () => openProgressionModal(els.shopModal));
 els.resultShopButton.addEventListener("click", () => openProgressionModal(els.shopModal));
 els.achievementsButton.addEventListener("click", () => openProgressionModal(els.achievementsModal));
@@ -3214,6 +3601,7 @@ document.addEventListener("keydown", (event) => {
 document.addEventListener("visibilitychange", () => {
   if (document.hidden && state.running && !state.paused && !state.tutorialActive) pauseGame(true);
 });
+window.addEventListener("pagehide", saveShiftCheckpoint);
 
 window.addEventListener("beforeinstallprompt", (event) => {
   event.preventDefault();
@@ -3224,7 +3612,7 @@ window.addEventListener("beforeinstallprompt", (event) => {
 window.addEventListener("appinstalled", () => {
   state.installPrompt = null;
   updateInstallButtons(false);
-  showToast("버블타임 75가 앱으로 설치됐어요!", "good", "✓", 1800);
+  showToast("버블타임이 앱으로 설치됐어요!", "good", "✓", 1800);
 });
 
 if ("serviceWorker" in navigator) {
@@ -3251,3 +3639,4 @@ if ("serviceWorker" in navigator) {
 setupManagementNavigation();
 resetGame();
 initializeVersionNotice();
+updateCheckpointUi();
