@@ -6,8 +6,8 @@ const MAX_QUEUE = CONFIG.maxQueue;
 const STORAGE_KEY = "bubbleTime75.bestRecord.v1";
 const PROGRESSION_KEY = "bubbleTime75.progression.v1";
 const SEEN_VERSION_KEY = "bubbleTime75.seenVersion";
-const APP_VERSION = "2.3.0";
-const DATA_SCHEMA_VERSION = 4;
+const APP_VERSION = "2.4.0";
+const DATA_SCHEMA_VERSION = 5;
 
 const DIFFICULTIES = {
   calm: { label: "여유 영업", risk: "낮음", guestInterval: 1.18, patience: 1.28, cycle: 0.94, dirtInterval: 1.2, eventInterval: 1.22, groupBonus: -1, dirtyBonus: -2 },
@@ -30,6 +30,24 @@ const PACE_MILESTONES = [
   { days: 5, reward: 100 },
 ];
 
+const MANAGER_LEVELS = [
+  { level: 1, xp: 0, title: "신입 점장", unlock: "Lv.2 · 아쿠아 타일과 꽃화분" },
+  { level: 2, xp: 180, title: "동네 점장", unlock: "Lv.3 · 오션 벽지와 희귀 평론가" },
+  { level: 3, xp: 450, title: "숙련 점장", unlock: "Lv.4 · 선셋 체크 바닥" },
+  { level: 4, xp: 850, title: "인기 점장", unlock: "Lv.5 · 명성 보너스 칭호" },
+  { level: 5, xp: 1350, title: "스타 점장", unlock: "Lv.6 · 버블타임 마스터" },
+  { level: 6, xp: 2000, title: "버블 마스터", unlock: "모든 점장 콘텐츠 해금" },
+];
+
+const MANAGEMENT_SCREENS = [
+  { id: "shop-modal", icon: "⚙", label: "강화" },
+  { id: "achievements-modal", icon: "♛", label: "업적" },
+  { id: "codex-modal", icon: "▤", label: "도감" },
+  { id: "decor-modal", icon: "✿", label: "꾸미기" },
+  { id: "stats-modal", icon: "▥", label: "기록" },
+  { id: "settings-modal", icon: "☼", label: "설정" },
+];
+
 const STORE_CONDITIONS = {
   rain: { icon: "☂", title: "비 오는 세탁일", copy: "물때가 자주 생기고 손님이 조금 더 찾아옵니다.", guestInterval: 0.94, dirtInterval: 0.92, reward: 1, limescaleBias: 0.62 },
   weekend: { icon: "%", title: "주말 할인 행사", copy: "손님이 빠르게 몰리지만 모든 응대 점수가 20% 증가합니다.", guestInterval: 0.88, dirtInterval: 1, reward: 1.2, limescaleBias: 0 },
@@ -47,12 +65,12 @@ const DECORATIONS = [
   { id: "sign_classic", type: "sign", icon: "OPEN", title: "클래식 간판", description: "버블타임의 기본 민트 간판", price: 0 },
   { id: "sign_gold", type: "sign", icon: "★", title: "황금 점장 간판", description: "주간 목표 3개를 모두 달성한 증표", unlock: "weekly" },
   { id: "floor_classic", type: "floor", icon: "▦", title: "클래식 타일", description: "차분한 회백색 매장 바닥", price: 0 },
-  { id: "floor_aqua", type: "floor", icon: "≈", title: "아쿠아 타일", description: "물결처럼 시원한 민트 타일", price: 180 },
-  { id: "floor_checker", type: "floor", icon: "▥", title: "선셋 체크", description: "산뜻한 코랄 체크 바닥", price: 260 },
+  { id: "floor_aqua", type: "floor", icon: "≈", title: "아쿠아 타일", description: "물결처럼 시원한 민트 타일", price: 180, unlockLevel: 2 },
+  { id: "floor_checker", type: "floor", icon: "▥", title: "선셋 체크", description: "산뜻한 코랄 체크 바닥", price: 260, unlockLevel: 4 },
   { id: "wall_cream", type: "wall", icon: "□", title: "크림 벽지", description: "포근하고 밝은 기본 벽지", price: 0 },
-  { id: "wall_ocean", type: "wall", icon: "≋", title: "오션 벽지", description: "깊고 깨끗한 바다색 벽지", price: 220 },
+  { id: "wall_ocean", type: "wall", icon: "≋", title: "오션 벽지", description: "깊고 깨끗한 바다색 벽지", price: 220, unlockLevel: 3 },
   { id: "plant_green", type: "plant", icon: "♣", title: "초록 화분", description: "익숙한 행운의 초록 식물", price: 0 },
-  { id: "plant_bloom", type: "plant", icon: "✿", title: "버블 꽃화분", description: "매장에 색을 더하는 작은 꽃", price: 160 },
+  { id: "plant_bloom", type: "plant", icon: "✿", title: "버블 꽃화분", description: "매장에 색을 더하는 작은 꽃", price: 160, unlockLevel: 2 },
 ];
 
 const TUTORIAL_STEPS = [
@@ -161,10 +179,13 @@ const state = {
   happyGuests: 0,
   typeCounts: { normal: 0, impatient: 0, regular: 0, bulk: 0, collector: 0 },
   shiftCoins: 0,
+  shiftXp: 0,
+  shiftReputation: 0,
   activeEvent: null,
   eventDeck: [],
   lastEventType: null,
   eventTimerScheduled: false,
+  queuedEventType: null,
   powerOut: false,
   detergentEmpty: false,
   eventsHandled: { breakdown: 0, blackout: 0, detergent: 0, group: 0, inspection: 0 },
@@ -195,6 +216,7 @@ const state = {
   tutorialStep: 0,
   decorTab: "sign",
   condition: null,
+  firstShiftHintStep: 0,
 };
 
 state.sound = state.progression.preferences.soundEnabled;
@@ -262,6 +284,14 @@ const els = {
   eventAlertIcon: document.querySelector("#event-alert-icon"),
   eventAlertTitle: document.querySelector("#event-alert-title"),
   eventAlertCopy: document.querySelector("#event-alert-copy"),
+  eventForecast: document.querySelector("#event-forecast"),
+  eventForecastIcon: document.querySelector("#event-forecast-icon"),
+  eventForecastTitle: document.querySelector("#event-forecast-title"),
+  eventForecastCopy: document.querySelector("#event-forecast-copy"),
+  eventForecastSeconds: document.querySelector("#event-forecast-seconds"),
+  firstShiftGuide: document.querySelector("#first-shift-guide"),
+  firstShiftGuideTitle: document.querySelector("#first-shift-guide-title"),
+  firstShiftGuideClose: document.querySelector("#first-shift-guide-close"),
   codexModal: document.querySelector("#codex-modal"),
   codexButton: document.querySelector("#codex-button"),
   resultCodexButton: document.querySelector("#result-codex-button"),
@@ -309,6 +339,14 @@ const els = {
   decorCloseButton: document.querySelector("#decor-close-button"),
   decorGrid: document.querySelector("#decor-grid"),
   decorTabs: [...document.querySelectorAll("[data-decor-tab]")],
+  statsModal: document.querySelector("#stats-modal"),
+  statsCloseButton: document.querySelector("#stats-close-button"),
+  managerButton: document.querySelector("#manager-button"),
+  resultStatsButton: document.querySelector("#result-stats-button"),
+  skipOnboardingButton: document.querySelector("#skip-onboarding-button"),
+  screenReaderLive: document.querySelector("#screen-reader-live"),
+  highContrastSetting: document.querySelector("#high-contrast-setting"),
+  textSizeSetting: document.querySelector("#text-size-setting"),
   weatherLayer: document.querySelector("#weather-layer"),
 };
 
@@ -366,10 +404,13 @@ function resetGame() {
   state.happyGuests = 0;
   state.typeCounts = { normal: 0, impatient: 0, regular: 0, bulk: 0, collector: 0 };
   state.shiftCoins = 0;
+  state.shiftXp = 0;
+  state.shiftReputation = 0;
   state.activeEvent = null;
   state.eventDeck = [];
   state.lastEventType = null;
   state.eventTimerScheduled = false;
+  state.queuedEventType = null;
   state.powerOut = false;
   state.detergentEmpty = false;
   state.eventsHandled = { breakdown: 0, blackout: 0, detergent: 0, group: 0, inspection: 0 };
@@ -379,6 +420,7 @@ function resetGame() {
   state.peakQueue = 0;
   state.tutorialActive = false;
   state.tutorialStep = 0;
+  state.firstShiftHintStep = 0;
   state.condition = currentStoreCondition();
   state.queue = [];
   state.guestSequence = 0;
@@ -397,6 +439,8 @@ function resetGame() {
   els.detergentGauge.style.width = "100%";
   els.detergentStation.setAttribute("aria-label", "세제 탱크, 현재 100퍼센트");
   els.eventAlert.hidden = true;
+  hideEventForecast();
+  els.firstShiftGuide.hidden = true;
   els.tutorialOverlay.hidden = true;
   els.pauseModal.classList.remove("open");
   els.pauseModal.setAttribute("aria-hidden", "true");
@@ -423,6 +467,7 @@ function startGame() {
   showToast("영업 시작! 오염 표시를 잘 살펴보세요.", "good", "✦", 1700);
   scheduleGameLoops(true);
   startBgm();
+  showFirstShiftGuide("오염 아이콘을 확인한 뒤 같은 도구를 선택하세요", 0);
 }
 
 function startTutorial() {
@@ -642,11 +687,18 @@ function tickClock() {
 function scheduleNextEvent(delay = null) {
   if (!state.running || state.paused || state.tutorialActive || state.activeEvent || state.eventTimerScheduled) return;
   const eventDelay = delay ?? randomBetween(CONFIG.events.intervalMin, CONFIG.events.intervalMax) * DIFFICULTIES[state.difficulty].eventInterval;
+  const warningDuration = Math.min(CONFIG.events.warningDuration, Math.max(900, eventDelay - 500));
+  const eventType = state.queuedEventType || nextEventType();
+  state.queuedEventType = eventType;
   state.eventTimerScheduled = true;
   scheduleTimeout(() => {
-    state.eventTimerScheduled = false;
-    triggerRandomEvent();
-  }, eventDelay);
+    if (!state.running || state.paused) return;
+    showEventForecast(eventType, warningDuration);
+    scheduleTimeout(() => {
+      state.eventTimerScheduled = false;
+      triggerRandomEvent(eventType);
+    }, warningDuration);
+  }, Math.max(0, eventDelay - warningDuration));
 }
 
 function nextEventType() {
@@ -663,9 +715,11 @@ function nextEventType() {
   return type;
 }
 
-function triggerRandomEvent() {
+function triggerRandomEvent(forcedType = null) {
   if (!state.running || state.paused || state.activeEvent) return;
-  const type = nextEventType();
+  const type = forcedType || state.queuedEventType || nextEventType();
+  state.queuedEventType = null;
+  hideEventForecast();
   discoverEntry("events", type);
 
   if (type === "group") {
@@ -753,6 +807,56 @@ function showEventAlert(type) {
   els.eventAlert.classList.remove("arrive");
   void els.eventAlert.offsetWidth;
   els.eventAlert.classList.add("arrive");
+}
+
+function showEventForecast(type, duration) {
+  const info = EVENT_INFO[type];
+  if (!info) return;
+  const seconds = Math.max(1, Math.ceil(duration / 1000));
+  els.eventForecastIcon.textContent = info.icon;
+  els.eventForecastTitle.textContent = info.title.replace("!", " 예고");
+  els.eventForecastCopy.textContent = info.copy;
+  els.eventForecastSeconds.textContent = String(seconds);
+  els.eventForecast.dataset.event = type;
+  els.eventForecast.hidden = false;
+  els.eventForecast.style.setProperty("--forecast-duration", `${duration}ms`);
+  els.eventForecast.classList.remove("arrive");
+  void els.eventForecast.offsetWidth;
+  els.eventForecast.classList.add("arrive");
+  for (let remaining = seconds - 1; remaining >= 1; remaining -= 1) {
+    const delay = duration - remaining * 1000;
+    if (delay > 0) scheduleTimeout(() => {
+      if (!els.eventForecast.hidden) els.eventForecastSeconds.textContent = String(remaining);
+    }, delay);
+  }
+  announce(`${seconds}초 뒤 ${info.title} ${info.copy}`);
+  showFirstShiftGuide("사건 예고를 보고 필요한 도구와 위치를 미리 확인하세요", 3);
+}
+
+function hideEventForecast() {
+  els.eventForecast.hidden = true;
+  els.eventForecast.classList.remove("arrive");
+  els.eventForecast.removeAttribute("data-event");
+}
+
+function announce(message) {
+  if (!els.screenReaderLive) return;
+  els.screenReaderLive.textContent = "";
+  window.setTimeout(() => { els.screenReaderLive.textContent = message; }, 30);
+}
+
+function showFirstShiftGuide(title, step = 0) {
+  const onboarding = state.progression.onboarding;
+  if (!state.running || state.tutorialActive || onboarding.firstShiftComplete || onboarding.hintsDismissed || step < state.firstShiftHintStep) return;
+  state.firstShiftHintStep = step;
+  els.firstShiftGuideTitle.textContent = title;
+  els.firstShiftGuide.hidden = false;
+}
+
+function dismissFirstShiftGuide() {
+  els.firstShiftGuide.hidden = true;
+  state.progression.onboarding.hintsDismissed = true;
+  saveProgression();
 }
 
 function hideEventAlert() {
@@ -858,6 +962,7 @@ function enqueueGuest() {
   els.emptyQueue.hidden = true;
   els.queueLane.appendChild(guest.el);
   updateQueueVisuals();
+  if (state.queue.length >= 3) showFirstShiftGuide("대기 손님이 3명입니다. 깨끗한 빈 기계를 먼저 확보하세요", 2);
   playTone(330, 0.035, "sine");
 
   if (state.queue.length >= MAX_QUEUE) {
@@ -916,7 +1021,8 @@ function makeGuest() {
 
 function chooseCustomerType() {
   const weeklyRule = currentWeeklyEventRule();
-  const collectorChance = state.condition?.id === "inspection" ? 0.055 : weeklyRule.id === "hygiene" ? 0.03 : 0.012;
+  const collectorUnlocked = managerLevelInfo().level >= 3;
+  const collectorChance = collectorUnlocked ? (state.condition?.id === "inspection" ? 0.055 : weeklyRule.id === "hygiene" ? 0.03 : 0.012) : 0;
   if (Math.random() < collectorChance) return "collector";
   const roll = Math.random();
   let cumulative = 0;
@@ -1082,6 +1188,7 @@ function makeDirty(machine, dirt) {
   machine.el.querySelector(".machine-label small").textContent = info.name;
   machine.el.setAttribute("aria-label", machineAriaLabel(machine));
   playTone(240, 0.04, "square");
+  showFirstShiftGuide(`${info.name}에는 ${TOOL_INFO[info.tool].name}를 사용하세요`, 1);
 }
 
 function handleMachineClick(id) {
@@ -1394,6 +1501,7 @@ function pauseGame(autoPaused = false) {
   state.paused = true;
   state.pausedAt = performance.now();
   clearGameTimers();
+  hideEventForecast();
   stopBgm();
   els.pauseButton.disabled = true;
   els.pauseTime.textContent = String(state.seconds);
@@ -1434,6 +1542,8 @@ function endGame(success, reason) {
   els.pauseModal.classList.remove("open");
   els.pauseModal.setAttribute("aria-hidden", "true");
   hideEventAlert();
+  hideEventForecast();
+  els.firstShiftGuide.hidden = true;
   els.powerOverlay.classList.remove("active");
   els.breakerPanel.classList.remove("active");
   els.detergentStation.classList.remove("target-ready");
@@ -1446,7 +1556,7 @@ function endGame(success, reason) {
 
   const finalSuccess = success && state.queue.length < MAX_QUEUE;
   const rank = getRank(finalSuccess);
-  const unlockedAchievements = finalizeProgression(finalSuccess);
+  const unlockedAchievements = finalizeProgression(finalSuccess, rank, reason);
   const isNewRecord = saveBestRecord(finalSuccess, rank);
   const card = els.resultCard;
   card.classList.toggle("failed", !finalSuccess);
@@ -1470,6 +1580,8 @@ function endGame(success, reason) {
   document.querySelector("#new-record-banner").hidden = !isNewRecord;
   document.querySelector("#result-coins").textContent = String(state.shiftCoins);
   document.querySelector("#result-wallet").textContent = state.progression.wallet.toLocaleString("ko-KR");
+  document.querySelector("#result-xp").textContent = String(state.shiftXp);
+  document.querySelector("#result-reputation").textContent = `명성 ${state.shiftReputation >= 0 ? "+" : ""}${state.shiftReputation}`;
   document.querySelector("#result-impatient").textContent = String(state.typeCounts.impatient);
   document.querySelector("#result-regular").textContent = String(state.typeCounts.regular);
   document.querySelector("#result-bulk").textContent = String(state.typeCounts.bulk);
@@ -1654,12 +1766,17 @@ function defaultProgression() {
       screenShake: true,
       reducedMotion: false,
       colorAssist: false,
+      highContrast: false,
+      textSize: "normal",
       lastDifficulty: "standard",
     },
     daily: freshDailyState(),
     weekly: freshWeeklyState(),
     cosmetics: { weeklyBadges: [] },
     tutorial: { completed: false, rewarded: false },
+    onboarding: { firstShiftComplete: false, hintsDismissed: false },
+    manager: { xp: 0, reputation: 0 },
+    recentShifts: [],
     decor: {
       owned: ["sign_classic", "floor_classic", "wall_cream", "plant_green"],
       equipped: { sign: "sign_classic", floor: "floor_classic", wall: "wall_cream", plant: "plant_green" },
@@ -1677,6 +1794,18 @@ function migrateProgressionData(saved) {
     migrated.tutorial = { ...(saved.tutorial || {}) };
     migrated.decor = { ...(saved.decor || {}) };
   }
+  if (version < 5) {
+    const stats = saved.stats || {};
+    migrated.manager = {
+      xp: Math.max(0, (Number(stats.shifts) || 0) * 90 + (Number(stats.cleaned) || 0) * 3 + (Number(stats.served) || 0) * 4),
+      reputation: Math.max(0, (Number(stats.shifts) || 0) * 2),
+    };
+    migrated.onboarding = {
+      firstShiftComplete: (Number(stats.shifts) || 0) > 0,
+      hintsDismissed: (Number(stats.shifts) || 0) > 0,
+    };
+    migrated.recentShifts = [];
+  }
   migrated.schemaVersion = Math.max(version, DATA_SCHEMA_VERSION);
   return migrated;
 }
@@ -1692,6 +1821,8 @@ function normalizePreferences(saved, fallback) {
     screenShake: source.screenShake !== false,
     reducedMotion: Boolean(source.reducedMotion),
     colorAssist: Boolean(source.colorAssist),
+    highContrast: Boolean(source.highContrast),
+    textSize: ["normal", "large", "largest"].includes(source.textSize) ? source.textSize : fallback.textSize,
     lastDifficulty: DIFFICULTIES[source.lastDifficulty] ? source.lastDifficulty : fallback.lastDifficulty,
   };
 }
@@ -1714,6 +1845,27 @@ function loadProgression() {
       weekly: saved.weekly && saved.weekly.week === localWeekKey() ? { ...fallback.weekly, ...saved.weekly } : fallback.weekly,
       cosmetics: { ...fallback.cosmetics, ...(saved.cosmetics || {}) },
       tutorial: { ...fallback.tutorial, ...(saved.tutorial || {}) },
+      onboarding: { ...fallback.onboarding, ...(saved.onboarding || {}) },
+      manager: {
+        xp: Math.max(0, Number(saved.manager?.xp) || 0),
+        reputation: Math.max(0, Number(saved.manager?.reputation) || 0),
+      },
+      recentShifts: Array.isArray(saved.recentShifts) ? saved.recentShifts.slice(0, 10).map((item) => ({
+        timestamp: typeof item?.timestamp === "string" ? item.timestamp : new Date().toISOString(),
+        success: Boolean(item?.success),
+        reason: ["time", "queue"].includes(item?.reason) ? item.reason : "time",
+        score: Math.max(0, Number(item?.score) || 0),
+        rank: ["S", "A", "B", "C", "F"].includes(item?.rank) ? item.rank : "F",
+        refunds: Math.max(0, Number(item?.refunds) || 0),
+        served: Math.max(0, Number(item?.served) || 0),
+        cleaned: Math.max(0, Number(item?.cleaned) || 0),
+        peakQueue: Math.max(0, Number(item?.peakQueue) || 0),
+        satisfaction: Math.max(0, Math.min(100, Number(item?.satisfaction) || 0)),
+        difficulty: DIFFICULTIES[item?.difficulty] ? item.difficulty : "standard",
+        condition: Object.hasOwn(STORE_CONDITIONS, item?.condition) ? item.condition : null,
+        xp: Math.max(0, Number(item?.xp) || 0),
+        reputation: Number(item?.reputation) || 0,
+      })) : [],
       decor: { ...fallback.decor, ...(saved.decor || {}), equipped: { ...fallback.decor.equipped, ...(saved.decor?.equipped || {}) } },
     };
     Object.keys(fallback.discovery).forEach((category) => {
@@ -1946,8 +2098,52 @@ function completeDailyChallengeIfReady(definition) {
   updateProgressionUi();
 }
 
-function finalizeProgression(success) {
+function managerLevelInfo(xp = state.progression.manager.xp) {
+  return [...MANAGER_LEVELS].reverse().find((item) => xp >= item.xp) || MANAGER_LEVELS[0];
+}
+
+function nextManagerLevel(xp = state.progression.manager.xp) {
+  return MANAGER_LEVELS.find((item) => item.xp > xp) || null;
+}
+
+function managerProgressValues() {
+  const current = managerLevelInfo();
+  const next = nextManagerLevel();
+  const start = current.xp;
+  const end = next?.xp ?? current.xp;
+  const percent = next ? Math.min(100, Math.max(0, ((state.progression.manager.xp - start) / (end - start)) * 100)) : 100;
+  return { current, next, percent };
+}
+
+function reputationDelta(success, rank) {
+  if (!success) return -1;
+  const rankBonus = { S: 3, A: 2, B: 1 }[rank.letter] || 0;
+  return Math.max(0, 2 + rankBonus - Math.min(2, state.refunds));
+}
+
+function recordShiftHistory(success, rank, reason) {
+  const entry = {
+    timestamp: new Date().toISOString(),
+    success,
+    reason,
+    score: state.score,
+    rank: rank.letter,
+    refunds: state.refunds,
+    served: state.served,
+    cleaned: state.cleaned,
+    peakQueue: state.peakQueue,
+    satisfaction: happyGuestRate(),
+    difficulty: state.difficulty,
+    condition: state.condition?.id || null,
+    xp: state.shiftXp,
+    reputation: state.shiftReputation,
+  };
+  state.progression.recentShifts = [entry, ...state.progression.recentShifts].slice(0, 10);
+}
+
+function finalizeProgression(success, rank, reason) {
   const progression = state.progression;
+  const previousLevel = managerLevelInfo().level;
   state.shiftCoins = Math.max(
     0,
     state.served * CONFIG.economy.servedCoins
@@ -1965,11 +2161,23 @@ function finalizeProgression(success) {
   progression.stats.impatient += state.typeCounts.impatient;
   progression.stats.earnings += state.shiftCoins;
   progression.stats.maxCombo = Math.max(progression.stats.maxCombo, state.maxCombo);
+  const rankXp = { S: 75, A: 55, B: 35, C: 20, F: 5 }[rank.letter] || 0;
+  state.shiftXp = 25 + state.cleaned * 4 + state.served * 5 + state.maxCombo * 2 + (success ? 60 : 10) + rankXp;
+  state.shiftReputation = reputationDelta(success, rank);
+  progression.manager.xp += state.shiftXp;
+  progression.manager.reputation = Math.max(0, progression.manager.reputation + state.shiftReputation);
+  progression.onboarding.firstShiftComplete = true;
+  recordShiftHistory(success, rank, reason);
   recordWeeklyPace();
   if (success) advanceWeeklyGoal("shift", 1);
 
   const newlyUnlocked = unlockAchievements(success);
   saveProgression();
+  const currentLevel = managerLevelInfo();
+  if (currentLevel.level > previousLevel) {
+    showToast(`점장 Lv.${currentLevel.level} 달성 · ${currentLevel.title}`, "secret", "★", 2600);
+    announce(`점장 레벨 ${currentLevel.level}, ${currentLevel.title}을 달성했습니다.`);
+  }
   return newlyUnlocked;
 }
 
@@ -2038,8 +2246,85 @@ function updateProgressionUi() {
   renderAchievements();
   updateCodexUi();
   renderWeeklyGoals();
+  updateManagerUi();
+  updateOnboardingUi();
+  if (els.statsModal.classList.contains("open")) renderShiftHistory();
   if (els.decorModal.classList.contains("open")) renderDecorations();
   document.documentElement.classList.toggle("weekly-shine", progression.weekly.allGoalsRewarded);
+}
+
+function updateManagerUi() {
+  const { current, next, percent } = managerProgressValues();
+  const progression = state.progression;
+  const currentXp = progression.manager.xp;
+  const targetXp = next?.xp ?? "MAX";
+  const values = {
+    "manager-level": current.level,
+    "manager-title": current.title,
+    "manager-reputation": progression.manager.reputation,
+    "manager-xp": currentXp,
+    "manager-next-xp": targetXp,
+    "manager-badge": current.level,
+    "stats-manager-level": current.level,
+    "stats-manager-title": current.title,
+    "stats-manager-reputation": progression.manager.reputation,
+    "stats-manager-xp": currentXp,
+    "stats-manager-next-xp": targetXp,
+    "stats-manager-unlock": next ? `다음 해금 · ${current.unlock}` : "모든 점장 콘텐츠를 해금했습니다",
+  };
+  Object.entries(values).forEach(([id, value]) => {
+    const element = document.querySelector(`#${id}`);
+    if (element) element.textContent = String(value);
+  });
+  document.querySelector("#manager-xp-bar").style.width = `${percent}%`;
+  document.querySelector("#stats-manager-xp-bar").style.width = `${percent}%`;
+}
+
+function updateOnboardingUi() {
+  const firstVisit = !state.progression.onboarding.firstShiftComplete;
+  const needsPractice = !state.progression.tutorial.completed;
+  const introCard = els.introModal.querySelector(".intro-card");
+  introCard.classList.toggle("new-manager", firstVisit);
+  els.startButton.querySelector("span").textContent = needsPractice ? "실습부터 시작하기" : "영업 준비하기";
+  els.skipOnboardingButton.hidden = !needsPractice;
+  els.tutorialButton.innerHTML = needsPractice ? "<span>▶</span>실습 튜토리얼" : "<span>↻</span>튜토리얼 다시 보기";
+}
+
+function renderShiftHistory() {
+  const shifts = state.progression.recentShifts;
+  const successCount = shifts.filter((item) => item.success).length;
+  const sum = (key) => shifts.reduce((total, item) => total + (Number(item[key]) || 0), 0);
+  document.querySelector("#history-success-rate").textContent = shifts.length ? `${Math.round((successCount / shifts.length) * 100)}%` : "–";
+  document.querySelector("#history-average-score").textContent = shifts.length ? Math.round(sum("score") / shifts.length).toLocaleString("ko-KR") : "–";
+  document.querySelector("#history-average-refunds").textContent = shifts.length ? (sum("refunds") / shifts.length).toFixed(1) : "–";
+  document.querySelector("#history-best-score").textContent = shifts.length ? Math.max(...shifts.map((item) => Number(item.score) || 0)).toLocaleString("ko-KR") : "–";
+
+  const chart = document.querySelector("#history-chart");
+  const maxScore = Math.max(1, ...shifts.map((item) => Number(item.score) || 0));
+  chart.innerHTML = shifts.length
+    ? [...shifts].reverse().map((item, index) => `<i class="${item.success ? "success" : "failed"}" style="--history-height:${Math.max(8, ((Number(item.score) || 0) / maxScore) * 100)}%" title="${index + 1}번째 · ${(Number(item.score) || 0).toLocaleString("ko-KR")}점"><b></b></i>`).join("")
+    : "<p>첫 영업을 완료하면 점수 흐름이 표시됩니다.</p>";
+
+  const list = document.querySelector("#history-list");
+  list.innerHTML = shifts.length
+    ? shifts.map((item) => {
+      const date = new Date(item.timestamp);
+      const dateLabel = Number.isNaN(date.getTime()) ? "최근" : new Intl.DateTimeFormat("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(date);
+      const difficulty = DIFFICULTIES[item.difficulty]?.label || "표준 영업";
+      return `<article class="${item.success ? "success" : "failed"}"><span>${item.success ? item.rank : "F"}</span><div><strong>${item.success ? "영업 완주" : "대기 초과"}</strong><small>${dateLabel} · ${difficulty}</small></div><em><b>${(Number(item.score) || 0).toLocaleString("ko-KR")}</b>점<small>환불 ${Number(item.refunds) || 0} · +${Number(item.xp) || 0} XP</small></em></article>`;
+    }).join("")
+    : "<p class=\"history-empty\">아직 저장된 영업 기록이 없습니다.</p>";
+
+  let insight = "첫 영업에서는 오염 표시와 도구 모양을 먼저 연결해 보세요.";
+  if (shifts.length >= 2) {
+    const averageRefunds = sum("refunds") / shifts.length;
+    const averagePeak = sum("peakQueue") / shifts.length;
+    if (successCount / shifts.length < 0.6) insight = "완주율을 높이려면 대기 줄이 4명일 때 오염 없는 빈 기계를 먼저 확보하세요.";
+    else if (averageRefunds >= 2) insight = "최근 환불이 잦습니다. 사건 예고가 뜨면 먼저 기계 오염을 정리해 빈 자리를 만드세요.";
+    else if (averagePeak >= 4) insight = "대기 줄이 자주 길어집니다. 단체 손님 예고 직전에 기계 가동 상태를 확인하세요.";
+    else insight = "운영이 안정적입니다. 피크 타임 또는 무환불 S등급에 도전해 보세요.";
+  }
+  document.querySelector("#history-insight").textContent = insight;
 }
 
 function renderWeeklyGoals() {
@@ -2059,7 +2344,9 @@ function decorationById(id) {
 }
 
 function decorationIsUnlocked(decoration) {
-  return decoration.unlock !== "weekly" || state.progression.cosmetics.weeklyBadges.length > 0;
+  const weeklyUnlocked = decoration.unlock !== "weekly" || state.progression.cosmetics.weeklyBadges.length > 0;
+  const levelUnlocked = !decoration.unlockLevel || managerLevelInfo().level >= decoration.unlockLevel;
+  return weeklyUnlocked && levelUnlocked;
 }
 
 function renderDecorations() {
@@ -2079,8 +2366,10 @@ function renderDecorations() {
     const unlocked = decorationIsUnlocked(decoration);
     const card = document.createElement("article");
     card.className = `decor-item${owned ? " owned" : ""}${equipped ? " equipped" : ""}${unlocked ? "" : " locked"}`;
-    const action = equipped ? "장착 중" : owned ? "장착하기" : unlocked ? `◈ ${decoration.price}` : "주간 목표 완성 필요";
-    card.innerHTML = `<span>${unlocked ? decoration.icon : "?"}</span><div><small>${decoration.type.toUpperCase()}</small><h3>${unlocked ? decoration.title : "잠긴 장식"}</h3><p>${unlocked ? decoration.description : "주간 목표 3개를 모두 달성하면 해금됩니다."}</p></div><button type="button" data-decor-action="${decoration.id}" ${equipped || !unlocked || (!owned && progression.wallet < decoration.price) ? "disabled" : ""}>${action}</button>`;
+    const lockLabel = decoration.unlock === "weekly" ? "주간 목표 완성 필요" : `점장 Lv.${decoration.unlockLevel} 필요`;
+    const lockCopy = decoration.unlock === "weekly" ? "주간 목표 3개를 모두 달성하면 해금됩니다." : `점장 레벨 ${decoration.unlockLevel}에서 해금됩니다.`;
+    const action = equipped ? "장착 중" : owned ? "장착하기" : unlocked ? `◈ ${decoration.price}` : lockLabel;
+    card.innerHTML = `<span>${unlocked ? decoration.icon : "?"}</span><div><small>${decoration.type.toUpperCase()}</small><h3>${unlocked ? decoration.title : "잠긴 장식"}</h3><p>${unlocked ? decoration.description : lockCopy}</p></div><button type="button" data-decor-action="${decoration.id}" ${equipped || !unlocked || (!owned && progression.wallet < decoration.price) ? "disabled" : ""}>${action}</button>`;
     card.querySelector("button").addEventListener("click", () => buyOrEquipDecoration(decoration.id));
     els.decorGrid.appendChild(card);
   });
@@ -2190,6 +2479,8 @@ function updateSettingsUi() {
   els.screenShakeSetting.checked = preferences.screenShake;
   els.reducedMotionSetting.checked = preferences.reducedMotion;
   els.colorAssistSetting.checked = preferences.colorAssist;
+  els.highContrastSetting.checked = preferences.highContrast;
+  els.textSizeSetting.value = preferences.textSize;
   document.querySelector("#save-version-label").textContent = `DATA v${state.progression.schemaVersion} · 자동 저장`;
 }
 
@@ -2197,6 +2488,9 @@ function applyPreferences() {
   const preferences = state.progression.preferences;
   document.documentElement.classList.toggle("reduce-motion", preferences.reducedMotion);
   document.documentElement.classList.toggle("color-assist", preferences.colorAssist);
+  document.documentElement.classList.toggle("high-contrast", preferences.highContrast);
+  document.documentElement.classList.toggle("text-large", preferences.textSize === "large");
+  document.documentElement.classList.toggle("text-largest", preferences.textSize === "largest");
   state.sound = preferences.soundEnabled;
   els.soundButton.setAttribute("aria-pressed", String(state.sound));
   els.soundButton.setAttribute("aria-label", state.sound ? "배경음과 효과음 끄기" : "배경음과 효과음 켜기");
@@ -2227,16 +2521,28 @@ function shakePlayArea() {
 
 function openProgressionModal(modal) {
   if (state.running) return;
-  state.lastFocusedElement = document.activeElement;
-  state.returnModal = els.resultModal.classList.contains("open") ? "result-modal" : "intro-modal";
-  els.introModal.classList.remove("open");
-  els.introModal.setAttribute("aria-hidden", "true");
-  els.resultModal.classList.remove("open");
-  els.resultModal.setAttribute("aria-hidden", "true");
+  const current = managementModalElements().find((item) => item.classList.contains("open"));
+  if (!current) {
+    state.lastFocusedElement = document.activeElement;
+    state.returnModal = els.resultModal.classList.contains("open") ? "result-modal" : "intro-modal";
+    [els.introModal, els.resultModal].forEach((item) => {
+      item.classList.remove("open");
+      item.setAttribute("aria-hidden", "true");
+    });
+  } else if (current !== modal) {
+    current.classList.remove("open");
+    current.setAttribute("aria-hidden", "true");
+  }
+  els.settingsModal.classList.remove("during-shift");
   modal.classList.add("open");
+  modal.classList.add("switching-in");
   modal.setAttribute("aria-hidden", "false");
+  window.setTimeout(() => modal.classList.remove("switching-in"), 260);
+  updateManagementNavigation(modal.id);
   updateProgressionUi();
   if (modal === els.decorModal) renderDecorations();
+  if (modal === els.statsModal) renderShiftHistory();
+  if (modal === els.settingsModal) updateSettingsUi();
   focusFirstInModal(modal);
 }
 
@@ -2247,6 +2553,39 @@ function closeProgressionModal(modal) {
   target.classList.add("open");
   target.setAttribute("aria-hidden", "false");
   if (state.lastFocusedElement instanceof HTMLElement) window.setTimeout(() => state.lastFocusedElement.focus(), 80);
+}
+
+function managementModalElements() {
+  return MANAGEMENT_SCREENS.map((screen) => document.querySelector(`#${screen.id}`)).filter(Boolean);
+}
+
+function setupManagementNavigation() {
+  managementModalElements().forEach((modal) => {
+    const section = modal.querySelector(".modal");
+    const description = section.querySelector(":scope > p");
+    if (!description || section.querySelector(".management-nav")) return;
+    const nav = document.createElement("nav");
+    nav.className = "management-nav";
+    nav.setAttribute("aria-label", "관리 화면");
+    nav.innerHTML = MANAGEMENT_SCREENS.map((screen) => `<button type="button" data-management-target="${screen.id}"><span aria-hidden="true">${screen.icon}</span>${screen.label}</button>`).join("");
+    description.insertAdjacentElement("afterend", nav);
+    nav.querySelectorAll("button").forEach((button) => {
+      button.addEventListener("click", () => {
+        if (state.running) return;
+        const target = document.querySelector(`#${button.dataset.managementTarget}`);
+        if (target) openProgressionModal(target);
+      });
+    });
+  });
+}
+
+function updateManagementNavigation(activeId) {
+  document.querySelectorAll(".management-nav button").forEach((button) => {
+    const active = button.dataset.managementTarget === activeId;
+    button.classList.toggle("active", active);
+    if (active) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
+  });
 }
 
 function openUtilityModal(modal) {
@@ -2262,6 +2601,7 @@ function openUtilityModal(modal) {
     item.setAttribute("aria-hidden", "true");
   });
   modal.classList.add("open");
+  modal.classList.toggle("during-shift", state.running);
   modal.setAttribute("aria-hidden", "false");
   updateSettingsUi();
   focusFirstInModal(modal);
@@ -2270,6 +2610,7 @@ function openUtilityModal(modal) {
 function closeUtilityModal(modal) {
   modal.classList.remove("open");
   modal.setAttribute("aria-hidden", "true");
+  modal.classList.remove("during-shift");
   const target = document.querySelector(`#${state.returnModal}`) || els.introModal;
   target.classList.add("open");
   target.setAttribute("aria-hidden", "false");
@@ -2483,7 +2824,11 @@ els.toolButtons.forEach((button) => {
   button.addEventListener("click", () => selectTool(button.dataset.tool));
 });
 
-els.startButton.addEventListener("click", () => openPrepModal(false));
+els.startButton.addEventListener("click", () => {
+  if (!state.progression.tutorial.completed) startTutorial();
+  else openPrepModal(false);
+});
+els.skipOnboardingButton.addEventListener("click", () => openPrepModal(false));
 els.tutorialButton.addEventListener("click", startTutorial);
 els.helpTutorialButton.addEventListener("click", startTutorial);
 els.tutorialExitButton.addEventListener("click", exitTutorial);
@@ -2509,8 +2854,10 @@ els.resultCodexButton.addEventListener("click", () => openProgressionModal(els.c
 els.decorButton.addEventListener("click", () => openProgressionModal(els.decorModal));
 els.resultDecorButton.addEventListener("click", () => openProgressionModal(els.decorModal));
 els.settingsButton.addEventListener("click", () => openUtilityModal(els.settingsModal));
-els.introSettingsButton.addEventListener("click", () => openUtilityModal(els.settingsModal));
-els.resultSettingsButton.addEventListener("click", () => openUtilityModal(els.settingsModal));
+els.introSettingsButton.addEventListener("click", () => openProgressionModal(els.settingsModal));
+els.resultSettingsButton.addEventListener("click", () => openProgressionModal(els.settingsModal));
+els.managerButton.addEventListener("click", () => openProgressionModal(els.statsModal));
+els.resultStatsButton.addEventListener("click", () => openProgressionModal(els.statsModal));
 els.helpButton.addEventListener("click", () => openUtilityModal(els.helpModal));
 els.updatesButton.addEventListener("click", () => {
   markVersionSeen();
@@ -2520,7 +2867,11 @@ els.shopCloseButton.addEventListener("click", () => closeProgressionModal(els.sh
 els.achievementsCloseButton.addEventListener("click", () => closeProgressionModal(els.achievementsModal));
 els.codexCloseButton.addEventListener("click", () => closeProgressionModal(els.codexModal));
 els.decorCloseButton.addEventListener("click", () => closeProgressionModal(els.decorModal));
-els.settingsCloseButton.addEventListener("click", () => closeUtilityModal(els.settingsModal));
+els.statsCloseButton.addEventListener("click", () => closeProgressionModal(els.statsModal));
+els.settingsCloseButton.addEventListener("click", () => {
+  if (els.settingsModal.classList.contains("during-shift")) closeUtilityModal(els.settingsModal);
+  else closeProgressionModal(els.settingsModal);
+});
 els.helpCloseButton.addEventListener("click", () => closeUtilityModal(els.helpModal));
 els.updatesCloseButton.addEventListener("click", () => closeUtilityModal(els.updatesModal));
 els.codexTabs.forEach((tab) => {
@@ -2545,6 +2896,9 @@ els.vibrationSetting.addEventListener("change", () => updatePreference("vibratio
 els.screenShakeSetting.addEventListener("change", () => updatePreference("screenShake", els.screenShakeSetting.checked));
 els.reducedMotionSetting.addEventListener("change", () => updatePreference("reducedMotion", els.reducedMotionSetting.checked));
 els.colorAssistSetting.addEventListener("change", () => updatePreference("colorAssist", els.colorAssistSetting.checked));
+els.highContrastSetting.addEventListener("change", () => updatePreference("highContrast", els.highContrastSetting.checked));
+els.textSizeSetting.addEventListener("change", () => updatePreference("textSize", els.textSizeSetting.value));
+els.firstShiftGuideClose.addEventListener("click", dismissFirstShiftGuide);
 els.fullscreenButton.addEventListener("click", toggleFullscreen);
 els.installButtons.forEach((button) => button.addEventListener("click", installApp));
 els.resetDataButton.addEventListener("click", resetSavedData);
@@ -2589,7 +2943,17 @@ document.addEventListener("keydown", (event) => {
     else if (event.key === "Enter" && !["INPUT", "BUTTON"].includes(document.activeElement?.tagName)) { event.preventDefault(); confirmPreparedShift(); }
     return;
   }
-  const openProgressionModalElement = [els.shopModal, els.achievementsModal, els.codexModal, els.decorModal].find((modal) => modal.classList.contains("open"));
+  const tablist = document.activeElement?.closest?.(".management-nav, .codex-tabs, .decor-tabs");
+  if (tablist && ["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+    const tabs = [...tablist.querySelectorAll("button:not(:disabled)")];
+    const currentIndex = Math.max(0, tabs.indexOf(document.activeElement));
+    const targetIndex = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : event.key === "ArrowLeft" ? (currentIndex - 1 + tabs.length) % tabs.length : (currentIndex + 1) % tabs.length;
+    event.preventDefault();
+    tabs[targetIndex]?.focus();
+    tabs[targetIndex]?.click();
+    return;
+  }
+  const openProgressionModalElement = managementModalElements().find((modal) => modal.classList.contains("open") && !modal.classList.contains("during-shift"));
   if (event.key === "Escape" && openProgressionModalElement) {
     event.preventDefault();
     closeProgressionModal(openProgressionModalElement);
@@ -2598,7 +2962,8 @@ document.addEventListener("keydown", (event) => {
   const openUtilityModalElement = [els.settingsModal, els.helpModal, els.updatesModal].find((modal) => modal.classList.contains("open"));
   if (event.key === "Escape" && openUtilityModalElement) {
     event.preventDefault();
-    closeUtilityModal(openUtilityModalElement);
+    if (openUtilityModalElement === els.settingsModal && !openUtilityModalElement.classList.contains("during-shift")) closeProgressionModal(openUtilityModalElement);
+    else closeUtilityModal(openUtilityModalElement);
     return;
   }
   if ((event.key.toLowerCase() === "p" || event.key === "Escape") && state.running && !state.tutorialActive) {
@@ -2647,5 +3012,6 @@ if ("serviceWorker" in navigator) {
   });
 }
 
+setupManagementNavigation();
 resetGame();
 initializeVersionNotice();

@@ -40,6 +40,7 @@ const LAUNDRY_CONFIG = Object.freeze({
   events: Object.freeze({
     initialDelay: 5200,
     resumeDelay: 4200,
+    warningDuration: 2800,
     intervalMin: 9000,
     intervalMax: 12500,
     groupSize: 3,

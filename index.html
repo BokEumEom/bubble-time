@@ -20,6 +20,8 @@
     <script src="./script.js" defer></script>
   </head>
   <body>
+    <a class="skip-link" href="#play-area">게임 화면으로 바로가기</a>
+    <div class="sr-live" id="screen-reader-live" aria-live="assertive" aria-atomic="true"></div>
     <div class="noise" aria-hidden="true"></div>
 
     <main class="game-shell">
@@ -160,6 +162,12 @@
         <div class="event-alert" id="event-alert" role="status" aria-live="assertive" hidden>
           <span id="event-alert-icon">!</span><div><small>STORE EVENT</small><strong id="event-alert-title">매장 사건 발생</strong><p id="event-alert-copy"></p></div>
         </div>
+        <div class="event-forecast" id="event-forecast" role="status" aria-live="polite" hidden>
+          <span id="event-forecast-icon">!</span><div><small>NEXT EVENT</small><strong id="event-forecast-title">사건 예고</strong><p id="event-forecast-copy">잠시 후 사건이 발생합니다.</p></div><em><b id="event-forecast-seconds">3</b>초</em>
+        </div>
+        <div class="first-shift-guide" id="first-shift-guide" role="status" hidden>
+          <span>FIRST SHIFT</span><strong id="first-shift-guide-title">도구와 오염 표시를 연결하세요</strong><button id="first-shift-guide-close" type="button" aria-label="첫 영업 도움말 닫기">×</button>
+        </div>
 
         <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="false"></div>
         <div class="score-pop-region" id="score-pop-region" aria-hidden="true"></div>
@@ -235,6 +243,11 @@
           <span>★ 최고 완주 기록</span>
           <strong><b id="intro-best-score">0</b>점 · <em id="intro-best-rank">–</em>등급</strong>
         </div>
+        <button class="manager-card" id="manager-button" type="button">
+          <span class="manager-badge" id="manager-badge">1</span>
+          <span><small>점장 레벨 · <b id="manager-title">신입 점장</b></small><strong>Lv.<b id="manager-level">1</b> · 명성 <em id="manager-reputation">0</em></strong><i><b id="manager-xp-bar"></b></i></span>
+          <em><b id="manager-xp">0</b> / <span id="manager-next-xp">180</span> XP <i>›</i></em>
+        </button>
         <div class="daily-challenge-card" id="intro-daily-card">
           <span class="daily-icon">☀</span>
           <span><small>오늘의 도전</small><strong id="intro-daily-title">오염 12개 청소하기</strong></span>
@@ -250,6 +263,7 @@
         <button class="primary-button" id="start-button" type="button">
           <span>영업 준비하기</span><b>→</b>
         </button>
+        <button class="onboarding-skip" id="skip-onboarding-button" type="button" hidden>튜토리얼 없이 바로 영업 준비</button>
         <div class="intro-utility-actions">
           <button id="tutorial-button" type="button"><span>▶</span>실습 튜토리얼</button>
           <button id="intro-settings-button" type="button"><span>⚙</span>설정</button>
@@ -366,6 +380,29 @@
       </section>
     </div>
 
+    <div class="modal-backdrop" id="stats-modal" role="dialog" aria-modal="true" aria-labelledby="stats-title" aria-hidden="true">
+      <section class="modal progression-modal stats-card">
+        <button class="modal-close" id="stats-close-button" type="button" aria-label="영업 통계 닫기">×</button>
+        <div class="modal-kicker">MANAGER OFFICE</div>
+        <h2 id="stats-title">점장 기록실</h2>
+        <p>점장 성장과 최근 10회 영업 기록을 함께 살펴봅니다.</p>
+        <section class="manager-overview" aria-label="점장 성장 현황">
+          <span class="manager-overview-level">Lv.<b id="stats-manager-level">1</b></span>
+          <div><small id="stats-manager-title">신입 점장</small><strong>명성 <b id="stats-manager-reputation">0</b></strong><i><b id="stats-manager-xp-bar"></b></i><p><b id="stats-manager-xp">0</b> / <span id="stats-manager-next-xp">180</span> XP</p></div>
+          <em id="stats-manager-unlock">다음 해금: 아쿠아 타일</em>
+        </section>
+        <div class="history-summary">
+          <article><small>최근 완주율</small><strong id="history-success-rate">–</strong></article>
+          <article><small>평균 점수</small><strong id="history-average-score">–</strong></article>
+          <article><small>평균 환불</small><strong id="history-average-refunds">–</strong></article>
+          <article><small>최고 기록</small><strong id="history-best-score">–</strong></article>
+        </div>
+        <div class="history-chart" id="history-chart" aria-label="최근 영업 점수 그래프"></div>
+        <div class="history-list" id="history-list"></div>
+        <p class="history-insight"><span>ANALYSIS</span><strong id="history-insight">영업을 완료하면 맞춤 분석이 표시됩니다.</strong></p>
+      </section>
+    </div>
+
     <div class="tutorial-overlay" id="tutorial-overlay" hidden>
       <section class="tutorial-coach" role="dialog" aria-modal="false" aria-labelledby="tutorial-step-title">
         <div class="tutorial-progress"><span>TUTORIAL</span><i><b id="tutorial-progress-bar"></b></i><em><b id="tutorial-step-number">1</b> / 6</em></div>
@@ -387,12 +424,14 @@
           <label class="toggle-setting"><span><b>화면 흔들림</b><small>실수와 긴급 사건 강조</small></span><input id="screen-shake-setting" type="checkbox" checked /><i aria-hidden="true"></i></label>
           <label class="toggle-setting"><span><b>모션 줄이기</b><small>반복 애니메이션과 이동 효과 최소화</small></span><input id="reduced-motion-setting" type="checkbox" /><i aria-hidden="true"></i></label>
           <label class="toggle-setting"><span><b>색각 보조 표시</b><small>오염 이름과 필요한 도구를 함께 표시</small></span><input id="color-assist-setting" type="checkbox" /><i aria-hidden="true"></i></label>
+          <label class="toggle-setting"><span><b>고대비 화면</b><small>글자와 조작 대상의 경계를 더 선명하게 표시</small></span><input id="high-contrast-setting" type="checkbox" /><i aria-hidden="true"></i></label>
+          <label class="select-setting" for="text-size-setting"><span><b>글자 크기</b><small>관리 화면과 안내 문구 크기 조절</small></span><select id="text-size-setting"><option value="normal">기본</option><option value="large">크게</option><option value="largest">가장 크게</option></select></label>
         </div>
         <div class="device-actions">
           <button id="fullscreen-button" type="button"><span>⛶</span><b>전체 화면</b><small>모바일에서 더 넓게 플레이</small></button>
           <button class="install-button" id="settings-install-button" type="button" disabled><span>＋</span><b>앱 설치</b><small id="install-status">브라우저 메뉴에서도 설치 가능</small></button>
         </div>
-        <div class="save-data-row"><span><small>저장 데이터</small><strong id="save-version-label">DATA v4 · 자동 저장</strong></span><div><button id="export-data-button" type="button">내보내기</button><button id="import-data-button" type="button">가져오기</button><button class="danger" id="reset-data-button" type="button">초기화</button></div></div>
+        <div class="save-data-row"><span><small>저장 데이터</small><strong id="save-version-label">DATA v5 · 자동 저장</strong></span><div><button id="export-data-button" type="button">내보내기</button><button id="import-data-button" type="button">가져오기</button><button class="danger" id="reset-data-button" type="button">초기화</button></div></div>
         <input id="import-data-input" type="file" accept="application/json,.json" hidden />
         <p class="save-data-status" id="save-data-status" role="status" aria-live="polite">최고 기록과 진행 정보는 이 브라우저에 자동 저장됩니다.</p>
       </section>
@@ -417,14 +456,14 @@
     <div class="modal-backdrop" id="updates-modal" role="dialog" aria-modal="true" aria-labelledby="updates-title" aria-hidden="true">
       <section class="modal progression-modal updates-card">
         <button class="modal-close" id="updates-close-button" type="button" aria-label="업데이트 안내 닫기">×</button>
-        <div class="modal-kicker">VERSION <span id="app-version-label">2.3.0</span></div>
+        <div class="modal-kicker">VERSION <span id="app-version-label">2.4.0</span></div>
         <h2 id="updates-title">완성도 업데이트</h2>
         <p>2026.08 · 매장 운영 정보를 더 명확하고 편안하게 다듬었습니다.</p>
         <div class="update-list">
-          <article><span>LEARN</span><div><h3>6단계 실습 튜토리얼</h3><p>실제 매장에서 기본 오염, 고장, 정전과 세제 보충을 직접 연습합니다.</p></div></article>
-          <article><span>DECOR</span><div><h3>매장 꾸미기</h3><p>수익으로 간판·바닥·벽지·화분을 구입하고 원하는 조합으로 장착합니다.</p></div></article>
-          <article><span>VARIETY</span><div><h3>매일 달라지는 영업</h3><p>비·주말 행사·점검일, 주간 사건 규칙, 위생 검사와 희귀 평론가 손님을 추가했습니다.</p></div></article>
-          <article><span>SAVE v4</span><div><h3>진행 정보 확장</h3><p>튜토리얼 완료와 보상, 보유 장식과 장착 조합까지 안전하게 자동 저장합니다.</p></div></article>
+          <article><span>FAIR</span><div><h3>사건 사전 예고</h3><p>모든 매장 사건을 2~3초 먼저 알려 대응 계획을 세울 수 있습니다.</p></div></article>
+          <article><span>LEVEL</span><div><h3>점장 레벨과 명성</h3><p>영업 성과로 경험치와 명성을 얻고 장식과 콘텐츠를 순차 해금합니다.</p></div></article>
+          <article><span>OFFICE</span><div><h3>관리 화면과 기록실</h3><p>화면 간 바로 전환되는 관리 내비게이션과 최근 10회 영업 분석을 추가했습니다.</p></div></article>
+          <article><span>A11Y v5</span><div><h3>접근성과 온보딩</h3><p>고대비·글자 크기·키보드 탐색과 신규 점장 중심의 첫 플레이 흐름을 보강했습니다.</p></div></article>
         </div>
       </section>
     </div>
@@ -457,6 +496,7 @@
         <p id="result-message">75초 동안 가게를 멋지게 지켜냈어요.</p>
         <div class="new-record-banner" id="new-record-banner" hidden><span>★</span><strong>새로운 최고 기록!</strong></div>
         <div class="shift-earnings"><span>이번 영업 수익</span><strong>+ ◈ <b id="result-coins">0</b></strong><small>보유 <b id="result-wallet">0</b></small></div>
+        <div class="result-manager-progress"><span>점장 성장</span><strong>+<b id="result-xp">0</b> XP</strong><em id="result-reputation">명성 +0</em></div>
         <div class="achievement-unlock-banner" id="achievement-unlock-banner" hidden><span>♛</span><strong id="achievement-unlock-text">새 업적 달성!</strong></div>
         <div class="result-stats">
           <div><small>최종 점수</small><strong id="result-score">0</strong></div>
@@ -494,6 +534,7 @@
           <button id="result-codex-button" type="button">▤ 도감 보기</button>
           <button id="result-settings-button" type="button">⚙ 환경 설정</button>
           <button id="result-decor-button" type="button">✿ 매장 꾸미기</button>
+          <button id="result-stats-button" type="button">▥ 영업 통계</button>
         </div>
       </section>
     </div>
