@@ -43,14 +43,14 @@
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "버블타임 영업 준비 화면"
+      "label": "버블타임 데스크톱 홈 화면"
     },
     {
       "src": "./assets/screenshot-mobile.png",
       "sizes": "390x844",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "모바일 버블타임 시작 화면"
+      "label": "버블타임 모바일 홈 화면"
     }
   ]
 }

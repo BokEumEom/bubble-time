@@ -67,7 +67,9 @@ assert.ok(manifest.screenshots.some((item) => item.form_factor === "narrow"), "�
   .forEach((asset) => assert.match(worker, new RegExp(asset.replace(".", "\\.")), `${asset}이 오프라인 캐시에 포함되어야 합니다.`));
 
 assert.match(script, /DATA_SCHEMA_VERSION\s*=\s*7/, "저장 데이터 스키마 버전 7이 필요합니다.");
+assert.match(script, /APP_VERSION\s*=\s*"2\.7\.0"/, "화면 전환 업데이트 버전 2.7.0이 필요합니다.");
 assert.match(script, /const GAME_MODES/, "네 가지 영업 모드 정의가 필요합니다.");
+assert.match(script, /const MANAGEMENT_GROUPS/, "관리 센터 네 그룹 정의가 필요합니다.");
 assert.match(script, /saveShiftCheckpoint/, "영업 체크포인트 저장 함수가 필요합니다.");
 assert.match(script, /restoreShiftCheckpoint/, "영업 체크포인트 복구 함수가 필요합니다.");
 assert.match(script, /resultShareCanvas/, "결과 공유 카드 생성 함수가 필요합니다.");
@@ -101,6 +103,9 @@ assert.match(styles, /\.tutorial-coach/, "튜토리얼 코치 스타일이 필�
 assert.match(styles, /\.decor-preview/, "매장 꾸미기 미리 보기 스타일이 필요합니다.");
 assert.match(styles, /\.high-contrast/, "고대비 화면 스타일이 필요합니다.");
 assert.match(styles, /\.management-nav/, "관리 화면 공통 탐색 스타일이 필요합니다.");
+assert.match(styles, /\.screen-view/, "팝업이 아닌 전용 화면 스타일이 필요합니다.");
+assert.match(styles, /\.management-subnav/, "관리 그룹 내부 탐색 스타일이 필요합니다.");
+assert.match(styles, /\.management-screen\.during-shift/, "영업 중 설정만 모달로 표시해야 합니다.");
 assert.match(styles, /\.result-celebration/, "결과 축하 연출 스타일이 필요합니다.");
 assert.match(styles, /\.shift-modes/, "영업 모드 선택 스타일이 필요합니다.");
 assert.ok(fs.existsSync(path.join(root, "tests", "laundry-game-ui.cjs")), "자동 UI 회귀 검사 파일이 필요합니다.");
@@ -114,5 +119,8 @@ Object.entries({
   "assets/screenshot-wide.png": [1280, 720],
   "assets/screenshot-mobile.png": [390, 844],
 }).forEach(([asset, [width, height]]) => assert.deepEqual(pngSize(asset), { width, height }, `${asset} 크기가 manifest와 일치해야 합니다.`));
+
+assert.equal((html.match(/class=["'][^"']*modal-backdrop/g) || []).length, 3, "도움말·업데이트·일시정지만 상시 모달 구조여야 합니다.");
+assert.equal((html.match(/class=["'][^"']*screen-view/g) || []).length, 9, "홈·준비·결과와 여섯 관리 기능은 전용 화면이어야 합니다.");
 
 console.log("출시 완성도 정적 검사를 통과했습니다.");

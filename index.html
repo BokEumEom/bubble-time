@@ -235,23 +235,26 @@
       </section>
     </main>
 
-    <div class="modal-backdrop open" id="intro-modal" role="dialog" aria-modal="true" aria-labelledby="intro-title">
+    <div class="screen-view home-screen open" id="intro-modal" role="region" aria-labelledby="intro-title">
       <section class="modal intro-card">
-        <div class="modal-kicker">CHOOSE YOUR SHIFT</div>
-        <div class="intro-illustration" aria-hidden="true">
-          <div class="mini-machine"><span></span><i></i></div>
-          <div class="bubble-cluster"><i></i><i></i><i></i><i></i></div>
-          <div class="intro-worker"><span>•‿•</span></div>
+        <div class="intro-hero">
+          <div class="modal-kicker">CHOOSE YOUR SHIFT</div>
+          <div class="intro-illustration" aria-hidden="true">
+            <div class="mini-machine"><span></span><i></i></div>
+            <div class="bubble-cluster"><i></i><i></i><i></i><i></i></div>
+            <div class="intro-worker"><span>•‿•</span></div>
+          </div>
+          <h2 id="intro-title">오늘도 깨끗하게,<br /><em>버블타임!</em></h2>
+          <p>기계 속 오염을 알맞은 도구로 처리하고<br />몰려오는 손님의 환불을 막아주세요.</p>
+          <div class="intro-rules">
+            <span><b>12</b><small>관리할 기계</small></span>
+            <i></i>
+            <span><b>6</b><small>대기 한계</small></span>
+            <i></i>
+            <span><b>4</b><small>영업 모드</small></span>
+          </div>
         </div>
-        <h2 id="intro-title">오늘도 깨끗하게,<br /><em>버블타임!</em></h2>
-        <p>기계 속 오염을 알맞은 도구로 처리하고<br />몰려오는 손님의 환불을 막아주세요.</p>
-        <div class="intro-rules">
-          <span><b>12</b><small>관리할 기계</small></span>
-          <i></i>
-          <span><b>6</b><small>대기 한계</small></span>
-          <i></i>
-          <span><b>4</b><small>영업 모드</small></span>
-        </div>
+        <div class="intro-dashboard">
         <div class="best-record-line" id="intro-best-record">
           <span>★ <b id="intro-best-mode">75초 기본 영업</b> 최고 기록</span>
           <strong><b id="intro-best-score">0</b>점 · <em id="intro-best-rank">–</em>등급</strong>
@@ -287,13 +290,14 @@
           <button id="updates-button" type="button"><span>NEW</span>업데이트</button>
           <button class="install-button" id="intro-install-button" type="button" hidden><span>＋</span>앱 설치</button>
         </div>
-        <small class="keyboard-hint">도구는 숫자키 1–6으로도 선택할 수 있어요</small>
+          <small class="keyboard-hint">도구는 숫자키 1–6으로도 선택할 수 있어요</small>
+        </div>
       </section>
     </div>
 
-    <div class="modal-backdrop" id="prep-modal" role="dialog" aria-modal="true" aria-labelledby="prep-title" aria-hidden="true">
+    <div class="screen-view workflow-screen prep-screen" id="prep-modal" role="region" aria-labelledby="prep-title" aria-hidden="true">
       <section class="modal prep-card">
-        <button class="modal-close" id="prep-close-button" type="button" aria-label="영업 준비 닫기">×</button>
+        <button class="screen-back" id="prep-close-button" type="button" aria-label="홈으로 돌아가기"><span aria-hidden="true">←</span><b>홈</b></button>
         <div class="modal-kicker">SHIFT BRIEFING</div>
         <h2 id="prep-title" tabindex="-1">오늘 영업을 준비하세요</h2>
         <p>운영 계획과 업그레이드, 이번 주 목표를 확인한 뒤 시작합니다.</p>
@@ -333,9 +337,9 @@
       </section>
     </div>
 
-    <div class="modal-backdrop" id="shop-modal" role="dialog" aria-modal="true" aria-labelledby="shop-title" aria-hidden="true">
+    <div class="screen-view management-screen" id="shop-modal" role="region" aria-labelledby="shop-title" aria-hidden="true">
       <section class="modal progression-modal shop-card">
-        <button class="modal-close" id="shop-close-button" type="button" aria-label="업그레이드 상점 닫기">×</button>
+        <button class="screen-back" id="shop-close-button" type="button" aria-label="관리 센터에서 홈으로 돌아가기"><span aria-hidden="true">←</span><b>홈</b></button>
         <div class="modal-kicker">LAUNDRY LAB</div>
         <h2 id="shop-title">가게 업그레이드</h2>
         <p>영업 수익으로 다음 영업부터 적용되는 설비를 강화하세요.</p>
@@ -358,9 +362,9 @@
       </section>
     </div>
 
-    <div class="modal-backdrop" id="achievements-modal" role="dialog" aria-modal="true" aria-labelledby="achievements-title" aria-hidden="true">
+    <div class="screen-view management-screen" id="achievements-modal" role="region" aria-labelledby="achievements-title" aria-hidden="true">
       <section class="modal progression-modal achievements-card">
-        <button class="modal-close" id="achievements-close-button" type="button" aria-label="업적 목록 닫기">×</button>
+        <button class="screen-back" id="achievements-close-button" type="button" aria-label="관리 센터에서 홈으로 돌아가기"><span aria-hidden="true">←</span><b>홈</b></button>
         <div class="modal-kicker">COLLECTION</div>
         <h2 id="achievements-title">업적과 오늘의 도전</h2>
         <p>새 업적을 달성하면 가게 업그레이드에 쓸 수익을 받습니다.</p>
@@ -371,9 +375,9 @@
       </section>
     </div>
 
-    <div class="modal-backdrop" id="codex-modal" role="dialog" aria-modal="true" aria-labelledby="codex-title" aria-hidden="true">
+    <div class="screen-view management-screen" id="codex-modal" role="region" aria-labelledby="codex-title" aria-hidden="true">
       <section class="modal progression-modal codex-card">
-        <button class="modal-close" id="codex-close-button" type="button" aria-label="도감 닫기">×</button>
+        <button class="screen-back" id="codex-close-button" type="button" aria-label="관리 센터에서 홈으로 돌아가기"><span aria-hidden="true">←</span><b>홈</b></button>
         <div class="modal-kicker">LAUNDRY INDEX</div>
         <h2 id="codex-title">버블타임 도감</h2>
         <p>영업 중 직접 만난 손님과 사건은 자세한 정보가 해금됩니다.</p>
@@ -389,9 +393,9 @@
       </section>
     </div>
 
-    <div class="modal-backdrop" id="decor-modal" role="dialog" aria-modal="true" aria-labelledby="decor-title" aria-hidden="true">
+    <div class="screen-view management-screen" id="decor-modal" role="region" aria-labelledby="decor-title" aria-hidden="true">
       <section class="modal progression-modal decor-card">
-        <button class="modal-close" id="decor-close-button" type="button" aria-label="매장 꾸미기 닫기">×</button>
+        <button class="screen-back" id="decor-close-button" type="button" aria-label="관리 센터에서 홈으로 돌아가기"><span aria-hidden="true">←</span><b>홈</b></button>
         <div class="modal-kicker">STORE ATELIER</div>
         <h2 id="decor-title">매장 꾸미기</h2>
         <p>수익으로 장식을 모으고 원하는 분위기로 매장을 바꿔보세요. 성능에는 영향을 주지 않습니다.</p>
@@ -407,9 +411,9 @@
       </section>
     </div>
 
-    <div class="modal-backdrop" id="stats-modal" role="dialog" aria-modal="true" aria-labelledby="stats-title" aria-hidden="true">
+    <div class="screen-view management-screen" id="stats-modal" role="region" aria-labelledby="stats-title" aria-hidden="true">
       <section class="modal progression-modal stats-card">
-        <button class="modal-close" id="stats-close-button" type="button" aria-label="영업 통계 닫기">×</button>
+        <button class="screen-back" id="stats-close-button" type="button" aria-label="관리 센터에서 홈으로 돌아가기"><span aria-hidden="true">←</span><b>홈</b></button>
         <div class="modal-kicker">MANAGER OFFICE</div>
         <h2 id="stats-title">점장 기록실</h2>
         <p>점장 성장과 최근 10회 영업 기록을 함께 살펴봅니다.</p>
@@ -438,9 +442,9 @@
       </section>
     </div>
 
-    <div class="modal-backdrop" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title" aria-hidden="true">
+    <div class="screen-view management-screen" id="settings-modal" role="region" aria-labelledby="settings-title" aria-hidden="true">
       <section class="modal progression-modal settings-card">
-        <button class="modal-close" id="settings-close-button" type="button" aria-label="설정 닫기">×</button>
+        <button class="screen-back" id="settings-close-button" type="button" aria-label="관리 센터에서 홈으로 돌아가기"><span aria-hidden="true">←</span><b>홈</b></button>
         <div class="modal-kicker">GAME SETTINGS</div>
         <h2 id="settings-title">게임 설정</h2>
         <p>소리와 화면 효과를 내 환경에 맞게 조정할 수 있습니다.</p>
@@ -483,14 +487,14 @@
     <div class="modal-backdrop" id="updates-modal" role="dialog" aria-modal="true" aria-labelledby="updates-title" aria-hidden="true">
       <section class="modal progression-modal updates-card">
         <button class="modal-close" id="updates-close-button" type="button" aria-label="업데이트 안내 닫기">×</button>
-        <div class="modal-kicker">VERSION <span id="app-version-label">2.6.0</span></div>
-        <h2 id="updates-title">완성도 업데이트</h2>
-        <p>2026.08 · 매장 운영 정보를 더 명확하고 편안하게 다듬었습니다.</p>
+        <div class="modal-kicker">VERSION <span id="app-version-label">2.7.0</span></div>
+        <h2 id="updates-title">편안한 화면 전환 업데이트</h2>
+        <p>2026.08 · 자주 오가는 기능을 팝업 대신 전용 화면으로 정리했습니다.</p>
         <div class="update-list">
-          <article><span>MODES</span><div><h3>네 가지 영업 모드</h3><p>45초·75초·120초와 직접 정산하는 무한 영업을 선택할 수 있습니다.</p></div></article>
-          <article><span>RECOVERY</span><div><h3>영업 자동 복구</h3><p>앱이 닫혀도 대기 손님, 기계 오염과 남은 시간을 이어서 복구합니다.</p></div></article>
-          <article><span>SHARE</span><div><h3>결과 카드 공유</h3><p>영업 점수와 등급을 담은 결과 카드를 이미지 또는 공유 문구로 전할 수 있습니다.</p></div></article>
-          <article><span>PWA · QA</span><div><h3>설치·공유·실전 검사</h3><p>앱 아이콘과 설치 화면, 결과 공유 카드와 실제 조작 자동 검사를 보강했습니다.</p></div></article>
+          <article><span>HOME</span><div><h3>팝업 없는 홈 화면</h3><p>영업 전 메인 화면을 독립된 홈으로 바꿔 시작부터 편안하게 둘러볼 수 있습니다.</p></div></article>
+          <article><span>MANAGER</span><div><h3>통합 관리 센터</h3><p>강화·업적·도감·꾸미기·기록·설정을 성장, 컬렉션, 기록, 설정 네 그룹으로 정리했습니다.</p></div></article>
+          <article><span>FLOW</span><div><h3>준비와 결과 전용 화면</h3><p>영업 준비와 결과도 배경 위 팝업 대신 자연스럽게 이어지는 전용 화면으로 표시합니다.</p></div></article>
+          <article><span>MOBILE</span><div><h3>고정 모바일 탐색</h3><p>모바일 관리 메뉴를 화면 아래 네 칸으로 고정해 긴 설정 화면에서도 바로 이동할 수 있습니다.</p></div></article>
         </div>
       </section>
     </div>
@@ -516,7 +520,7 @@
       </section>
     </div>
 
-    <div class="modal-backdrop" id="result-modal" role="dialog" aria-modal="true" aria-labelledby="result-title" aria-hidden="true">
+    <div class="screen-view workflow-screen result-screen" id="result-modal" role="region" aria-labelledby="result-title" aria-hidden="true">
       <div class="result-celebration" id="result-celebration" aria-hidden="true"></div>
       <section class="modal result-card">
         <div class="result-badge" id="result-badge">영업 완료</div>

@@ -130,10 +130,16 @@ async function run() {
 
   const firstScreen = await evaluate(`({
     intro: document.querySelector('#intro-modal').classList.contains('open'),
+    role: document.querySelector('#intro-modal').getAttribute('role'),
+    modalBackdrops: document.querySelectorAll('.modal-backdrop').length,
+    screenViews: document.querySelectorAll('.screen-view').length,
     start: document.querySelector('#start-button').innerText,
     skipVisible: !document.querySelector('#skip-onboarding-button').hidden
   })`);
   assert.equal(firstScreen.intro, true, "첫 화면이 열려야 합니다.");
+  assert.equal(firstScreen.role, "region", "홈은 팝업 대화상자가 아닌 전용 화면이어야 합니다.");
+  assert.equal(firstScreen.modalBackdrops, 3, "실제 모달은 도움말·업데이트·일시정지 세 개만 유지해야 합니다.");
+  assert.equal(firstScreen.screenViews, 9, "홈·준비·결과와 관리 기능은 전용 화면이어야 합니다.");
   assert.match(firstScreen.start, /실습부터 시작하기/, "첫 이용자는 실습으로 안내해야 합니다.");
   assert.equal(firstScreen.skipVisible, true, "튜토리얼 건너뛰기 선택지가 필요합니다.");
 
@@ -165,12 +171,15 @@ async function run() {
     document.querySelector('#manager-button').click();
   `);
   await waitFor("document.querySelector('#stats-modal').classList.contains('open')");
-  assert.equal(await evaluate("document.querySelectorAll('#stats-modal .management-nav button').length"), 6, "관리 화면 여섯 개가 연결되어야 합니다.");
-  await evaluate("document.querySelector('#stats-modal [data-management-target=\"codex-modal\"]').click()");
+  assert.equal(await evaluate("document.querySelectorAll('#stats-modal .management-nav button').length"), 4, "관리 센터는 네 그룹으로 정리되어야 합니다.");
+  assert.equal(await evaluate("document.querySelector('#stats-modal').getAttribute('role')"), "region", "관리 센터는 팝업이 아닌 전용 화면이어야 합니다.");
+  await evaluate("document.querySelector('#stats-modal [data-management-group=\"collection\"]').click()");
   await waitFor("document.querySelector('#codex-modal').classList.contains('open')");
+  assert.equal(await evaluate("document.querySelectorAll('#codex-modal .management-subnav button').length"), 2, "컬렉션 그룹에서 도감과 꾸미기를 바로 전환할 수 있어야 합니다.");
   await wait(350);
-  await evaluate("document.querySelector('#codex-modal [data-management-target=\"settings-modal\"]').click()");
+  await evaluate("document.querySelector('#codex-modal [data-management-group=\"settings\"]').click()");
   await waitFor("document.querySelector('#settings-modal').classList.contains('open')");
+  assert.equal(await evaluate("document.querySelector('#settings-modal').getAttribute('role')"), "region", "영업 전 설정은 관리 센터 화면이어야 합니다.");
 
   await evaluate(`
     closeProgressionModal(els.settingsModal);
@@ -180,6 +189,7 @@ async function run() {
   `);
   await waitFor("document.querySelector('#settings-modal').classList.contains('during-shift')");
   assert.equal(await evaluate("getComputedStyle(document.querySelector('#settings-modal .management-nav')).display"), "none", "영업 중 설정에서는 관리 탭을 숨겨야 합니다.");
+  assert.equal(await evaluate("document.querySelector('#settings-modal').getAttribute('role')"), "dialog", "영업 중 빠른 설정만 실제 모달이어야 합니다.");
   await evaluate("document.querySelector('#settings-close-button').click()");
   await waitFor("document.querySelector('#pause-modal').classList.contains('open')");
 
@@ -270,10 +280,12 @@ async function run() {
   await cdp("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
   const mobileNavigation = await evaluate(`({
     columns: getComputedStyle(document.querySelector('#stats-modal .management-nav')).gridTemplateColumns.split(' ').length,
-    buttons: [...document.querySelectorAll('#stats-modal .management-nav button')].filter((button) => button.offsetWidth > 0).length
+    buttons: [...document.querySelectorAll('#stats-modal .management-nav button')].filter((button) => button.offsetWidth > 0).length,
+    position: getComputedStyle(document.querySelector('#stats-modal .management-nav')).position
   })`);
-  assert.equal(mobileNavigation.columns, 3, "모바일 관리 메뉴는 세 열이어야 합니다.");
-  assert.equal(mobileNavigation.buttons, 6, "모바일에서도 관리 메뉴 여섯 개가 보여야 합니다.");
+  assert.equal(mobileNavigation.columns, 4, "모바일 관리 메뉴는 네 그룹 한 줄이어야 합니다.");
+  assert.equal(mobileNavigation.buttons, 4, "모바일 관리 센터 그룹 네 개가 보여야 합니다.");
+  assert.equal(mobileNavigation.position, "fixed", "모바일 관리 메뉴는 긴 화면에서도 아래에 고정되어야 합니다.");
 
   await evaluate(`
     localStorage.setItem('bubbleTime75.progression.v1', JSON.stringify({ schemaVersion: 5, stats: { shifts: 1 }, preferences: {}, tutorial: { completed: true } }));
@@ -288,10 +300,14 @@ async function run() {
 
   if (process.env.CAPTURE_PWA_ASSETS === "1") {
     await evaluate("clearShiftCheckpoint(); updateCheckpointUi()");
+    await cdp("Emulation.setDeviceMetricsOverride", { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false });
+    await wait(250);
+    const wideScreenshot = await cdp("Page.captureScreenshot", { format: "png", fromSurface: true, captureBeyondViewport: false });
+    fs.writeFileSync(path.join(root, "assets", "screenshot-wide.png"), Buffer.from(wideScreenshot.data, "base64"));
     await cdp("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
     await wait(250);
-    const screenshot = await cdp("Page.captureScreenshot", { format: "png", fromSurface: true, captureBeyondViewport: false });
-    fs.writeFileSync(path.join(root, "assets", "screenshot-mobile.png"), Buffer.from(screenshot.data, "base64"));
+    const mobileScreenshot = await cdp("Page.captureScreenshot", { format: "png", fromSurface: true, captureBeyondViewport: false });
+    fs.writeFileSync(path.join(root, "assets", "screenshot-mobile.png"), Buffer.from(mobileScreenshot.data, "base64"));
   }
 
   console.log("자동 UI 회귀 검사를 통과했습니다.");

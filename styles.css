@@ -3540,3 +3540,384 @@ button:focus-visible {
   .resume-shift-card > span { width: 36px; height: 36px; }
   .resume-shift-card button:last-child { position: absolute; right: 4px; top: -34px; background: var(--deep); color: white; }
 }
+
+/* v2.7 page-based navigation */
+.screen-view {
+  position: fixed;
+  inset: 0;
+  z-index: 190;
+  display: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  background:
+    radial-gradient(circle at 12% 16%, rgba(87, 211, 189, .14) 0 70px, transparent 72px),
+    radial-gradient(circle at 88% 82%, rgba(255, 214, 90, .13) 0 95px, transparent 97px),
+    #f2f7f4;
+}
+
+html:has(.screen-view.open),
+body:has(.screen-view.open) {
+  overflow: hidden;
+}
+
+.screen-view.open {
+  display: block;
+  animation: screen-view-in .18s ease both;
+}
+
+.screen-view .modal {
+  max-height: none;
+  overflow: visible;
+  animation: none;
+}
+
+.home-screen {
+  padding: clamp(18px, 4vw, 46px);
+  background:
+    linear-gradient(135deg, rgba(18, 60, 67, .97), rgba(25, 112, 102, .94)),
+    #123c43;
+}
+
+.home-screen::before,
+.home-screen::after {
+  content: "";
+  position: fixed;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.home-screen::before { width: 280px; height: 280px; left: -85px; top: -100px; }
+.home-screen::after { width: 420px; height: 420px; right: -170px; bottom: -190px; }
+
+.home-screen .intro-card {
+  width: min(1040px, 100%);
+  display: grid;
+  grid-template-columns: minmax(300px, .9fr) minmax(390px, 1.1fr);
+  align-items: center;
+  gap: clamp(28px, 5vw, 70px);
+  margin: 0 auto;
+  padding: clamp(28px, 4vw, 46px) clamp(24px, 6vw, 64px);
+  border: 0;
+  border-radius: 30px;
+  background: rgba(255, 253, 247, .98);
+  box-shadow: none;
+}
+
+.intro-hero { min-width: 0; text-align: center; }
+.intro-hero > p {
+  margin: 8px 0 0;
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.65;
+}
+.intro-dashboard { min-width: 0; text-align: left; }
+.intro-dashboard .best-record-line { margin-top: 0; }
+.intro-dashboard .keyboard-hint { text-align: center; }
+
+.workflow-screen {
+  padding: clamp(16px, 4vw, 42px);
+}
+
+.workflow-screen .modal {
+  margin: 0 auto;
+  border: 0;
+  border-radius: 24px;
+  box-shadow: none;
+}
+
+.workflow-screen .prep-card { width: min(820px, 100%); }
+.workflow-screen .result-card { width: min(720px, 100%); }
+
+.result-screen {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 214, 90, .2), transparent 24%),
+    linear-gradient(145deg, #123c43, #1b6f68);
+}
+
+.screen-back {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin: 0 0 20px;
+  padding: 8px 13px;
+  border: 1px solid #c9dcd6;
+  border-radius: 999px;
+  background: #edf5f2;
+  color: #315e57;
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.screen-back span { font-size: 15px; line-height: 1; }
+.screen-back:hover { border-color: var(--mint-dark); background: #def4ed; color: #176f65; }
+
+.management-screen {
+  padding: clamp(18px, 3vw, 34px);
+}
+
+.management-screen .progression-modal {
+  width: min(1120px, 100%);
+  min-height: calc(100dvh - clamp(36px, 6vw, 68px));
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  grid-auto-flow: row;
+  align-content: start;
+  column-gap: clamp(24px, 4vw, 54px);
+  margin: 0 auto;
+  padding: clamp(28px, 4vw, 48px);
+  border: 1px solid #d7e4df;
+  border-radius: 26px;
+  background: rgba(255, 253, 247, .98);
+  box-shadow: none;
+}
+
+.management-screen .progression-modal > *:not(.screen-back):not(.management-nav) {
+  grid-column: 2;
+}
+
+.management-screen .modal-kicker { justify-self: start; }
+
+.management-screen .screen-back {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: start;
+  justify-self: start;
+}
+
+.management-screen .management-nav {
+  position: sticky;
+  top: 26px;
+  grid-column: 1;
+  grid-row: 2 / span 30;
+  align-self: start;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 7px;
+  margin: 0;
+  padding: 7px;
+  overflow: visible;
+  border-radius: 16px;
+}
+
+.management-screen .management-nav::before {
+  content: "관리 센터";
+  padding: 8px 9px 5px;
+  color: #789087;
+  font-size: 7px;
+  font-weight: 950;
+  letter-spacing: .12em;
+}
+
+.management-screen .management-nav button {
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  place-content: initial;
+  align-items: center;
+  justify-items: start;
+  gap: 8px;
+  padding: 9px 11px;
+  font-size: 10px;
+  text-align: left;
+}
+
+.management-screen .management-nav button span {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: rgba(128, 164, 155, .12);
+}
+
+.management-subnav {
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(105px, 1fr);
+  justify-self: start;
+  gap: 5px;
+  margin: 14px 0 4px;
+  padding: 4px;
+  border: 1px solid #d6e5df;
+  border-radius: 11px;
+  background: #edf4f1;
+}
+
+.management-subnav button {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #6f847d;
+  cursor: pointer;
+  font-size: 8px;
+  font-weight: 900;
+}
+
+.management-subnav button span { color: #80a49b; font-size: 11px; }
+.management-subnav button.active { border-color: #99ccbf; background: white; color: #176f65; }
+.management-subnav button.active span { color: var(--mint-dark); }
+
+.management-screen .achievement-list,
+.management-screen .codex-grid,
+.management-screen .decor-grid,
+.management-screen .history-list {
+  max-height: none;
+  overflow: visible;
+}
+
+.management-screen.switching-in .progression-modal > *:not(.screen-back):not(.management-nav) {
+  animation: management-content-in .16s ease both;
+}
+
+.management-screen.during-shift {
+  z-index: 200;
+  place-items: center;
+  padding: 20px;
+  background: rgba(7, 38, 43, .72);
+  backdrop-filter: blur(12px);
+}
+
+.management-screen.during-shift.open { display: grid; }
+
+.management-screen.during-shift .settings-card {
+  position: relative;
+  width: min(620px, 100%);
+  min-height: 0;
+  max-height: calc(100dvh - 32px);
+  display: block;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 26px 34px 28px;
+  border: 5px solid var(--deep);
+  border-radius: 27px;
+  background: var(--paper);
+  box-shadow: 0 12px 0 #082c32, 0 32px 75px rgba(0, 0, 0, .33);
+  animation: modal-up .24s ease both;
+}
+
+.management-screen.during-shift .screen-back {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  width: 34px;
+  min-height: 34px;
+  margin: 0;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.management-screen.during-shift .screen-back b {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.management-screen.during-shift .management-nav,
+.management-screen.during-shift .management-subnav {
+  display: none;
+}
+
+@keyframes screen-view-in {
+  from { opacity: 0; }
+}
+
+@keyframes management-content-in {
+  from { opacity: 0; transform: translateY(5px); }
+}
+
+@media (max-width: 720px) {
+  .screen-view { background: #f6f8f5; }
+  .home-screen { padding: 14px; background: linear-gradient(150deg, #123c43, #1a746b); }
+  .home-screen .intro-card { display: block; padding: 26px 20px 30px; border-radius: 22px; }
+  .intro-dashboard { margin-top: 14px; }
+
+  .workflow-screen { padding: 0; }
+  .workflow-screen .modal {
+    min-height: 100dvh;
+    padding: 24px 18px 38px;
+    border-radius: 0;
+  }
+
+  .result-screen .result-card { min-height: 100dvh; }
+
+  .management-screen { padding: 0; }
+  .management-screen .progression-modal {
+    width: 100%;
+    min-height: 100dvh;
+    display: block;
+    padding: 22px 16px calc(108px + env(safe-area-inset-bottom));
+    border: 0;
+    border-radius: 0;
+  }
+
+  .management-screen .screen-back { margin-bottom: 18px; }
+
+  .management-screen .management-nav {
+    position: fixed;
+    inset: auto 10px max(10px, env(safe-area-inset-bottom)) 10px;
+    z-index: 5;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 3px;
+    margin: 0;
+    padding: 6px;
+    border: 1px solid #c9ddd6;
+    border-radius: 16px;
+    background: rgba(245, 250, 247, .97);
+    box-shadow: 0 8px 24px rgba(18, 60, 67, .18);
+    backdrop-filter: blur(10px);
+  }
+
+  .management-screen .management-nav::before { display: none; }
+
+  .management-screen .management-nav button {
+    min-width: 0;
+    min-height: 55px;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 2px;
+    padding: 5px 3px;
+    font-size: 8px;
+    text-align: center;
+  }
+
+  .management-screen .management-nav button span {
+    width: 25px;
+    height: 25px;
+  }
+
+  .management-subnav {
+    position: sticky;
+    top: 8px;
+    z-index: 3;
+    width: 100%;
+    grid-auto-columns: 1fr;
+    margin: 12px 0 6px;
+    background: rgba(237, 244, 241, .96);
+    backdrop-filter: blur(8px);
+  }
+
+  .management-screen.during-shift { padding: 10px; background: rgba(7, 38, 43, .72); }
+  .management-screen.during-shift .settings-card {
+    min-height: 0;
+    max-height: calc(100dvh - 20px);
+    padding: 23px 20px 25px;
+    border: 4px solid var(--deep);
+    border-radius: 21px;
+  }
+}

@@ -7,7 +7,7 @@ const STORAGE_KEY = "bubbleTime75.bestRecord.v1";
 const PROGRESSION_KEY = "bubbleTime75.progression.v1";
 const CHECKPOINT_KEY = "bubbleTime.shiftCheckpoint.v1";
 const SEEN_VERSION_KEY = "bubbleTime75.seenVersion";
-const APP_VERSION = "2.6.0";
+const APP_VERSION = "2.7.0";
 const DATA_SCHEMA_VERSION = 7;
 
 const GAME_MODES = {
@@ -48,12 +48,19 @@ const MANAGER_LEVELS = [
 ];
 
 const MANAGEMENT_SCREENS = [
-  { id: "shop-modal", icon: "⚙", label: "강화" },
-  { id: "achievements-modal", icon: "♛", label: "업적" },
-  { id: "codex-modal", icon: "▤", label: "도감" },
-  { id: "decor-modal", icon: "✿", label: "꾸미기" },
-  { id: "stats-modal", icon: "▥", label: "기록" },
-  { id: "settings-modal", icon: "☼", label: "설정" },
+  { id: "shop-modal", group: "growth", icon: "⚙", label: "강화" },
+  { id: "achievements-modal", group: "growth", icon: "♛", label: "업적" },
+  { id: "codex-modal", group: "collection", icon: "▤", label: "도감" },
+  { id: "decor-modal", group: "collection", icon: "✿", label: "꾸미기" },
+  { id: "stats-modal", group: "records", icon: "▥", label: "기록" },
+  { id: "settings-modal", group: "settings", icon: "☼", label: "설정" },
+];
+
+const MANAGEMENT_GROUPS = [
+  { id: "growth", icon: "↗", label: "성장", screens: ["shop-modal", "achievements-modal"] },
+  { id: "collection", icon: "◇", label: "컬렉션", screens: ["codex-modal", "decor-modal"] },
+  { id: "records", icon: "▥", label: "기록", screens: ["stats-modal"] },
+  { id: "settings", icon: "☼", label: "설정", screens: ["settings-modal"] },
 ];
 
 const STORE_CONDITIONS = {
@@ -3048,16 +3055,24 @@ function openProgressionModal(modal) {
     current.setAttribute("aria-hidden", "true");
   }
   els.settingsModal.classList.remove("during-shift");
+  updateSettingsBackButton(false);
+  modal.setAttribute("role", "region");
+  modal.removeAttribute("aria-modal");
   modal.classList.add("open");
-  modal.classList.add("switching-in");
+  if (current && current !== modal) modal.classList.add("switching-in");
   modal.setAttribute("aria-hidden", "false");
-  window.setTimeout(() => modal.classList.remove("switching-in"), 260);
+  window.setTimeout(() => modal.classList.remove("switching-in"), 160);
   updateManagementNavigation(modal.id);
   updateProgressionUi();
   if (modal === els.decorModal) renderDecorations();
   if (modal === els.statsModal) renderShiftHistory();
   if (modal === els.settingsModal) updateSettingsUi();
-  focusFirstInModal(modal);
+  modal.scrollTop = 0;
+  if (current && current !== modal) {
+    window.setTimeout(() => modal.querySelector(".management-subnav button.active, .management-nav button.active")?.focus(), 40);
+  } else {
+    focusFirstInModal(modal);
+  }
 }
 
 function closeProgressionModal(modal) {
@@ -3073,33 +3088,70 @@ function managementModalElements() {
   return MANAGEMENT_SCREENS.map((screen) => document.querySelector(`#${screen.id}`)).filter(Boolean);
 }
 
+function managementScreenDefinition(screenId) {
+  return MANAGEMENT_SCREENS.find((screen) => screen.id === screenId);
+}
+
+function managementGroupForScreen(screenId) {
+  const screen = managementScreenDefinition(screenId);
+  return MANAGEMENT_GROUPS.find((group) => group.id === screen?.group);
+}
+
 function setupManagementNavigation() {
   managementModalElements().forEach((modal) => {
     const section = modal.querySelector(".modal");
     const description = section.querySelector(":scope > p");
     if (!description || section.querySelector(".management-nav")) return;
+    const activeGroup = managementGroupForScreen(modal.id);
     const nav = document.createElement("nav");
     nav.className = "management-nav";
-    nav.setAttribute("aria-label", "관리 화면");
-    nav.innerHTML = MANAGEMENT_SCREENS.map((screen) => `<button type="button" data-management-target="${screen.id}"><span aria-hidden="true">${screen.icon}</span>${screen.label}</button>`).join("");
+    nav.setAttribute("aria-label", "관리 센터");
+    nav.innerHTML = MANAGEMENT_GROUPS.map((group) => {
+      const targetId = group.id === activeGroup?.id ? modal.id : group.screens[0];
+      return `<button type="button" data-management-group="${group.id}" data-management-target="${targetId}"><span aria-hidden="true">${group.icon}</span>${group.label}</button>`;
+    }).join("");
     description.insertAdjacentElement("afterend", nav);
-    nav.querySelectorAll("button").forEach((button) => {
+    if (activeGroup?.screens.length > 1) {
+      const subnav = document.createElement("nav");
+      subnav.className = "management-subnav";
+      subnav.setAttribute("aria-label", `${activeGroup.label} 상세 메뉴`);
+      subnav.innerHTML = activeGroup.screens.map((screenId) => {
+        const screen = managementScreenDefinition(screenId);
+        return `<button type="button" data-management-target="${screen.id}"><span aria-hidden="true">${screen.icon}</span>${screen.label}</button>`;
+      }).join("");
+      nav.insertAdjacentElement("afterend", subnav);
+    }
+    section.querySelectorAll(".management-nav button, .management-subnav button").forEach((button) => {
       button.addEventListener("click", () => {
         if (state.running) return;
         const target = document.querySelector(`#${button.dataset.managementTarget}`);
-        if (target) openProgressionModal(target);
+        if (target && target !== modal) openProgressionModal(target);
       });
     });
   });
 }
 
 function updateManagementNavigation(activeId) {
+  const activeGroup = managementGroupForScreen(activeId);
   document.querySelectorAll(".management-nav button").forEach((button) => {
+    const active = button.dataset.managementGroup === activeGroup?.id;
+    button.classList.toggle("active", active);
+    if (active) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
+  });
+  document.querySelectorAll(".management-subnav button").forEach((button) => {
     const active = button.dataset.managementTarget === activeId;
     button.classList.toggle("active", active);
     if (active) button.setAttribute("aria-current", "page");
     else button.removeAttribute("aria-current");
   });
+}
+
+function updateSettingsBackButton(duringShift) {
+  els.settingsCloseButton.innerHTML = duringShift
+    ? '<span aria-hidden="true">×</span><b>닫기</b>'
+    : '<span aria-hidden="true">←</span><b>홈</b>';
+  els.settingsCloseButton.setAttribute("aria-label", duringShift ? "빠른 설정 닫기" : "관리 센터에서 홈으로 돌아가기");
 }
 
 function openUtilityModal(modal) {
@@ -3116,6 +3168,11 @@ function openUtilityModal(modal) {
   });
   modal.classList.add("open");
   modal.classList.toggle("during-shift", state.running);
+  if (modal === els.settingsModal && state.running) {
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    updateSettingsBackButton(true);
+  }
   modal.setAttribute("aria-hidden", "false");
   updateSettingsUi();
   focusFirstInModal(modal);
@@ -3125,6 +3182,11 @@ function closeUtilityModal(modal) {
   modal.classList.remove("open");
   modal.setAttribute("aria-hidden", "true");
   modal.classList.remove("during-shift");
+  if (modal === els.settingsModal) {
+    modal.setAttribute("role", "region");
+    modal.removeAttribute("aria-modal");
+    updateSettingsBackButton(false);
+  }
   const target = document.querySelector(`#${state.returnModal}`) || els.introModal;
   target.classList.add("open");
   target.setAttribute("aria-hidden", "false");
@@ -3474,7 +3536,10 @@ els.codexButton.addEventListener("click", () => openProgressionModal(els.codexMo
 els.resultCodexButton.addEventListener("click", () => openProgressionModal(els.codexModal));
 els.decorButton.addEventListener("click", () => openProgressionModal(els.decorModal));
 els.resultDecorButton.addEventListener("click", () => openProgressionModal(els.decorModal));
-els.settingsButton.addEventListener("click", () => openUtilityModal(els.settingsModal));
+els.settingsButton.addEventListener("click", () => {
+  if (state.running) openUtilityModal(els.settingsModal);
+  else openProgressionModal(els.settingsModal);
+});
 els.introSettingsButton.addEventListener("click", () => openProgressionModal(els.settingsModal));
 els.resultSettingsButton.addEventListener("click", () => openProgressionModal(els.settingsModal));
 els.managerButton.addEventListener("click", () => openProgressionModal(els.statsModal));
@@ -3549,7 +3614,7 @@ document.addEventListener("keydown", (event) => {
     exitTutorial();
     return;
   }
-  const openModal = document.querySelector(".modal-backdrop.open");
+  const openModal = document.querySelector(".modal-backdrop.open, .management-screen.during-shift.open");
   if (event.key === "Tab" && openModal) {
     const focusable = [...openModal.querySelectorAll("button:not(:disabled), input:not(:disabled), [tabindex='0']")].filter((element) => element.offsetParent !== null);
     if (focusable.length) {
@@ -3564,7 +3629,7 @@ document.addEventListener("keydown", (event) => {
     else if (event.key === "Enter" && !["INPUT", "BUTTON"].includes(document.activeElement?.tagName)) { event.preventDefault(); confirmPreparedShift(); }
     return;
   }
-  const tablist = document.activeElement?.closest?.(".management-nav, .codex-tabs, .decor-tabs");
+  const tablist = document.activeElement?.closest?.(".management-nav, .management-subnav, .codex-tabs, .decor-tabs");
   if (tablist && ["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
     const tabs = [...tablist.querySelectorAll("button:not(:disabled)")];
     const currentIndex = Math.max(0, tabs.indexOf(document.activeElement));
