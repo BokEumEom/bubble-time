@@ -32,6 +32,7 @@ const LAUNDRY_CONFIG = Object.freeze({
     master: Object.freeze({
       maxLevel: 3,
       costs: Object.freeze([2200, 3200, 4400]),
+      firstPurchaseDiscount: 0.5,
       resetCost: 800,
       machineTurbo: Object.freeze([0, 0.03, 0.06, 0.09]),
       machineService: Object.freeze([0, 0.05, 0.1, 0.15]),
@@ -40,10 +41,13 @@ const LAUNDRY_CONFIG = Object.freeze({
     }),
   }),
   economy: Object.freeze({
-    servedCoins: 10,
-    happyCoins: 4,
-    successBonus: 35,
-    refundPenalty: 6,
+    servedCoins: 12,
+    happyCoins: 5,
+    successBonus: 50,
+    refundPenalty: 8,
+    rankBonuses: Object.freeze({ S: 90, A: 60, B: 35, C: 15, F: 0 }),
+    refundlessBonus: 40,
+    allObjectivesBonus: 30,
     dailyReward: 100,
   }),
   events: Object.freeze({

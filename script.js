@@ -7,7 +7,7 @@ const STORAGE_KEY = "bubbleTime75.bestRecord.v1";
 const PROGRESSION_KEY = "bubbleTime75.progression.v1";
 const CHECKPOINT_KEY = "bubbleTime.shiftCheckpoint.v1";
 const SEEN_VERSION_KEY = "bubbleTime75.seenVersion";
-const APP_VERSION = "2.15.0";
+const APP_VERSION = "2.16.0";
 const DATA_SCHEMA_VERSION = 8;
 const MOBILE_PAGE_MEDIA = "(max-width: 520px)";
 const MOBILE_SLIDE_PAGE_IDS = new Set(["prep-modal", "stats-modal", "settings-modal", "help-modal", "updates-modal"]);
@@ -85,6 +85,10 @@ const DECORATIONS = [
   { id: "sign_retro", type: "sign", icon: "24H", display: "24H", title: "레트로 24시 간판", description: "코랄과 노랑으로 꾸민 복고풍 간판", price: 420, unlockLevel: 4 },
   { id: "sign_cloud", type: "sign", icon: "☁", display: "CLOUD", title: "구름 세탁 간판", description: "포근한 거품 구름을 닮은 간판", price: 520, unlockLevel: 5 },
   { id: "sign_midnight", type: "sign", icon: "☾", display: "MOON", title: "미드나이트 간판", description: "늦은 영업에 어울리는 달빛 간판", price: 650, unlockLevel: 6 },
+  { id: "sign_turbo", type: "sign", icon: "ϟ", display: "TURBO", title: "터보 마스터 간판", description: "터보 회전율을 완성한 설비 장인의 간판", price: 0, unlockMaster: { type: "machine", path: "turbo", level: 3 } },
+  { id: "sign_service", type: "sign", icon: "♥", display: "CARE", title: "서비스 마스터 간판", description: "고객 응대 특화를 완성한 점장의 간판", price: 0, unlockMaster: { type: "machine", path: "service", level: 3 } },
+  { id: "sign_precision", type: "sign", icon: "◆", display: "CLEAN", title: "정밀 세척 마스터 간판", description: "정밀 세척 특화를 완성한 청소 장인의 간판", price: 0, unlockMaster: { type: "tool", path: "precision", level: 3 } },
+  { id: "sign_rhythm", type: "sign", icon: "♪", display: "BEAT", title: "리듬 마스터 간판", description: "리듬 유지 특화를 완성한 콤보 장인의 간판", price: 0, unlockMaster: { type: "tool", path: "rhythm", level: 3 } },
   { id: "floor_classic", type: "floor", icon: "▦", title: "클래식 타일", description: "차분한 회백색 매장 바닥", price: 0 },
   { id: "floor_aqua", type: "floor", icon: "≈", title: "아쿠아 타일", description: "물결처럼 시원한 민트 타일", price: 180, unlockLevel: 2 },
   { id: "floor_checker", type: "floor", icon: "▥", title: "선셋 체크", description: "산뜻한 코랄 체크 바닥", price: 260, unlockLevel: 4 },
@@ -169,6 +173,9 @@ const ACHIEVEMENTS = [
   { id: "regular_10", icon: "★", title: "단골 맛집", description: "단골 손님 10명 응대하기", reward: 60 },
   { id: "bulk_10", icon: "▦", title: "대량 세탁 전문가", description: "대량 세탁 손님 10명 응대하기", reward: 70 },
   { id: "earn_1000", icon: "◈", title: "알뜰한 경영자", description: "영업 수익을 누적 1,000 모으기", reward: 120 },
+  { id: "master_first", icon: "◇", title: "첫 개조의 시작", description: "마스터 개조를 처음 적용하기", reward: 200 },
+  { id: "master_track", icon: "✦", title: "전문가의 길", description: "마스터 특화 한 종류를 Lv.3으로 완성하기", reward: 350 },
+  { id: "master_dual", icon: "♛", title: "마스터 엔지니어", description: "기계와 도구 마스터 특화를 모두 Lv.3으로 완성하기", reward: 600 },
 ];
 
 const DAILY_CHALLENGES = [
@@ -195,6 +202,21 @@ const EVENT_INFO = {
   group: { icon: "♟", title: "단체 손님 도착!", copy: "손님 세 명이 한꺼번에 들어옵니다. 빈 기계를 빠르게 확보하세요." },
   inspection: { icon: "◆", title: "위생 검사!", copy: "검사 시간이 끝나기 전에 매장의 오염을 모두 정리하세요." },
 };
+
+const EVENT_VIBRATION_PATTERNS = Object.freeze({
+  breakdown: [35, 25, 35],
+  blackout: [80, 30, 80, 30, 120],
+  detergent: [25, 40, 25],
+  group: [18, 20, 18, 20, 18],
+  inspection: [45, 20, 45],
+});
+
+const EVENT_COMPLETION_VIBRATIONS = Object.freeze({
+  breakdown: [20, 15, 35],
+  blackout: [30, 20, 50],
+  detergent: [15, 10, 20],
+  inspection: [18, 12, 28],
+});
 
 const CODEX_CONTENT = {
   customers: [
@@ -249,6 +271,8 @@ const state = {
   objectiveResults: [],
   objectiveRewardCoins: 0,
   objectiveRewardXp: 0,
+  earningsBreakdown: {},
+  masterScoreBonus: { machine: 0, tool: 0 },
   lastShiftPlan: null,
   resultUnlockTarget: null,
   resultLeveledUp: false,
@@ -429,6 +453,11 @@ const els = {
   textSizeSetting: document.querySelector("#text-size-setting"),
   shiftObjectivesHud: document.querySelector("#shift-objectives-hud"),
   shiftObjectivesHudList: document.querySelector("#shift-objectives-hud-list"),
+  masterHudBadges: document.querySelector("#master-hud-badges"),
+  prepMasterLoadout: document.querySelector("#prep-master-loadout"),
+  prepMasterEffects: document.querySelector("#prep-master-effects"),
+  resultMasterImpact: document.querySelector("#result-master-impact"),
+  resultMasterEffects: document.querySelector("#result-master-effects"),
   shiftObjectiveList: document.querySelector("#shift-objective-list"),
   resultObjectiveList: document.querySelector("#result-objective-list"),
   resultCelebration: document.querySelector("#result-celebration"),
@@ -504,6 +533,8 @@ function resetGame(options = {}) {
   state.objectiveResults = [];
   state.objectiveRewardCoins = 0;
   state.objectiveRewardXp = 0;
+  state.earningsBreakdown = {};
+  state.masterScoreBonus = { machine: 0, tool: 0 };
   state.resultUnlockTarget = null;
   state.resultLeveledUp = false;
   state.activeEvent = null;
@@ -770,6 +801,30 @@ function renderShiftObjectiveHud() {
   }).join("");
 }
 
+function activeMasterTracks() {
+  return Object.entries(state.progression.master || {}).flatMap(([type, track]) => {
+    const definition = MASTER_RENOVATIONS[type]?.paths[track.path];
+    return definition && track.level > 0 ? [{ type, path: track.path, level: track.level, definition }] : [];
+  });
+}
+
+function renderMasterHud() {
+  if (!els.masterHudBadges) return;
+  const tracks = activeMasterTracks();
+  const visible = state.running && !state.tutorialActive && tracks.length > 0;
+  els.masterHudBadges.hidden = !visible;
+  els.masterHudBadges.parentElement?.classList.toggle("has-master", visible);
+  if (!visible) return;
+  els.masterHudBadges.innerHTML = tracks.map((track) => `<span title="${masterEffectCopy(track.type, track.path, track.level)}"><i>${MASTER_RENOVATIONS[track.type].icon}</i><b>${track.definition.title.replace(" 회전율", "").replace(" 유지", "")}</b><em>Lv.${track.level}</em></span>`).join("");
+}
+
+function renderPrepMasterLoadout() {
+  if (!els.prepMasterLoadout || !els.prepMasterEffects) return;
+  const tracks = activeMasterTracks();
+  els.prepMasterLoadout.hidden = tracks.length === 0;
+  els.prepMasterEffects.innerHTML = tracks.map((track) => `<article><span>${MASTER_RENOVATIONS[track.type].icon}</span><div><strong>${track.definition.title} Lv.${track.level}</strong><small>${masterEffectCopy(track.type, track.path, track.level, "적용")}</small></div></article>`).join("");
+}
+
 function updatePrepUi() {
   ensureCurrentDaily();
   ensureCurrentWeekly();
@@ -797,6 +852,7 @@ function updatePrepUi() {
   document.querySelector("#prep-event-count").textContent = String(expectedEvents);
   document.querySelector("#prep-machine-level").textContent = String(state.progression.upgrades.machine);
   document.querySelector("#prep-tool-level").textContent = String(state.progression.upgrades.tool);
+  renderPrepMasterLoadout();
   document.querySelector("#prep-daily-title").textContent = dailyDefinition.title;
   document.querySelector("#prep-daily-progress").textContent = daily.completed ? "완료!" : `${daily.progress} / ${dailyDefinition.target}`;
   document.querySelector("#prep-active-days").textContent = String(Math.min(5, state.progression.weekly.activeDays.length));
@@ -1131,6 +1187,7 @@ function triggerRandomEvent(forcedType = null) {
     if (arrivingGuests < groupSize) showToast("혼잡해 일부 단체 손님은 다음 차례로 안내했어요.", "good", "♟", 1400);
     state.eventsHandled.group += 1;
     advanceWeeklyGoal("event", 1);
+    playEventAlarm(type);
     scheduleTimeout(hideEventAlert, 2300);
     scheduleNextEvent();
     return;
@@ -1173,6 +1230,7 @@ function triggerRandomEvent(forcedType = null) {
     });
     scheduleInspectionDeadline();
   }
+  syncToolTargets();
   playEventAlarm(type);
 }
 
@@ -1185,6 +1243,7 @@ function scheduleInspectionDeadline() {
     state.activeEvent = null;
     changeScore(-260);
     hideEventAlert();
+    syncToolTargets();
     showToast("위생 검사에 실패해 260점이 차감됐어요!", "bad", "◆", 1600);
     playRefundSound();
     shakePlayArea();
@@ -1320,18 +1379,20 @@ function finishStoreEvent(type, points, rect, message) {
   state.eventsHandled[type] += 1;
   advanceWeeklyGoal("event", 1);
   state.activeEvent = null;
+  syncToolTargets();
   changeScore(points);
   scorePop(rect, `+${points}`);
   cleanBurst(rect, type);
   hideEventAlert();
   showToast(message, "good", "✓", 1150);
   playCleanSound(type, state.combo);
+  vibrate(EVENT_COMPLETION_VIBRATIONS[type] || [16, 12, 24]);
   scheduleNextEvent();
   tutorialDidAction("event", type);
 }
 
 function playEventAlarm(type) {
-  vibrate(type === "group" ? [18, 25, 18] : [35, 35, 35]);
+  vibrate(EVENT_VIBRATION_PATTERNS[type] || [35, 35, 35]);
   shakePlayArea();
   if (type === "group") {
     playTone(480, 0.08, "sine", 0.04);
@@ -1520,8 +1581,10 @@ function finishCycle(machine) {
     recordSatisfaction(guest.satisfaction);
     const satisfactionBonus = Math.round(guest.satisfaction * 0.6);
     const conditionReward = state.condition?.reward || 1;
-    const serviceMasterBonus = 1 + masterBonus("machine", "service");
-    const servicePoints = Math.round((160 + satisfactionBonus + (guest.cleaned ? 120 : 0)) * guest.rewardMultiplier * conditionReward * serviceMasterBonus);
+    const serviceRawPoints = (160 + satisfactionBonus + (guest.cleaned ? 120 : 0)) * guest.rewardMultiplier * conditionReward;
+    const baseServicePoints = Math.round(serviceRawPoints);
+    const servicePoints = Math.round(serviceRawPoints * (1 + masterBonus("machine", "service")));
+    state.masterScoreBonus.machine += Math.max(0, servicePoints - baseServicePoints);
     changeScore(servicePoints);
     if (guest.satisfaction >= CONFIG.satisfaction.happyThreshold) {
       advanceDailyChallenge("happy", 1);
@@ -1596,6 +1659,7 @@ function makeDirty(machine, dirt) {
   machine.el.setAttribute("aria-label", machineAriaLabel(machine));
   playTone(240, 0.04, "square");
   showFirstShiftGuide(`${info.name}에는 ${TOOL_INFO[info.tool].name}를 사용하세요`, 1);
+  syncToolTargets();
 }
 
 function handleMachineClick(id) {
@@ -1628,8 +1692,11 @@ function handleMachineClick(id) {
   const rect = machine.el.getBoundingClientRect();
   const cleanElapsed = performance.now() - machine.dirtCreatedAt;
   const combo = registerCleanCombo(cleanElapsed);
-  const toolBonus = 1 + upgradeBonus("toolScoreBonuses", state.progression.upgrades.tool) + masterBonus("tool", "precision");
+  const baseToolBonus = 1 + upgradeBonus("toolScoreBonuses", state.progression.upgrades.tool);
+  const toolBonus = baseToolBonus + masterBonus("tool", "precision");
+  const baseEarnedPoints = Math.round(140 * baseToolBonus * combo.multiplier);
   const earnedPoints = Math.round(140 * toolBonus * combo.multiplier);
+  state.masterScoreBonus.tool += Math.max(0, earnedPoints - baseEarnedPoints);
   state.dirtCleanCounts[machine.dirt] += 1;
   machine.dirt = null;
   machine.dirtCreatedAt = 0;
@@ -1649,6 +1716,7 @@ function handleMachineClick(id) {
   showToast(combo.fast && state.combo >= 2 ? `${dirt.name} 제거 · ${state.combo} COMBO!` : `${dirt.name} 제거 완료!`, "good", "✓", 950);
   playCleanSound(dirt.tool, state.combo);
   vibrate(12);
+  syncToolTargets();
   tutorialDidAction("clean", dirt.tool === "squeegee" ? "limescale" : dirt.tool === "duster" ? "dust" : "laundry");
   checkInspectionCompletion();
 }
@@ -1668,14 +1736,18 @@ function handleGuestClick(id) {
     state.dirtCleanCounts.stain += 1;
     const rect = guest.el.getBoundingClientRect();
     const combo = registerCleanCombo(performance.now() - guest.arrivedAt);
-    const toolBonus = 1 + upgradeBonus("toolScoreBonuses", state.progression.upgrades.tool) + masterBonus("tool", "precision");
+    const baseToolBonus = 1 + upgradeBonus("toolScoreBonuses", state.progression.upgrades.tool);
+    const toolBonus = baseToolBonus + masterBonus("tool", "precision");
+    const baseEarnedPoints = Math.round(450 * baseToolBonus * combo.multiplier);
     const earnedPoints = Math.round(450 * toolBonus * combo.multiplier);
+    state.masterScoreBonus.tool += Math.max(0, earnedPoints - baseEarnedPoints);
     changeScore(earnedPoints);
     scorePop(rect, `+${earnedPoints}`);
     if (combo.fast) comboPop(rect, combo.multiplier);
     cleanBurst(rect, "rainbow");
     showToast("이스터 에그! 얼룩이 무지개로 변했어요 ✦", "secret", "🌈", 2300);
     playSecretJingle();
+    syncToolTargets();
     return;
   }
 
@@ -1827,6 +1899,8 @@ function updateHud() {
   els.satisfactionMeter.classList.toggle("danger", satisfaction < 60);
   updateQueueVisuals();
   renderShiftObjectiveHud();
+  renderMasterHud();
+  syncToolTargets();
 }
 
 function changeScore(amount) {
@@ -1843,7 +1917,22 @@ function selectTool(tool) {
     button.setAttribute("aria-pressed", String(selected));
   });
   els.selectedToolName.textContent = TOOL_INFO[tool].name;
+  syncToolTargets();
   playTone(430 + Object.keys(TOOL_INFO).indexOf(tool) * 60, 0.025, "sine");
+}
+
+function syncToolTargets() {
+  const interactive = state.running && !state.paused;
+  state.machines.forEach((machine) => {
+    const matchingDirt = machine.dirt && DIRT_INFO[machine.dirt]?.tool === state.selectedTool;
+    const matchingRepair = machine.broken && state.selectedTool === "wrench";
+    machine.el.classList.toggle("tool-linked", Boolean(interactive && (matchingDirt || matchingRepair)));
+  });
+  state.queue.forEach((guest) => {
+    guest.el.classList.toggle("tool-linked", Boolean(interactive && state.selectedTool === "spray" && guest.stained && !guest.cleaned));
+  });
+  els.detergentStation.classList.toggle("tool-linked", Boolean(interactive && state.detergentEmpty && state.selectedTool === "detergent"));
+  els.breakerPanel.classList.toggle("event-target", Boolean(interactive && state.powerOut));
 }
 
 function showToast(message, type = "good", icon = "✓", duration = 1500) {
@@ -2016,6 +2105,7 @@ function endGame(success, reason) {
   document.querySelector("#result-difficulty").textContent = `${currentGameMode().shortLabel} · ${DIFFICULTIES[state.difficulty].label}`;
   renderResultObjectives();
   updateResultAnalysis();
+  renderResultMasterImpact();
   const unlockBanner = document.querySelector("#achievement-unlock-banner");
   unlockBanner.hidden = unlockedAchievements.length === 0;
   document.querySelector("#achievement-unlock-text").textContent = unlockedAchievements.length
@@ -2161,6 +2251,20 @@ function updateResultAnalysis() {
   document.querySelector("#result-refund-cause").textContent = refundCount ? `${DIRT_INFO[refundDirt].name} ${refundCount}건` : "환불 없음";
   document.querySelector("#result-peak-queue").textContent = String(state.peakQueue);
   document.querySelector("#result-advice").textContent = resultAdvice(responseAverage, refundDirt, refundCount);
+}
+
+function renderResultMasterImpact() {
+  if (!els.resultMasterImpact || !els.resultMasterEffects) return;
+  const tracks = activeMasterTracks();
+  els.resultMasterImpact.hidden = tracks.length === 0;
+  if (!tracks.length) return;
+  els.resultMasterEffects.innerHTML = tracks.map((track) => {
+    const directBonus = state.masterScoreBonus[track.type] || 0;
+    const impact = directBonus > 0
+      ? `직접 보너스 +${directBonus.toLocaleString("ko-KR")}점`
+      : masterEffectCopy(track.type, track.path, track.level, "활성");
+    return `<article><span>${MASTER_RENOVATIONS[track.type].icon}</span><div><strong>${track.definition.title} Lv.${track.level}</strong><small>${impact}</small></div></article>`;
+  }).join("");
 }
 
 function resultAdvice(responseAverage, refundDirt, refundCount) {
@@ -2737,14 +2841,18 @@ function recordShiftHistory(success, rank, reason) {
 function finalizeProgression(success, rank, reason) {
   const progression = state.progression;
   const previousLevel = managerLevelInfo().level;
-  state.shiftCoins = Math.max(
-    0,
-    state.served * CONFIG.economy.servedCoins
-      + state.happyGuests * CONFIG.economy.happyCoins
-      + (success ? CONFIG.economy.successBonus : 0)
-      - state.refunds * CONFIG.economy.refundPenalty
-      + state.objectiveRewardCoins,
-  );
+  const completedObjectives = state.objectiveResults.filter((result) => result.completed).length;
+  state.earningsBreakdown = {
+    service: state.served * CONFIG.economy.servedCoins,
+    happiness: state.happyGuests * CONFIG.economy.happyCoins,
+    completion: success ? CONFIG.economy.successBonus : 0,
+    rank: CONFIG.economy.rankBonuses[rank.letter] || 0,
+    refundless: success && state.refunds === 0 ? CONFIG.economy.refundlessBonus : 0,
+    objectives: state.objectiveRewardCoins,
+    allObjectives: success && state.objectiveResults.length > 0 && completedObjectives === state.objectiveResults.length ? CONFIG.economy.allObjectivesBonus : 0,
+    penalty: state.refunds * CONFIG.economy.refundPenalty,
+  };
+  state.shiftCoins = Math.max(0, Object.entries(state.earningsBreakdown).reduce((total, [key, value]) => total + (key === "penalty" ? -value : value), 0));
   progression.wallet += state.shiftCoins;
   progression.stats.shifts += success ? 1 : 0;
   progression.stats.cleaned += state.cleaned;
@@ -2778,6 +2886,7 @@ function finalizeProgression(success, rank, reason) {
 
 function achievementIsComplete(id, success) {
   const stats = state.progression.stats;
+  const masterTracks = Object.values(state.progression.master || {});
   const rules = {
     first_shift: stats.shifts >= 1,
     spotless: success && state.refunds === 0,
@@ -2786,6 +2895,9 @@ function achievementIsComplete(id, success) {
     regular_10: stats.regular >= 10,
     bulk_10: stats.bulk >= 10,
     earn_1000: stats.earnings >= 1000,
+    master_first: masterTracks.some((track) => track.level >= 1),
+    master_track: masterTracks.some((track) => track.level >= CONFIG.upgrades.master.maxLevel),
+    master_dual: masterTracks.length >= 2 && masterTracks.every((track) => track.level >= CONFIG.upgrades.master.maxLevel),
   };
   return Boolean(rules[id]);
 }
@@ -2803,6 +2915,8 @@ function unlockAchievements(success) {
 
 function achievementProgress(achievement) {
   const stats = state.progression.stats;
+  const masterTracks = Object.values(state.progression.master || {});
+  const masterLevels = masterTracks.map((track) => track.level || 0);
   const values = {
     first_shift: [stats.shifts, 1],
     spotless: [state.progression.achievements.includes("spotless") ? 1 : 0, 1],
@@ -2811,6 +2925,9 @@ function achievementProgress(achievement) {
     regular_10: [stats.regular, 10],
     bulk_10: [stats.bulk, 10],
     earn_1000: [stats.earnings, 1000],
+    master_first: [Math.min(1, masterLevels.reduce((sum, level) => sum + level, 0)), 1],
+    master_track: [Math.max(0, ...masterLevels), CONFIG.upgrades.master.maxLevel],
+    master_dual: [masterLevels.filter((level) => level >= CONFIG.upgrades.master.maxLevel).length, 2],
   };
   return values[achievement.id] || [0, 1];
 }
@@ -2961,7 +3078,19 @@ function masterBonus(type, path) {
 function decorationIsUnlocked(decoration) {
   const weeklyUnlocked = decoration.unlock !== "weekly" || state.progression.cosmetics.weeklyBadges.length > 0;
   const levelUnlocked = !decoration.unlockLevel || managerLevelInfo().level >= decoration.unlockLevel;
-  return weeklyUnlocked && levelUnlocked;
+  const masterTrack = decoration.unlockMaster ? state.progression.master?.[decoration.unlockMaster.type] : null;
+  const masterUnlocked = !decoration.unlockMaster
+    || (masterTrack?.path === decoration.unlockMaster.path && masterTrack.level >= decoration.unlockMaster.level);
+  return weeklyUnlocked && levelUnlocked && masterUnlocked;
+}
+
+function decorationLockCopy(decoration) {
+  if (decoration.unlock === "weekly") return { label: "주간 목표 완성 필요", copy: "주간 목표 3개를 모두 달성하면 해금됩니다." };
+  if (decoration.unlockMaster) {
+    const definition = MASTER_RENOVATIONS[decoration.unlockMaster.type].paths[decoration.unlockMaster.path];
+    return { label: `${definition.title} Lv.${decoration.unlockMaster.level} 필요`, copy: `${definition.title} 특화를 완성하면 무료로 받을 수 있습니다.` };
+  }
+  return { label: `점장 Lv.${decoration.unlockLevel} 필요`, copy: `점장 레벨 ${decoration.unlockLevel}에서 해금됩니다.` };
 }
 
 function renderDecorations() {
@@ -2981,10 +3110,9 @@ function renderDecorations() {
     const unlocked = decorationIsUnlocked(decoration);
     const card = document.createElement("article");
     card.className = `decor-item${owned ? " owned" : ""}${equipped ? " equipped" : ""}${unlocked ? "" : " locked"}`;
-    const lockLabel = decoration.unlock === "weekly" ? "주간 목표 완성 필요" : `점장 Lv.${decoration.unlockLevel} 필요`;
-    const lockCopy = decoration.unlock === "weekly" ? "주간 목표 3개를 모두 달성하면 해금됩니다." : `점장 레벨 ${decoration.unlockLevel}에서 해금됩니다.`;
-    const action = equipped ? "장착 중" : owned ? "장착하기" : unlocked ? `◈ ${decoration.price}` : lockLabel;
-    card.innerHTML = `<span>${unlocked ? decoration.icon : "?"}</span><div><small>${decoration.type.toUpperCase()}</small><h3>${unlocked ? decoration.title : "잠긴 장식"}</h3><p>${unlocked ? decoration.description : lockCopy}</p></div><button type="button" data-decor-action="${decoration.id}" ${equipped || !unlocked || (!owned && progression.wallet < decoration.price) ? "disabled" : ""}>${action}</button>`;
+    const lock = decorationLockCopy(decoration);
+    const action = equipped ? "장착 중" : owned ? "장착하기" : unlocked ? (decoration.price ? `◈ ${decoration.price}` : "무료 받기") : lock.label;
+    card.innerHTML = `<span>${unlocked ? decoration.icon : "?"}</span><div><small>${decoration.type.toUpperCase()}</small><h3>${unlocked ? decoration.title : "잠긴 장식"}</h3><p>${unlocked ? decoration.description : lock.copy}</p></div><button type="button" data-decor-action="${decoration.id}" ${equipped || !unlocked || (!owned && progression.wallet < decoration.price) ? "disabled" : ""}>${action}</button>`;
     card.querySelector("button").addEventListener("click", () => buyOrEquipDecoration(decoration.id));
     els.decorGrid.appendChild(card);
   });
@@ -3038,6 +3166,16 @@ function masterEffectCopy(type, path, level, prefix = "현재") {
   return `${prefix} 콤보 판정 +${(value / 1000).toFixed(1)}초`;
 }
 
+function masterRenovationCost(type) {
+  const track = state.progression.master[type];
+  const baseCost = CONFIG.upgrades.master.costs[track?.level] ?? 0;
+  const firstPurchase = baseCost > 0 && Object.values(state.progression.master).every((item) => item.level === 0);
+  return {
+    cost: firstPurchase ? Math.round(baseCost * CONFIG.upgrades.master.firstPurchaseDiscount) : baseCost,
+    firstPurchase,
+  };
+}
+
 function renderMasterRenovations() {
   const list = document.querySelector("#master-renovation-list");
   const summary = document.querySelector("#master-renovation-summary");
@@ -3049,7 +3187,8 @@ function renderMasterRenovations() {
   list.innerHTML = Object.entries(MASTER_RENOVATIONS).map(([type, renovation]) => {
     const track = state.progression.master[type];
     const unlocked = state.progression.upgrades[type] >= CONFIG.upgrades.maxLevel;
-    const nextCost = CONFIG.upgrades.master.costs[track.level] ?? 0;
+    const nextPurchase = masterRenovationCost(type);
+    const nextCost = nextPurchase.cost;
     const paths = Object.entries(renovation.paths).map(([path, definition]) => {
       const selected = track.path === path;
       const blocked = Boolean(track.path && !selected);
@@ -3061,7 +3200,7 @@ function renderMasterRenovations() {
           ? "다른 특화 적용 중"
           : maxed
             ? "MASTERED"
-            : `Lv.${selected ? track.level + 1 : 1} · ◈ ${nextCost.toLocaleString("ko-KR")}`;
+            : `${nextPurchase.firstPurchase ? "첫 개조 50% · " : ""}Lv.${selected ? track.level + 1 : 1} · ◈ ${nextCost.toLocaleString("ko-KR")}`;
       const disabled = !unlocked || blocked || maxed || state.progression.wallet < nextCost;
       return `<button class="master-path${selected ? " selected" : ""}${blocked ? " blocked" : ""}" type="button" data-master-type="${type}" data-master-path="${path}" ${disabled ? "disabled" : ""}><span>${definition.tag}</span><div><strong>${definition.title}</strong><p>${definition.description}</p><em>${masterEffectCopy(type, path, previewLevel, selected ? "현재" : "최대")}</em></div><b>${action}</b></button>`;
     }).join("");
@@ -3078,7 +3217,8 @@ function buyMasterRenovation(type, path) {
   if (state.progression.upgrades[type] < CONFIG.upgrades.maxLevel) return;
   const track = state.progression.master[type];
   if ((track.path && track.path !== path) || track.level >= CONFIG.upgrades.master.maxLevel) return;
-  const cost = CONFIG.upgrades.master.costs[track.level];
+  const purchase = masterRenovationCost(type);
+  const cost = purchase.cost;
   if (state.progression.wallet < cost) {
     showToast("마스터 개조에 필요한 수익이 부족해요.", "bad", "◈", 1500);
     return;
@@ -3086,9 +3226,12 @@ function buyMasterRenovation(type, path) {
   state.progression.wallet -= cost;
   track.path = path;
   track.level += 1;
+  const newlyUnlocked = unlockAchievements(false);
   saveProgression();
   updateProgressionUi();
-  showToast(`${MASTER_RENOVATIONS[type].paths[path].title} Lv.${track.level} 개조 완료!`, "good", "✦", 1700);
+  const discountCopy = purchase.firstPurchase ? " · 첫 개조 50% 할인" : "";
+  const achievementCopy = newlyUnlocked.length ? ` · ${newlyUnlocked.map((item) => item.title).join(" · ")} 달성` : "";
+  showToast(`${MASTER_RENOVATIONS[type].paths[path].title} Lv.${track.level} 개조 완료${discountCopy}${achievementCopy}!`, "good", "✦", 2200);
   playSuccessJingle();
 }
 

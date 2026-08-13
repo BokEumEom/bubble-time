@@ -24,9 +24,9 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./assets/icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=2.15.0" />
-    <script src="./game-config.js?v=2.15.0" defer></script>
-    <script src="./script.js?v=2.15.0" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=2.16.0" />
+    <script src="./game-config.js?v=2.16.0" defer></script>
+    <script src="./script.js?v=2.16.0" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#play-area">게임 화면으로 바로가기</a>
@@ -93,6 +93,7 @@
             </div>
             <strong><b id="queue-value">0</b> / 6</strong>
           </div>
+          <div class="master-hud-badges" id="master-hud-badges" aria-label="활성 마스터 개조" hidden></div>
         </div>
       </section>
 
@@ -325,6 +326,10 @@
           <article><small>예상 사건</small><strong><b id="prep-event-count">6</b>회</strong></article>
           <article><small>설비 강화</small><strong>기계 <b id="prep-machine-level">0</b> · 도구 <b id="prep-tool-level">0</b></strong></article>
         </div>
+        <section class="prep-master-loadout" id="prep-master-loadout" aria-labelledby="prep-master-title" hidden>
+          <div><small>MASTER LOADOUT</small><h3 id="prep-master-title">이번 영업 마스터 효과</h3></div>
+          <div id="prep-master-effects"></div>
+        </section>
         <div class="prep-challenges">
           <section><div><small>TODAY</small><strong id="prep-daily-title">오염 12개 청소하기</strong></div><em id="prep-daily-progress">0 / 12</em></section>
           <section><div><small>WEEKLY PACE</small><strong>이번 주 영업 페이스</strong></div><em><b id="prep-active-days">0</b> / 5일</em></section>
@@ -500,14 +505,14 @@
     <div class="modal-backdrop" id="updates-modal" role="dialog" aria-modal="true" aria-labelledby="updates-title" aria-hidden="true">
       <section class="modal progression-modal updates-card">
         <button class="modal-close utility-page-back" id="updates-close-button" type="button" aria-label="업데이트 안내에서 홈으로 돌아가기"><span class="utility-close-mark" aria-hidden="true">×</span><span class="utility-back-arrow" aria-hidden="true">←</span><b>홈</b></button>
-        <div class="modal-kicker">VERSION <span id="app-version-label">2.15.0</span></div>
-        <h2 id="updates-title">마스터 개조·플레이 UI 업데이트</h2>
-        <p>2026.08 · Lv.8 이후 선택형 성장을 추가하고, 모바일 사건 조작과 결과 화면의 행동 간격을 다시 정돈했습니다.</p>
+        <div class="modal-kicker">VERSION <span id="app-version-label">2.16.0</span></div>
+        <h2 id="updates-title">마스터 피드백·장기 운영 업데이트</h2>
+        <p>2026.08 · 성장 효과를 영업 전후에 확인할 수 있게 만들고, 장기 수익과 마스터 보상·사건 조작 피드백을 보강했습니다.</p>
         <div class="update-list">
-          <article><span>MASTER</span><div><h3>Lv.8 이후 선택형 개조</h3><p>설비별 두 특화 중 하나를 선택해 3단계까지 성장할 수 있습니다.</p></div></article>
-          <article><span>50 PX</span><div><h3>커진 사건 조작 버튼</h3><p>세제 탱크와 차단기를 액션 도구와 같은 높이로 맞췄습니다.</p></div></article>
-          <article><span>RESULT</span><div><h3>분리된 홈 이동</h3><p>홈 버튼을 재도전 행동과 분리해 충분한 여백과 명확한 우선순위를 제공합니다.</p></div></article>
-          <article><span>SAVE V8</span><div><h3>기존 진행 그대로</h3><p>기존 강화·꾸미기 저장 데이터는 유지되고 마스터 개조 상태만 안전하게 추가됩니다.</p></div></article>
+          <article><span>VISIBLE</span><div><h3>보이는 마스터 효과</h3><p>준비 화면·플레이 HUD·결과에서 활성 특화와 직접 점수 기여를 확인합니다.</p></div></article>
+          <article><span>BONUS</span><div><h3>장기 수익 밸런스</h3><p>첫 개조 50% 할인과 등급·무환불·목표 완주 보너스를 추가했습니다.</p></div></article>
+          <article><span>REWARD</span><div><h3>마스터 업적과 간판</h3><p>새 업적 3종과 특화 완성으로 해금되는 전용 간판 4종이 추가됐습니다.</p></div></article>
+          <article><span>EVENT</span><div><h3>사건 대응 피드백</h3><p>도구와 올바른 대상을 빛으로 연결하고 사건별 진동·정전 연출을 강화했습니다.</p></div></article>
         </div>
       </section>
     </div>
@@ -544,6 +549,10 @@
         <div class="new-record-banner" id="new-record-banner" hidden><span>★</span><strong>새로운 최고 기록!</strong></div>
         <div class="shift-earnings"><span>이번 영업 수익</span><strong>+ ◈ <b id="result-coins">0</b></strong><small>보유 <b id="result-wallet">0</b></small></div>
         <div class="result-manager-progress"><span>점장 성장</span><strong>+<b id="result-xp">0</b> XP</strong><em id="result-reputation">명성 +0</em><small id="result-next-level">다음 레벨까지 180 XP</small></div>
+        <section class="result-master-impact" id="result-master-impact" aria-labelledby="result-master-title" hidden>
+          <div><small>MASTER IMPACT</small><strong id="result-master-title">마스터 개조 기여</strong></div>
+          <div id="result-master-effects"></div>
+        </section>
         <div class="achievement-unlock-banner" id="achievement-unlock-banner" hidden><span>♛</span><strong id="achievement-unlock-text">새 업적 달성!</strong></div>
         <div class="result-stats">
           <div><small>최종 점수</small><strong id="result-score">0</strong></div>

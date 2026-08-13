@@ -61,6 +61,9 @@ const pngSize = (file) => {
   "result-home-button",
   "result-details",
   "pause-settings-button",
+  "master-hud-badges",
+  "prep-master-loadout",
+  "result-master-impact",
 ].forEach((id) => assert.match(html, new RegExp(`id=["']${id}["']`), `${id} UI가 필요합니다.`));
 
 assert.equal(manifest.display, "standalone", "PWA는 독립 실행형으로 열려야 합니다.");
@@ -72,7 +75,7 @@ assert.ok(manifest.screenshots.some((item) => item.form_factor === "narrow"), "�
   .forEach((asset) => assert.match(worker, new RegExp(asset.replace(".", "\\.")), `${asset}이 오프라인 캐시에 포함되어야 합니다.`));
 
 assert.match(script, /DATA_SCHEMA_VERSION\s*=\s*8/, "마스터 개조 저장을 위한 데이터 스키마 버전 8이 필요합니다.");
-assert.match(script, /APP_VERSION\s*=\s*"2\.15\.0"/, "마스터 개조·플레이 UI 업데이트 버전 2.15.0이 필요합니다.");
+assert.match(script, /APP_VERSION\s*=\s*"2\.16\.0"/, "마스터 피드백·경제 밸런스 업데이트 버전 2.16.0이 필요합니다.");
 assert.match(config, /maxLevel:\s*8/, "가게 업그레이드는 8단계까지 제공해야 합니다.");
 assert.match(config, /machineCosts:\s*Object\.freeze\(\[[^\]]*1800\]\)/, "고속 모터 8단계 비용표가 필요합니다.");
 assert.match(config, /toolCosts:\s*Object\.freeze\(\[[^\]]*1600\]\)/, "청소 도구 8단계 비용표가 필요합니다.");
@@ -83,12 +86,20 @@ assert.match(config, /machineTurbo/, "기계 터보 특화 효과가 필요합�
 assert.match(config, /machineService/, "기계 고객 응대 특화 효과가 필요합니다.");
 assert.match(config, /toolPrecision/, "도구 정밀 세척 특화 효과가 필요합니다.");
 assert.match(config, /toolRhythm/, "도구 리듬 유지 특화 효과가 필요합니다.");
+assert.match(config, /firstPurchaseDiscount:\s*0\.5/, "첫 마스터 개조 50% 할인이 필요합니다.");
+assert.match(config, /rankBonuses/, "등급별 영업 수익 보너스가 필요합니다.");
+assert.match(config, /refundlessBonus/, "무환불 영업 수익 보너스가 필요합니다.");
+assert.match(config, /allObjectivesBonus/, "추가 목표 전체 달성 보너스가 필요합니다.");
 assert.match(script, /buyMasterRenovation/, "마스터 개조 구매 함수가 필요합니다.");
 assert.match(script, /resetMasterRenovation/, "마스터 특화 재설계 함수가 필요합니다.");
 assert.match(script, /sign_midnight/, "확장된 간판 컬렉션이 필요합니다.");
 assert.match(script, /floor_terrazzo/, "확장된 바닥 컬렉션이 필요합니다.");
 assert.match(script, /wall_pattern/, "확장된 벽지 컬렉션이 필요합니다.");
 assert.match(script, /plant_bonsai/, "확장된 화분 컬렉션이 필요합니다.");
+assert.match(script, /master_dual/, "마스터 개조 완성 업적이 필요합니다.");
+assert.match(script, /sign_turbo/, "마스터 전용 꾸미기 보상이 필요합니다.");
+assert.match(script, /syncToolTargets/, "선택 도구와 대응 대상의 시각 연결이 필요합니다.");
+assert.match(script, /EVENT_VIBRATION_PATTERNS/, "사건별 진동 패턴이 필요합니다.");
 assert.match(script, /const GAME_MODES/, "네 가지 영업 모드 정의가 필요합니다.");
 assert.match(script, /const MANAGEMENT_GROUPS/, "관리 센터 네 그룹 정의가 필요합니다.");
 assert.match(script, /saveShiftCheckpoint/, "영업 체크포인트 저장 함수가 필요합니다.");

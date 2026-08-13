@@ -510,6 +510,7 @@ async function run() {
     state.progression.wallet = 99999;
     updateUpgradeCards();
     const unlockedButtons = document.querySelectorAll('#master-renovation-list [data-master-path]:not(:disabled)').length;
+    const firstPurchaseCopy = document.querySelector('[data-master-type="machine"][data-master-path="turbo"]').innerText;
     buyMasterRenovation('machine', 'turbo');
     buyMasterRenovation('machine', 'turbo');
     buyMasterRenovation('machine', 'turbo');
@@ -528,7 +529,13 @@ async function run() {
       machinePips: machineTrack.querySelectorAll('.master-level-pips i.active').length,
       toolPips: toolTrack.querySelectorAll('.master-level-pips i.active').length,
       blockedMachinePaths: machineTrack.querySelectorAll('.master-path.blocked').length,
-      summary: document.querySelector('#master-renovation-summary').textContent
+      summary: document.querySelector('#master-renovation-summary').textContent,
+      firstPurchaseCopy,
+      masterAchievements: state.progression.achievements.filter((id) => id.startsWith('master_')),
+      turboDecorUnlocked: decorationIsUnlocked(decorationById('sign_turbo')),
+      prepEffects: (updatePrepUi(), document.querySelectorAll('#prep-master-effects article').length),
+      hudEffects: (state.running = true, renderMasterHud(), document.querySelectorAll('#master-hud-badges > span').length),
+      resultEffects: (state.running = false, renderResultMasterImpact(), document.querySelectorAll('#result-master-effects article').length)
     };
   })()`);
   assert.equal(masterRenovation.maxLevel, 3, "마스터 개조는 특화별 3단계여야 합니다.");
@@ -541,6 +548,12 @@ async function run() {
   assert.equal(masterRenovation.toolPips, 1, "진행 중인 마스터 개조는 현재 단계만 표시해야 합니다.");
   assert.equal(masterRenovation.blockedMachinePaths, 1, "특화를 고르면 반대 특화는 잠겨야 합니다.");
   assert.match(masterRenovation.summary, /4 \/ 6/, "마스터 전체 진행도가 표시되어야 합니다.");
+  assert.match(masterRenovation.firstPurchaseCopy, /첫 개조 50%.*1,100/, "첫 마스터 개조는 절반 가격을 명확히 안내해야 합니다.");
+  assert.deepEqual(masterRenovation.masterAchievements, ["master_first", "master_track"], "첫 개조와 한 특화 완성 업적이 즉시 해금되어야 합니다.");
+  assert.equal(masterRenovation.turboDecorUnlocked, true, "마스터 특화 완성 시 전용 간판이 해금되어야 합니다.");
+  assert.equal(masterRenovation.prepEffects, 2, "영업 준비 화면에서 활성 마스터 효과를 확인할 수 있어야 합니다.");
+  assert.equal(masterRenovation.hudEffects, 2, "플레이 HUD에서 활성 마스터 효과를 확인할 수 있어야 합니다.");
+  assert.equal(masterRenovation.resultEffects, 2, "결과 화면에서 활성 마스터 효과를 확인할 수 있어야 합니다.");
   await evaluate(`
     state.progression.upgrades.machine = 0;
     state.progression.upgrades.tool = 0;
@@ -589,14 +602,14 @@ async function run() {
       fitsWidth: modal.scrollWidth <= modal.clientWidth + 1
     };
   })()`);
-  assert.equal(decorExpansion.total, 24, "꾸미기 컬렉션은 총 24종이어야 합니다.");
-  assert.deepEqual(decorExpansion.counts, { sign: 6, floor: 6, wall: 6, plant: 6 }, "간판·바닥·벽지·화분은 각각 6종이어야 합니다.");
+  assert.equal(decorExpansion.total, 28, "꾸미기 컬렉션은 총 28종이어야 합니다.");
+  assert.deepEqual(decorExpansion.counts, { sign: 10, floor: 6, wall: 6, plant: 6 }, "마스터 전용 간판 4종을 포함해야 합니다.");
   assert.equal(decorExpansion.visibleCards, 6, "선택한 꾸미기 분류의 6종을 한 목록에서 확인할 수 있어야 합니다.");
   assert.equal(decorExpansion.owned, true, "새 꾸미기 아이템을 구매할 수 있어야 합니다.");
   assert.equal(decorExpansion.equipped, "floor_terrazzo", "구매한 꾸미기 아이템을 바로 장착해야 합니다.");
   assert.equal(decorExpansion.shopClass, true, "장착한 바닥이 실제 매장에 적용되어야 합니다.");
   assert.equal(decorExpansion.previewClass, true, "장착한 바닥이 꾸미기 미리 보기에 적용되어야 합니다.");
-  assert.match(decorExpansion.ownedLabel, /\/ 24 보유/, "꾸미기 보유 현황은 24종 기준으로 표시해야 합니다.");
+  assert.match(decorExpansion.ownedLabel, /\/ 28 보유/, "꾸미기 보유 현황은 28종 기준으로 표시해야 합니다.");
   assert.equal(decorExpansion.fitsWidth, true, "확장된 꾸미기 목록이 모바일 화면 너비를 넘지 않아야 합니다.");
   await evaluate("document.querySelector('#decor-close-button').click()");
   await waitFor("document.querySelector('#intro-modal').classList.contains('open') && !document.querySelector('#decor-modal').classList.contains('open')");
