@@ -71,13 +71,20 @@ assert.ok(manifest.screenshots.some((item) => item.form_factor === "narrow"), "�
 ["index.html", "styles.css", "game-config.js", "script.js", "manifest.webmanifest", "icon.svg", "icon-maskable.svg", "assets/icon-192.png", "assets/icon-512.png", "assets/icon-maskable-512.png", "assets/share-card.png", "assets/screenshot-wide.png", "assets/screenshot-mobile.png"]
   .forEach((asset) => assert.match(worker, new RegExp(asset.replace(".", "\\.")), `${asset}이 오프라인 캐시에 포함되어야 합니다.`));
 
-assert.match(script, /DATA_SCHEMA_VERSION\s*=\s*7/, "저장 데이터 스키마 버전 7이 필요합니다.");
-assert.match(script, /APP_VERSION\s*=\s*"2\.14\.0"/, "성장·컬렉션 확장 업데이트 버전 2.14.0이 필요합니다.");
+assert.match(script, /DATA_SCHEMA_VERSION\s*=\s*8/, "마스터 개조 저장을 위한 데이터 스키마 버전 8이 필요합니다.");
+assert.match(script, /APP_VERSION\s*=\s*"2\.15\.0"/, "마스터 개조·플레이 UI 업데이트 버전 2.15.0이 필요합니다.");
 assert.match(config, /maxLevel:\s*8/, "가게 업그레이드는 8단계까지 제공해야 합니다.");
 assert.match(config, /machineCosts:\s*Object\.freeze\(\[[^\]]*1800\]\)/, "고속 모터 8단계 비용표가 필요합니다.");
 assert.match(config, /toolCosts:\s*Object\.freeze\(\[[^\]]*1600\]\)/, "청소 도구 8단계 비용표가 필요합니다.");
 assert.match(config, /machineSpeedBonuses/, "후반 기계 강화의 단계별 밸런스 값이 필요합니다.");
 assert.match(config, /toolScoreBonuses/, "후반 도구 강화의 단계별 밸런스 값이 필요합니다.");
+assert.match(config, /master:\s*Object\.freeze/, "Lv.8 이후 마스터 개조 설정이 필요합니다.");
+assert.match(config, /machineTurbo/, "기계 터보 특화 효과가 필요합니다.");
+assert.match(config, /machineService/, "기계 고객 응대 특화 효과가 필요합니다.");
+assert.match(config, /toolPrecision/, "도구 정밀 세척 특화 효과가 필요합니다.");
+assert.match(config, /toolRhythm/, "도구 리듬 유지 특화 효과가 필요합니다.");
+assert.match(script, /buyMasterRenovation/, "마스터 개조 구매 함수가 필요합니다.");
+assert.match(script, /resetMasterRenovation/, "마스터 특화 재설계 함수가 필요합니다.");
 assert.match(script, /sign_midnight/, "확장된 간판 컬렉션이 필요합니다.");
 assert.match(script, /floor_terrazzo/, "확장된 바닥 컬렉션이 필요합니다.");
 assert.match(script, /wall_pattern/, "확장된 벽지 컬렉션이 필요합니다.");
@@ -135,6 +142,8 @@ assert.match(styles, /@keyframes management-page-in-right/, "모바일 관리 �
 assert.match(styles, /\.toast\.routine/, "일상적인 손님 완료 메시지는 간결한 스타일이어야 합니다.");
 assert.match(styles, /screen-view\.open:not\(\.mobile-page-entering\)/, "모바일 페이지 슬라이드 후 재페이드를 막아야 합니다.");
 assert.match(styles, /168\.1579vw - 16\.8158px/, "모바일 기계 보드의 고정 비율 계산이 필요합니다.");
+assert.match(styles, /v2\.15 master progression/, "마스터 개조와 동일 높이 액션을 위한 모바일 스타일이 필요합니다.");
+assert.match(styles, /\.result-home-row/, "결과의 홈 이동은 재도전 행동과 시각적으로 분리되어야 합니다.");
 assert.ok(fs.existsSync(path.join(root, "tests", "laundry-game-ui.cjs")), "자동 UI 회귀 검사 파일이 필요합니다.");
 ["icon-192.png", "icon-512.png", "icon-maskable-512.png", "share-card.png", "screenshot-wide.png", "screenshot-mobile.png"]
   .forEach((asset) => assert.ok(fs.existsSync(path.join(root, "assets", asset)), `${asset} 파일이 필요합니다.`));

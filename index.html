@@ -24,9 +24,9 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./assets/icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=2.14.0" />
-    <script src="./game-config.js?v=2.14.0" defer></script>
-    <script src="./script.js?v=2.14.0" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=2.15.0" />
+    <script src="./game-config.js?v=2.15.0" defer></script>
+    <script src="./script.js?v=2.15.0" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#play-area">게임 화면으로 바로가기</a>
@@ -363,7 +363,15 @@
             <button class="upgrade-buy-button" id="buy-tool-upgrade" type="button"><span>강화</span><strong>◈ <b>80</b></strong></button>
           </article>
         </div>
-        <small class="keyboard-hint">최대 레벨은 8이며 후반 강화일수록 더 많은 수익이 필요합니다.</small>
+        <small class="keyboard-hint">기본 강화 Lv.8을 달성하면 선택형 마스터 개조가 열립니다.</small>
+        <section class="master-renovation" id="master-renovation" aria-labelledby="master-renovation-title">
+          <div class="master-renovation-heading">
+            <span>MASTER</span>
+            <div><h3 id="master-renovation-title">마스터 개조</h3><p>Lv.8 설비를 한 방향으로 특화하고 3단계까지 완성하세요.</p></div>
+            <em id="master-renovation-summary">Lv.8 달성 후 해금</em>
+          </div>
+          <div class="master-renovation-list" id="master-renovation-list"></div>
+        </section>
       </section>
     </div>
 
@@ -467,7 +475,7 @@
           <button id="fullscreen-button" type="button"><span>⛶</span><b>전체 화면</b><small>모바일에서 더 넓게 플레이</small></button>
           <button class="install-button" id="settings-install-button" type="button" disabled><span>＋</span><b>앱 설치</b><small id="install-status">브라우저 메뉴에서도 설치 가능</small></button>
         </div>
-        <div class="save-data-row"><span><small>저장 데이터</small><strong id="save-version-label">DATA v7 · 자동 저장</strong></span><div><button id="export-data-button" type="button">내보내기</button><button id="import-data-button" type="button">가져오기</button><button class="danger" id="reset-data-button" type="button">초기화</button></div></div>
+        <div class="save-data-row"><span><small>저장 데이터</small><strong id="save-version-label">DATA v8 · 자동 저장</strong></span><div><button id="export-data-button" type="button">내보내기</button><button id="import-data-button" type="button">가져오기</button><button class="danger" id="reset-data-button" type="button">초기화</button></div></div>
         <input id="import-data-input" type="file" accept="application/json,.json" hidden />
         <p class="save-data-status" id="save-data-status" role="status" aria-live="polite">최고 기록과 진행 정보는 이 브라우저에 자동 저장됩니다.</p>
       </section>
@@ -492,14 +500,14 @@
     <div class="modal-backdrop" id="updates-modal" role="dialog" aria-modal="true" aria-labelledby="updates-title" aria-hidden="true">
       <section class="modal progression-modal updates-card">
         <button class="modal-close utility-page-back" id="updates-close-button" type="button" aria-label="업데이트 안내에서 홈으로 돌아가기"><span class="utility-close-mark" aria-hidden="true">×</span><span class="utility-back-arrow" aria-hidden="true">←</span><b>홈</b></button>
-        <div class="modal-kicker">VERSION <span id="app-version-label">2.14.0</span></div>
-        <h2 id="updates-title">성장·컬렉션 확장 업데이트</h2>
-        <p>2026.08 · 가게 업그레이드의 성장 구간을 늘리고, 매장 분위기를 바꿀 수 있는 꾸미기 컬렉션을 대폭 확장했습니다.</p>
+        <div class="modal-kicker">VERSION <span id="app-version-label">2.15.0</span></div>
+        <h2 id="updates-title">마스터 개조·플레이 UI 업데이트</h2>
+        <p>2026.08 · Lv.8 이후 선택형 성장을 추가하고, 모바일 사건 조작과 결과 화면의 행동 간격을 다시 정돈했습니다.</p>
         <div class="update-list">
-          <article><span>LEVEL 8</span><div><h3>길어진 가게 성장</h3><p>고속 모터와 프로 청소 키트를 8단계까지 강화할 수 있습니다.</p></div></article>
-          <article><span>BALANCE</span><div><h3>안정적인 후반 효과</h3><p>기존 3단계 성능은 유지하면서 후반 보너스는 완만하게 증가합니다.</p></div></article>
-          <article><span>24 ITEMS</span><div><h3>24종으로 넓어진 컬렉션</h3><p>간판·바닥·벽지·화분을 각각 6종씩, 총 24종 모을 수 있습니다.</p></div></article>
-          <article><span>STYLE</span><div><h3>새로운 매장 테마</h3><p>네온, 테라조, 별밤, 라벤더 등 다양한 분위기를 조합할 수 있습니다.</p></div></article>
+          <article><span>MASTER</span><div><h3>Lv.8 이후 선택형 개조</h3><p>설비별 두 특화 중 하나를 선택해 3단계까지 성장할 수 있습니다.</p></div></article>
+          <article><span>50 PX</span><div><h3>커진 사건 조작 버튼</h3><p>세제 탱크와 차단기를 액션 도구와 같은 높이로 맞췄습니다.</p></div></article>
+          <article><span>RESULT</span><div><h3>분리된 홈 이동</h3><p>홈 버튼을 재도전 행동과 분리해 충분한 여백과 명확한 우선순위를 제공합니다.</p></div></article>
+          <article><span>SAVE V8</span><div><h3>기존 진행 그대로</h3><p>기존 강화·꾸미기 저장 데이터는 유지되고 마스터 개조 상태만 안전하게 추가됩니다.</p></div></article>
         </div>
       </section>
     </div>
@@ -575,11 +583,11 @@
         </details>
         <div class="result-retry-actions">
           <button class="primary-button" id="restart-button" type="button"><span>같은 조건으로 재도전</span><b>↻</b></button>
-          <button class="result-home-button" id="result-home-button" type="button"><span>홈으로 돌아가기</span><b>⌂</b></button>
           <button id="new-plan-button" type="button"><span>새 목표로 준비</span><b>◆</b></button>
           <button id="next-difficulty-button" type="button"><span>다음 난이도 도전</span><b>↑</b></button>
           <button id="share-result-button" type="button"><span>결과 카드 공유</span><b>↗</b></button>
         </div>
+        <div class="result-home-row"><button class="result-home-button" id="result-home-button" type="button"><span>홈으로 돌아가기</span><b>⌂</b></button></div>
         <button class="result-unlock-button" id="result-unlock-button" type="button" hidden><span>★ 새로 해금된 콘텐츠 보기</span><b>→</b></button>
         <div class="result-secondary-actions">
           <button id="result-shop-button" type="button">⚙ 업그레이드</button>

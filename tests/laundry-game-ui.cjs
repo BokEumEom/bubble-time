@@ -504,9 +504,48 @@ async function run() {
   assert.match(upgradeExpansion.toolAction, /Lv\.4/, "기존 3레벨 도구 다음에 4레벨 강화를 안내해야 합니다.");
   assert.match(upgradeExpansion.machineEffect, /24%/, "기존 3레벨 기계 효과는 24%로 유지되어야 합니다.");
   assert.match(upgradeExpansion.toolEffect, /\+36%.*1\.05초/, "기존 3레벨 도구 효과는 그대로 유지되어야 합니다.");
+  const masterRenovation = await evaluate(`(() => {
+    state.progression.upgrades.machine = 8;
+    state.progression.upgrades.tool = 8;
+    state.progression.wallet = 99999;
+    updateUpgradeCards();
+    const unlockedButtons = document.querySelectorAll('#master-renovation-list [data-master-path]:not(:disabled)').length;
+    buyMasterRenovation('machine', 'turbo');
+    buyMasterRenovation('machine', 'turbo');
+    buyMasterRenovation('machine', 'turbo');
+    buyMasterRenovation('tool', 'rhythm');
+    const machineTrack = document.querySelector('[data-master-track="machine"]');
+    const toolTrack = document.querySelector('[data-master-track="tool"]');
+    return {
+      maxLevel: CONFIG.upgrades.master.maxLevel,
+      unlockedButtons,
+      machinePath: state.progression.master.machine.path,
+      machineLevel: state.progression.master.machine.level,
+      toolPath: state.progression.master.tool.path,
+      toolLevel: state.progression.master.tool.level,
+      turboBonus: masterBonus('machine', 'turbo'),
+      rhythmBonus: masterBonus('tool', 'rhythm'),
+      machinePips: machineTrack.querySelectorAll('.master-level-pips i.active').length,
+      toolPips: toolTrack.querySelectorAll('.master-level-pips i.active').length,
+      blockedMachinePaths: machineTrack.querySelectorAll('.master-path.blocked').length,
+      summary: document.querySelector('#master-renovation-summary').textContent
+    };
+  })()`);
+  assert.equal(masterRenovation.maxLevel, 3, "마스터 개조는 특화별 3단계여야 합니다.");
+  assert.equal(masterRenovation.unlockedButtons, 4, "두 설비의 Lv.8 달성 후 네 특화 선택지가 열려야 합니다.");
+  assert.deepEqual({ path: masterRenovation.machinePath, level: masterRenovation.machineLevel }, { path: "turbo", level: 3 }, "터보 회전율을 3단계까지 개조할 수 있어야 합니다.");
+  assert.deepEqual({ path: masterRenovation.toolPath, level: masterRenovation.toolLevel }, { path: "rhythm", level: 1 }, "도구 리듬 특화를 선택해 강화할 수 있어야 합니다.");
+  assert.equal(masterRenovation.turboBonus, 0.09, "터보 마스터 3단계는 작업 시간을 추가 9% 단축해야 합니다.");
+  assert.equal(masterRenovation.rhythmBonus, 400, "리듬 마스터 1단계는 콤보 판정을 0.4초 늘려야 합니다.");
+  assert.equal(masterRenovation.machinePips, 3, "완성된 마스터 개조는 진행 칸 세 개가 채워져야 합니다.");
+  assert.equal(masterRenovation.toolPips, 1, "진행 중인 마스터 개조는 현재 단계만 표시해야 합니다.");
+  assert.equal(masterRenovation.blockedMachinePaths, 1, "특화를 고르면 반대 특화는 잠겨야 합니다.");
+  assert.match(masterRenovation.summary, /4 \/ 6/, "마스터 전체 진행도가 표시되어야 합니다.");
   await evaluate(`
     state.progression.upgrades.machine = 0;
     state.progression.upgrades.tool = 0;
+    state.progression.master.machine = { path: null, level: 0 };
+    state.progression.master.tool = { path: null, level: 0 };
     updateUpgradeCards();
   `);
   const growthToSettings = await evaluate(`(() => {
@@ -578,6 +617,8 @@ async function run() {
     dockHeight: document.querySelector('.tool-dock').getBoundingClientRect().height,
     toolGap: parseFloat(getComputedStyle(document.querySelector('#tools')).gap),
     toolHeight: document.querySelector('.tool').getBoundingClientRect().height,
+    detergentHeight: document.querySelector('#detergent-station').getBoundingClientRect().height,
+    breakerHeight: document.querySelector('#breaker-panel').getBoundingClientRect().height,
     bodyFits: document.body.scrollHeight <= innerHeight + 1,
     topbarHeight: document.querySelector('.topbar').getBoundingClientRect().height,
     missionHeight: document.querySelector('.mission-strip').getBoundingClientRect().height,
@@ -614,6 +655,8 @@ async function run() {
   assert.ok(mobileGame.dockHeight <= 111, "모바일 도구판은 확대된 버튼을 포함하면서 111px 이하여야 합니다.");
   assert.equal(mobileGame.toolGap, 2, "모바일 액션 버튼 간격은 2px로 촘촘해야 합니다.");
   assert.equal(mobileGame.toolHeight, 50, "모바일 액션 버튼은 50px 높이로 터치 영역을 확보해야 합니다.");
+  assert.equal(mobileGame.detergentHeight, mobileGame.toolHeight, "세제 탱크는 액션 도구와 같은 50px 높이여야 합니다.");
+  assert.equal(mobileGame.breakerHeight, mobileGame.toolHeight, "차단기는 액션 도구와 같은 50px 높이여야 합니다.");
   assert.equal(mobileGame.bodyFits, true, "모바일 영업 화면은 세로 스크롤 없이 한 화면에 들어와야 합니다.");
   assert.equal(mobileGame.topbarHeight, 34, "모바일 상단 HUD는 34px로 압축되어야 합니다.");
   assert.equal(mobileGame.missionHeight, 26, "모바일 상태 HUD는 26px로 압축되어야 합니다.");
@@ -668,11 +711,15 @@ async function run() {
       playHeight: play.height,
       expectedHeight: (innerWidth - 10) * 639 / 380,
       machineToolGap: tools.top - lastMachine.bottom,
+      detergentHeight: document.querySelector('#detergent-station').getBoundingClientRect().height,
+      breakerHeight: document.querySelector('#breaker-panel').getBoundingClientRect().height,
       bodyFits: document.body.scrollHeight <= innerHeight + 1
     };
   })()`);
   assert.ok(Math.abs(compactMobileGame.playHeight - compactMobileGame.expectedHeight) <= 1, "360px 모바일에서도 기계 보드 비율이 유지되어야 합니다.");
   assert.ok(Math.abs(compactMobileGame.machineToolGap) <= 1, "360px 모바일에서도 기계와 액션 버튼이 바로 연결되어야 합니다.");
+  assert.equal(compactMobileGame.detergentHeight, 50, "360px 모바일에서도 세제 탱크는 50px 높이를 유지해야 합니다.");
+  assert.equal(compactMobileGame.breakerHeight, 50, "360px 모바일에서도 차단기는 50px 높이를 유지해야 합니다.");
   assert.equal(compactMobileGame.bodyFits, true, "360×800에서도 게임 화면이 세로 스크롤 없이 보여야 합니다.");
   await cdp("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
   await wait(60);
@@ -694,12 +741,18 @@ async function run() {
     layout: getComputedStyle(document.querySelector('#result-modal .result-card')).display,
     gap: parseFloat(getComputedStyle(document.querySelector('#result-modal .result-card')).gap),
     actionGap: parseFloat(getComputedStyle(document.querySelector('.result-retry-actions')).gap),
-    statsMargin: getComputedStyle(document.querySelector('.result-stats')).margin
+    statsMargin: getComputedStyle(document.querySelector('.result-stats')).margin,
+    homeInsideRetry: Boolean(document.querySelector('.result-retry-actions #result-home-button')),
+    homeGap: document.querySelector('#result-home-button').getBoundingClientRect().top - document.querySelector('.result-retry-actions').getBoundingClientRect().bottom,
+    homeHeight: document.querySelector('#result-home-button').getBoundingClientRect().height
   })`);
   assert.equal(mobileResultSpacing.layout, "flex", "모바일 결과는 일정한 세로 리듬을 위한 플렉스 레이아웃이어야 합니다.");
   assert.equal(mobileResultSpacing.gap, 8, "모바일 결과의 주요 정보 간격은 8px로 일정해야 합니다.");
   assert.equal(mobileResultSpacing.actionGap, 6, "모바일 결과 행동 버튼 간격은 6px이어야 합니다.");
   assert.equal(mobileResultSpacing.statsMargin, "0px", "모바일 결과 통계에 중복 여백이 남지 않아야 합니다.");
+  assert.equal(mobileResultSpacing.homeInsideRetry, false, "홈 이동은 재도전 버튼 묶음에서 분리되어야 합니다.");
+  assert.ok(mobileResultSpacing.homeGap >= 24, "홈 이동 버튼 위에는 재도전 행동과 구분되는 간격이 있어야 합니다.");
+  assert.equal(mobileResultSpacing.homeHeight, 52, "홈 이동 버튼은 모바일에서 충분한 터치 높이를 가져야 합니다.");
   if (process.env.CAPTURE_UI_REVIEW === "1") {
     await wait(250);
     const resultReview = await cdp("Page.captureScreenshot", { format: "png", fromSurface: true, captureBeyondViewport: false });
@@ -712,11 +765,12 @@ async function run() {
   `);
   await waitFor("document.readyState === 'complete' && typeof state !== 'undefined'");
   console.log("UI 회귀: 저장 데이터 이전 확인");
-  const migrated = await evaluate("({ version: state.progression.schemaVersion, objectives: state.progression.stats.objectives, standardRecord: state.progression.records.standard.score, lastMode: state.progression.preferences.lastMode })");
-  assert.equal(migrated.version, 7, "v5 저장 데이터는 v7으로 이전되어야 합니다.");
+  const migrated = await evaluate("({ version: state.progression.schemaVersion, objectives: state.progression.stats.objectives, standardRecord: state.progression.records.standard.score, lastMode: state.progression.preferences.lastMode, master: state.progression.master })");
+  assert.equal(migrated.version, 8, "v5 저장 데이터는 v8으로 이전되어야 합니다.");
   assert.equal(migrated.objectives, 0, "이전 데이터의 목표 통계 기본값은 0이어야 합니다.");
   assert.equal(migrated.standardRecord, 4200, "기존 최고 기록은 75초 기본 모드 기록으로 이전되어야 합니다.");
   assert.equal(migrated.lastMode, "standard", "이전 데이터는 75초 기본 영업을 유지해야 합니다.");
+  assert.deepEqual(migrated.master, { machine: { path: null, level: 0 }, tool: { path: null, level: 0 } }, "이전 저장 데이터에는 안전한 마스터 개조 기본값이 추가되어야 합니다.");
 
   if (process.env.CAPTURE_PWA_ASSETS === "1") {
     await evaluate("clearShiftCheckpoint(); updateCheckpointUi()");

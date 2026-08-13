@@ -7,8 +7,8 @@ const STORAGE_KEY = "bubbleTime75.bestRecord.v1";
 const PROGRESSION_KEY = "bubbleTime75.progression.v1";
 const CHECKPOINT_KEY = "bubbleTime.shiftCheckpoint.v1";
 const SEEN_VERSION_KEY = "bubbleTime75.seenVersion";
-const APP_VERSION = "2.14.0";
-const DATA_SCHEMA_VERSION = 7;
+const APP_VERSION = "2.15.0";
+const DATA_SCHEMA_VERSION = 8;
 const MOBILE_PAGE_MEDIA = "(max-width: 520px)";
 const MOBILE_SLIDE_PAGE_IDS = new Set(["prep-modal", "stats-modal", "settings-modal", "help-modal", "updates-modal"]);
 
@@ -105,6 +105,27 @@ const DECORATIONS = [
   { id: "plant_bonsai", type: "plant", icon: "♧", display: "♧", title: "점장 보너스 분재", description: "오래 운영한 점장을 위한 단정한 분재", price: 680, unlockLevel: 6 },
 ];
 
+const MASTER_RENOVATIONS = Object.freeze({
+  machine: Object.freeze({
+    icon: "◎",
+    title: "기계 마스터",
+    requirement: "고속 모터 Lv.8",
+    paths: Object.freeze({
+      turbo: Object.freeze({ title: "터보 회전율", tag: "SPEED", description: "모든 기계의 작업 시간을 추가로 단축합니다.", bonusKey: "machineTurbo" }),
+      service: Object.freeze({ title: "고객 응대", tag: "SERVICE", description: "세탁을 마친 손님의 서비스 점수를 높입니다.", bonusKey: "machineService" }),
+    }),
+  }),
+  tool: Object.freeze({
+    icon: "✦",
+    title: "도구 마스터",
+    requirement: "프로 청소 키트 Lv.8",
+    paths: Object.freeze({
+      precision: Object.freeze({ title: "정밀 세척", tag: "SCORE", description: "오염을 처리할 때 얻는 청소 점수를 높입니다.", bonusKey: "toolPrecision" }),
+      rhythm: Object.freeze({ title: "리듬 유지", tag: "COMBO", description: "빠른 청소 콤보의 판정 시간을 늘립니다.", bonusKey: "toolRhythm" }),
+    }),
+  }),
+});
+
 const TUTORIAL_STEPS = [
   { id: "limescale", action: "clean", icon: "💧", kicker: "기본 청소", title: "물때를 닦아볼까요?", copy: "스퀴지를 선택하고 반짝이는 세탁기를 눌러주세요.", tool: "squeegee", machineId: "washer-1" },
   { id: "dust", action: "clean", icon: "☁", kicker: "기본 청소", title: "먼지를 털어내세요", copy: "먼지털이를 선택하고 먼지가 쌓인 건조기를 눌러주세요.", tool: "duster", machineId: "dryer-1" },
@@ -197,8 +218,8 @@ const CODEX_CONTENT = {
     { id: "inspection", icon: "◆", title: "위생 검사", tag: "매장 전체", description: "제한 시간 안에 모든 오염을 제거하면 보너스를 받고, 실패하면 점수가 차감됩니다." },
   ],
   upgrades: [
-    { id: "machine", icon: "◎", title: "고속 모터", tag: "MACHINE", description: "8단계까지 강화하며 모든 기계 작업 시간을 최대 50% 줄입니다." },
-    { id: "tool", icon: "✦", title: "프로 청소 키트", tag: "TOOLS", description: "8단계까지 강화하며 청소 점수와 콤보 판정을 함께 높입니다." },
+    { id: "machine", icon: "◎", title: "고속 모터", tag: "MACHINE", description: "기본 8단계 이후 터보 회전율 또는 고객 응대 마스터 개조를 선택합니다." },
+    { id: "tool", icon: "✦", title: "프로 청소 키트", tag: "TOOLS", description: "기본 8단계 이후 정밀 세척 또는 리듬 유지 마스터 개조를 선택합니다." },
   ],
 };
 
@@ -1449,7 +1470,8 @@ function processQueue() {
 function beginCycle(machine, guest) {
   machine.guest = guest;
   machine.cycleStarted = performance.now();
-  const machineSpeed = 1 - upgradeBonus("machineSpeedBonuses", state.progression.upgrades.machine);
+  const machineReduction = upgradeBonus("machineSpeedBonuses", state.progression.upgrades.machine) + masterBonus("machine", "turbo");
+  const machineSpeed = 1 - Math.min(0.65, machineReduction);
   machine.cycleDuration = randomBetween(CONFIG.machine.cycleMin, CONFIG.machine.cycleMax) * guest.cycleMultiplier * machineSpeed * DIFFICULTIES[state.difficulty].cycle;
   machine.el.classList.add("busy");
   machine.el.querySelector(".machine-label small").textContent = guest.type === "bulk" ? "대량 세탁 중" : "작동 중";
@@ -1498,7 +1520,8 @@ function finishCycle(machine) {
     recordSatisfaction(guest.satisfaction);
     const satisfactionBonus = Math.round(guest.satisfaction * 0.6);
     const conditionReward = state.condition?.reward || 1;
-    const servicePoints = Math.round((160 + satisfactionBonus + (guest.cleaned ? 120 : 0)) * guest.rewardMultiplier * conditionReward);
+    const serviceMasterBonus = 1 + masterBonus("machine", "service");
+    const servicePoints = Math.round((160 + satisfactionBonus + (guest.cleaned ? 120 : 0)) * guest.rewardMultiplier * conditionReward * serviceMasterBonus);
     changeScore(servicePoints);
     if (guest.satisfaction >= CONFIG.satisfaction.happyThreshold) {
       advanceDailyChallenge("happy", 1);
@@ -1605,7 +1628,7 @@ function handleMachineClick(id) {
   const rect = machine.el.getBoundingClientRect();
   const cleanElapsed = performance.now() - machine.dirtCreatedAt;
   const combo = registerCleanCombo(cleanElapsed);
-  const toolBonus = 1 + upgradeBonus("toolScoreBonuses", state.progression.upgrades.tool);
+  const toolBonus = 1 + upgradeBonus("toolScoreBonuses", state.progression.upgrades.tool) + masterBonus("tool", "precision");
   const earnedPoints = Math.round(140 * toolBonus * combo.multiplier);
   state.dirtCleanCounts[machine.dirt] += 1;
   machine.dirt = null;
@@ -1645,7 +1668,8 @@ function handleGuestClick(id) {
     state.dirtCleanCounts.stain += 1;
     const rect = guest.el.getBoundingClientRect();
     const combo = registerCleanCombo(performance.now() - guest.arrivedAt);
-    const earnedPoints = Math.round(450 * combo.multiplier);
+    const toolBonus = 1 + upgradeBonus("toolScoreBonuses", state.progression.upgrades.tool) + masterBonus("tool", "precision");
+    const earnedPoints = Math.round(450 * toolBonus * combo.multiplier);
     changeScore(earnedPoints);
     scorePop(rect, `+${earnedPoints}`);
     if (combo.fast) comboPop(rect, combo.multiplier);
@@ -1751,7 +1775,7 @@ function comboMultiplier(combo = state.combo) {
 }
 
 function registerCleanCombo(elapsedMs) {
-  const comboWindow = CONFIG.combo.fastWindow + upgradeBonus("comboWindowBonuses", state.progression.upgrades.tool);
+  const comboWindow = CONFIG.combo.fastWindow + upgradeBonus("comboWindowBonuses", state.progression.upgrades.tool) + masterBonus("tool", "rhythm");
   const fast = elapsedMs <= comboWindow;
   if (fast) {
     state.combo += 1;
@@ -2288,6 +2312,7 @@ function defaultProgression() {
     schemaVersion: DATA_SCHEMA_VERSION,
     wallet: 0,
     upgrades: { machine: 0, tool: 0 },
+    master: { machine: { path: null, level: 0 }, tool: { path: null, level: 0 } },
     stats: { shifts: 0, cleaned: 0, served: 0, happy: 0, regular: 0, bulk: 0, impatient: 0, earnings: 0, maxCombo: 0, objectives: 0 },
     achievements: [],
     discovery: { customers: ["normal"], dirt: [], events: [], upgrades: ["machine", "tool"] },
@@ -2348,6 +2373,9 @@ function migrateProgressionData(saved) {
     migrated.records = { ...defaultModeRecords(), ...(saved.records || {}) };
     migrated.preferences = { ...(migrated.preferences || saved.preferences || {}), lastMode: saved.preferences?.lastMode || "standard" };
   }
+  if (version < 8) {
+    migrated.master = { machine: { path: null, level: 0 }, tool: { path: null, level: 0 } };
+  }
   migrated.schemaVersion = Math.max(version, DATA_SCHEMA_VERSION);
   return migrated;
 }
@@ -2380,6 +2408,7 @@ function loadProgression() {
       schemaVersion: saved.schemaVersion,
       wallet: Math.max(0, Number(saved.wallet) || 0),
       upgrades: { ...fallback.upgrades, ...(saved.upgrades || {}) },
+      master: { ...fallback.master },
       stats: { ...fallback.stats, ...(saved.stats || {}) },
       achievements: Array.isArray(saved.achievements) ? saved.achievements.filter((id) => ACHIEVEMENTS.some((item) => item.id === id)) : [],
       discovery: { ...fallback.discovery },
@@ -2431,6 +2460,12 @@ function loadProgression() {
     progression.discovery.upgrades = ["machine", "tool"];
     progression.upgrades.machine = Math.min(CONFIG.upgrades.maxLevel, Math.max(0, Number(progression.upgrades.machine) || 0));
     progression.upgrades.tool = Math.min(CONFIG.upgrades.maxLevel, Math.max(0, Number(progression.upgrades.tool) || 0));
+    Object.entries(MASTER_RENOVATIONS).forEach(([type, renovation]) => {
+      const savedTrack = saved.master?.[type] || {};
+      const validPath = Object.hasOwn(renovation.paths, savedTrack.path) ? savedTrack.path : null;
+      const level = Math.min(CONFIG.upgrades.master.maxLevel, Math.max(0, Number(savedTrack.level) || 0));
+      progression.master[type] = { path: level > 0 ? validPath : null, level: validPath ? level : 0 };
+    });
     const weeklyDefinitions = weeklyDefinitionsFor(progression.weekly.week);
     progression.weekly.goals = weeklyDefinitions.map((definition) => {
       const goal = Array.isArray(progression.weekly.goals) ? progression.weekly.goals.find((item) => item.id === definition.id) : null;
@@ -2914,6 +2949,15 @@ function upgradeBonus(key, level) {
   return bonuses?.[safeLevel] ?? 0;
 }
 
+function masterBonus(type, path) {
+  const renovation = MASTER_RENOVATIONS[type];
+  const track = state.progression.master?.[type];
+  if (!renovation || !track || track.path !== path) return 0;
+  const definition = renovation.paths[path];
+  const level = Math.min(CONFIG.upgrades.master.maxLevel, Math.max(0, Number(track.level) || 0));
+  return CONFIG.upgrades.master[definition.bonusKey]?.[level] ?? 0;
+}
+
 function decorationIsUnlocked(decoration) {
   const weeklyUnlocked = decoration.unlock !== "weekly" || state.progression.cosmetics.weeklyBadges.length > 0;
   const levelUnlocked = !decoration.unlockLevel || managerLevelInfo().level >= decoration.unlockLevel;
@@ -2985,6 +3029,83 @@ function updateDecorPreview() {
   preview.querySelector(".preview-sign").textContent = sign?.display || "OPEN";
 }
 
+function masterEffectCopy(type, path, level, prefix = "현재") {
+  const definition = MASTER_RENOVATIONS[type]?.paths[path];
+  const value = definition ? CONFIG.upgrades.master[definition.bonusKey]?.[level] ?? 0 : 0;
+  if (type === "machine" && path === "turbo") return `${prefix} 작업 시간 추가 ${Math.round(value * 100)}% 단축`;
+  if (type === "machine" && path === "service") return `${prefix} 서비스 점수 +${Math.round(value * 100)}%`;
+  if (type === "tool" && path === "precision") return `${prefix} 청소 점수 +${Math.round(value * 100)}%`;
+  return `${prefix} 콤보 판정 +${(value / 1000).toFixed(1)}초`;
+}
+
+function renderMasterRenovations() {
+  const list = document.querySelector("#master-renovation-list");
+  const summary = document.querySelector("#master-renovation-summary");
+  if (!list || !summary) return;
+  const maxLevel = CONFIG.upgrades.master.maxLevel;
+  const totalLevel = Object.values(state.progression.master).reduce((total, track) => total + track.level, 0);
+  const readyTracks = Object.keys(MASTER_RENOVATIONS).filter((type) => state.progression.upgrades[type] >= CONFIG.upgrades.maxLevel).length;
+  summary.textContent = readyTracks ? `마스터 ${totalLevel} / ${maxLevel * 2}` : "Lv.8 달성 후 해금";
+  list.innerHTML = Object.entries(MASTER_RENOVATIONS).map(([type, renovation]) => {
+    const track = state.progression.master[type];
+    const unlocked = state.progression.upgrades[type] >= CONFIG.upgrades.maxLevel;
+    const nextCost = CONFIG.upgrades.master.costs[track.level] ?? 0;
+    const paths = Object.entries(renovation.paths).map(([path, definition]) => {
+      const selected = track.path === path;
+      const blocked = Boolean(track.path && !selected);
+      const maxed = selected && track.level >= maxLevel;
+      const previewLevel = selected ? track.level : maxLevel;
+      const action = !unlocked
+        ? `${renovation.requirement} 필요`
+        : blocked
+          ? "다른 특화 적용 중"
+          : maxed
+            ? "MASTERED"
+            : `Lv.${selected ? track.level + 1 : 1} · ◈ ${nextCost.toLocaleString("ko-KR")}`;
+      const disabled = !unlocked || blocked || maxed || state.progression.wallet < nextCost;
+      return `<button class="master-path${selected ? " selected" : ""}${blocked ? " blocked" : ""}" type="button" data-master-type="${type}" data-master-path="${path}" ${disabled ? "disabled" : ""}><span>${definition.tag}</span><div><strong>${definition.title}</strong><p>${definition.description}</p><em>${masterEffectCopy(type, path, previewLevel, selected ? "현재" : "최대")}</em></div><b>${action}</b></button>`;
+    }).join("");
+    const pips = Array.from({ length: maxLevel }, (_, index) => `<i class="${index < track.level ? "active" : ""}"></i>`).join("");
+    const reset = track.path
+      ? `<button class="master-reset" type="button" data-master-reset="${type}" ${state.progression.wallet < CONFIG.upgrades.master.resetCost ? "disabled" : ""}>특화 재설계 · ◈ ${CONFIG.upgrades.master.resetCost.toLocaleString("ko-KR")}</button>`
+      : "";
+    return `<article class="master-track${unlocked ? " unlocked" : " locked"}" data-master-track="${type}"><header><span>${renovation.icon}</span><div><small>${unlocked ? "MASTER READY" : "LOCKED"}</small><h4>${renovation.title}</h4></div><em>${unlocked ? `Lv.${track.level} / ${maxLevel}` : renovation.requirement}</em></header><div class="master-path-list">${paths}</div><footer><div class="master-level-pips" aria-label="${renovation.title} 레벨 ${track.level}/${maxLevel}">${pips}</div>${reset}</footer></article>`;
+  }).join("");
+}
+
+function buyMasterRenovation(type, path) {
+  if (state.running || !Object.hasOwn(MASTER_RENOVATIONS, type) || !Object.hasOwn(MASTER_RENOVATIONS[type].paths, path)) return;
+  if (state.progression.upgrades[type] < CONFIG.upgrades.maxLevel) return;
+  const track = state.progression.master[type];
+  if ((track.path && track.path !== path) || track.level >= CONFIG.upgrades.master.maxLevel) return;
+  const cost = CONFIG.upgrades.master.costs[track.level];
+  if (state.progression.wallet < cost) {
+    showToast("마스터 개조에 필요한 수익이 부족해요.", "bad", "◈", 1500);
+    return;
+  }
+  state.progression.wallet -= cost;
+  track.path = path;
+  track.level += 1;
+  saveProgression();
+  updateProgressionUi();
+  showToast(`${MASTER_RENOVATIONS[type].paths[path].title} Lv.${track.level} 개조 완료!`, "good", "✦", 1700);
+  playSuccessJingle();
+}
+
+function resetMasterRenovation(type) {
+  if (state.running || !Object.hasOwn(MASTER_RENOVATIONS, type)) return;
+  const track = state.progression.master[type];
+  const cost = CONFIG.upgrades.master.resetCost;
+  if (!track.path || state.progression.wallet < cost) return;
+  if (!window.confirm(`◈ ${cost.toLocaleString("ko-KR")}을 사용해 이 특화를 초기화할까요? 사용한 개조 비용은 반환되지 않습니다.`)) return;
+  state.progression.wallet -= cost;
+  track.path = null;
+  track.level = 0;
+  saveProgression();
+  updateProgressionUi();
+  showToast("마스터 특화를 재설계할 수 있어요.", "good", "↻", 1500);
+}
+
 function updateUpgradeCards() {
   ["machine", "tool"].forEach((type) => {
     const level = state.progression.upgrades[type];
@@ -3013,6 +3134,7 @@ function updateUpgradeCards() {
     button.disabled = state.progression.wallet < cost;
     button.innerHTML = `<span>Lv.${level + 1} 강화</span><strong>◈ <b>${cost}</b></strong>`;
   });
+  renderMasterRenovations();
 }
 
 function renderAchievements() {
@@ -3723,6 +3845,12 @@ els.detergentStation.addEventListener("click", handleDetergentClick);
 els.breakerPanel.addEventListener("click", handleBreakerClick);
 els.buyMachineUpgrade.addEventListener("click", () => buyUpgrade("machine"));
 els.buyToolUpgrade.addEventListener("click", () => buyUpgrade("tool"));
+document.querySelector("#master-renovation-list").addEventListener("click", (event) => {
+  const pathButton = event.target.closest("[data-master-path]");
+  const resetButton = event.target.closest("[data-master-reset]");
+  if (pathButton) buyMasterRenovation(pathButton.dataset.masterType, pathButton.dataset.masterPath);
+  if (resetButton) resetMasterRenovation(resetButton.dataset.masterReset);
+});
 els.bgmVolume.addEventListener("input", () => updatePreference("bgmVolume", Number(els.bgmVolume.value)));
 els.sfxVolume.addEventListener("input", () => updatePreference("sfxVolume", Number(els.sfxVolume.value)));
 els.vibrationSetting.addEventListener("change", () => updatePreference("vibration", els.vibrationSetting.checked));

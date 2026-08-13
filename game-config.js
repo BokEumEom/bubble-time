@@ -29,6 +29,15 @@ const LAUNDRY_CONFIG = Object.freeze({
     machineSpeedBonuses: Object.freeze([0, 0.08, 0.16, 0.24, 0.31, 0.37, 0.42, 0.46, 0.5]),
     toolScoreBonuses: Object.freeze([0, 0.12, 0.24, 0.36, 0.47, 0.58, 0.68, 0.77, 0.84]),
     comboWindowBonuses: Object.freeze([0, 350, 700, 1050, 1350, 1600, 1850, 2050, 2200]),
+    master: Object.freeze({
+      maxLevel: 3,
+      costs: Object.freeze([2200, 3200, 4400]),
+      resetCost: 800,
+      machineTurbo: Object.freeze([0, 0.03, 0.06, 0.09]),
+      machineService: Object.freeze([0, 0.05, 0.1, 0.15]),
+      toolPrecision: Object.freeze([0, 0.1, 0.2, 0.3]),
+      toolRhythm: Object.freeze([0, 400, 800, 1200]),
+    }),
   }),
   economy: Object.freeze({
     servedCoins: 10,
