@@ -256,7 +256,9 @@ async function run() {
     objectives: document.querySelectorAll('#result-objective-list article').length,
     completed: document.querySelectorAll('#result-objective-list article.completed').length,
     retry: document.querySelector('#restart-button').innerText,
+    home: document.querySelector('#result-home-button').innerText,
     next: document.querySelector('#next-difficulty-button').innerText,
+    detailsOpen: document.querySelector('#result-details').open,
     celebration: document.querySelectorAll('#result-celebration i').length,
     levelUp: document.querySelector('.result-card').classList.contains('level-up'),
     unlockVisible: !document.querySelector('#result-unlock-button').hidden
@@ -264,6 +266,8 @@ async function run() {
   assert.deepEqual(resultScreen.objectives, 2, "결과에 목표 두 개가 표시되어야 합니다.");
   assert.deepEqual(resultScreen.completed, 2, "충족한 목표는 완료 처리되어야 합니다.");
   assert.match(resultScreen.retry, /같은 조건/, "같은 조건 재도전 버튼이 필요합니다.");
+  assert.match(resultScreen.home, /홈으로/, "결과에서 홈으로 돌아가는 버튼이 필요합니다.");
+  assert.equal(resultScreen.detailsOpen, true, "데스크톱 결과 화면은 상세 기록을 바로 보여야 합니다.");
   assert.match(resultScreen.next, /피크 타임/, "다음 난이도를 제안해야 합니다.");
   assert.ok(resultScreen.celebration >= 24, "성과 축하 입자가 표시되어야 합니다.");
   assert.equal(resultScreen.levelUp, true, "첫 우수 영업은 레벨업 연출을 보여야 합니다.");
@@ -272,7 +276,15 @@ async function run() {
   assert.equal(await evaluate("state.progression.records.standard.score"), 4200, "75초 최고 기록은 모드별로 저장되어야 합니다.");
 
   const retryIds = await evaluate("state.lastShiftPlan.objectiveIds.join(',')");
-  await evaluate("document.querySelector('#restart-button').click()");
+  await evaluate("document.querySelector('#result-home-button').click()");
+  await waitFor("document.querySelector('#intro-modal').classList.contains('open') && !document.querySelector('#result-modal').classList.contains('open')");
+  assert.equal(await evaluate("state.running"), false, "결과에서 홈으로 이동하면 영업 상태가 안전하게 초기화되어야 합니다.");
+  await evaluate(`
+    document.querySelector('#intro-modal').classList.remove('open');
+    document.querySelector('#result-modal').classList.add('open');
+    document.querySelector('#result-modal').setAttribute('aria-hidden', 'false');
+    document.querySelector('#restart-button').click();
+  `);
   await waitFor("state.running === true && !document.querySelector('#result-modal').classList.contains('open')");
   assert.equal(await evaluate("state.shiftObjectives.map((item) => item.id).join(',')"), retryIds, "재도전은 같은 목표를 유지해야 합니다.");
   await evaluate("resetGame(); state.progression.onboarding.firstShiftComplete = true; updateProgressionUi(); openProgressionModal(els.statsModal)");
@@ -286,6 +298,44 @@ async function run() {
   assert.equal(mobileNavigation.columns, 4, "모바일 관리 메뉴는 네 그룹 한 줄이어야 합니다.");
   assert.equal(mobileNavigation.buttons, 4, "모바일 관리 센터 그룹 네 개가 보여야 합니다.");
   assert.equal(mobileNavigation.position, "fixed", "모바일 관리 메뉴는 긴 화면에서도 아래에 고정되어야 합니다.");
+
+  await evaluate("closeProgressionModal(els.statsModal)");
+  await waitFor("document.querySelector('#intro-modal').classList.contains('open')");
+  const mobileHome = await evaluate(`({
+    hubDisplay: getComputedStyle(document.querySelector('#mobile-manager-button')).display,
+    legacyActions: getComputedStyle(document.querySelector('.progression-actions')).display,
+    startFont: parseFloat(getComputedStyle(document.querySelector('#start-button')).fontSize),
+    utilityFont: parseFloat(getComputedStyle(document.querySelector('#tutorial-button')).fontSize),
+    fitsViewport: document.querySelector('#intro-modal').scrollHeight <= document.querySelector('#intro-modal').clientHeight + 2
+  })`);
+  assert.equal(mobileHome.hubDisplay, "grid", "모바일 홈에는 통합 관리 센터 진입 카드가 보여야 합니다.");
+  assert.equal(mobileHome.legacyActions, "none", "모바일 홈에서는 네 개 관리 버튼을 한꺼번에 노출하지 않아야 합니다.");
+  assert.ok(mobileHome.startFont >= 15, "모바일 시작 버튼 글자는 15px 이상이어야 합니다.");
+  assert.ok(mobileHome.utilityFont >= 11, "모바일 보조 버튼 글자는 11px 이상이어야 합니다.");
+  assert.equal(mobileHome.fitsViewport, true, "모바일 홈 핵심 행동은 첫 화면 안에 들어와야 합니다.");
+
+  await evaluate(`
+    state.shiftObjectives = [shiftObjectiveById('clean_6'), shiftObjectiveById('refundless')];
+    startGame();
+    clearGameTimers();
+  `);
+  const mobileGame = await evaluate(`({
+    toolColumns: getComputedStyle(document.querySelector('#tools')).gridTemplateColumns.split(' ').length,
+    toolLabelFont: parseFloat(getComputedStyle(document.querySelector('.tool'), '::before').fontSize),
+    hudLabelFont: parseFloat(getComputedStyle(document.querySelector('.hud-card small')).fontSize),
+    bestVisible: getComputedStyle(document.querySelector('.best-card')).display,
+    dockPosition: getComputedStyle(document.querySelector('.tool-dock')).position
+  })`);
+  assert.equal(mobileGame.toolColumns, 3, "모바일 도구판은 읽기 쉬운 3열 2행이어야 합니다.");
+  assert.ok(mobileGame.toolLabelFont >= 11, "모바일 도구 이름은 11px 이상이어야 합니다.");
+  assert.ok(mobileGame.hudLabelFont >= 10, "모바일 HUD 라벨은 10px 이상이어야 합니다.");
+  assert.equal(mobileGame.bestVisible, "none", "영업 중 모바일 HUD에서는 최고 기록을 숨겨야 합니다.");
+  assert.equal(mobileGame.dockPosition, "sticky", "모바일 도구판은 화면 아래에서 계속 접근할 수 있어야 합니다.");
+
+  await evaluate("state.score = 900; state.cleaned = 2; endGame(true, 'time')");
+  await waitFor("document.querySelector('#result-modal').classList.contains('open')");
+  assert.equal(await evaluate("document.querySelector('#result-details').open"), false, "모바일 결과의 상세 기록은 기본적으로 접혀야 합니다.");
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.result-secondary-actions')).display"), "none", "모바일 결과에서는 보조 관리 버튼 묶음을 숨겨야 합니다.");
 
   await evaluate(`
     localStorage.setItem('bubbleTime75.progression.v1', JSON.stringify({ schemaVersion: 5, stats: { shifts: 1 }, preferences: {}, tutorial: { completed: true } }));

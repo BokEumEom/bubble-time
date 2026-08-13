@@ -24,9 +24,9 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./assets/icon-192.png" />
-    <link rel="stylesheet" href="./styles.css" />
-    <script src="./game-config.js" defer></script>
-    <script src="./script.js" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=2.8.0" />
+    <script src="./game-config.js?v=2.8.0" defer></script>
+    <script src="./script.js?v=2.8.0" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#play-area">게임 화면으로 바로가기</a>
@@ -255,6 +255,11 @@
           </div>
         </div>
         <div class="intro-dashboard">
+        <button class="mobile-manager-entry" id="mobile-manager-button" type="button" aria-label="관리 센터 열기">
+          <span aria-hidden="true">▦</span>
+          <span><small>MANAGER DESK</small><strong>Lv.<b id="mobile-manager-level">1</b> · 보유 ◈ <b id="mobile-manager-wallet">0</b></strong><em id="mobile-manager-daily">오늘의 도전 0 / 12</em></span>
+          <b aria-hidden="true">→</b>
+        </button>
         <div class="best-record-line" id="intro-best-record">
           <span>★ <b id="intro-best-mode">75초 기본 영업</b> 최고 기록</span>
           <strong><b id="intro-best-score">0</b>점 · <em id="intro-best-rank">–</em>등급</strong>
@@ -487,14 +492,14 @@
     <div class="modal-backdrop" id="updates-modal" role="dialog" aria-modal="true" aria-labelledby="updates-title" aria-hidden="true">
       <section class="modal progression-modal updates-card">
         <button class="modal-close" id="updates-close-button" type="button" aria-label="업데이트 안내 닫기">×</button>
-        <div class="modal-kicker">VERSION <span id="app-version-label">2.7.0</span></div>
-        <h2 id="updates-title">편안한 화면 전환 업데이트</h2>
-        <p>2026.08 · 자주 오가는 기능을 팝업 대신 전용 화면으로 정리했습니다.</p>
+        <div class="modal-kicker">VERSION <span id="app-version-label">2.8.0</span></div>
+        <h2 id="updates-title">모바일 플레이 집중 업데이트</h2>
+        <p>2026.08 · 작은 화면에서는 지금 필요한 정보와 행동이 먼저 보이도록 다시 정리했습니다.</p>
         <div class="update-list">
-          <article><span>HOME</span><div><h3>팝업 없는 홈 화면</h3><p>영업 전 메인 화면을 독립된 홈으로 바꿔 시작부터 편안하게 둘러볼 수 있습니다.</p></div></article>
-          <article><span>MANAGER</span><div><h3>통합 관리 센터</h3><p>강화·업적·도감·꾸미기·기록·설정을 성장, 컬렉션, 기록, 설정 네 그룹으로 정리했습니다.</p></div></article>
-          <article><span>FLOW</span><div><h3>준비와 결과 전용 화면</h3><p>영업 준비와 결과도 배경 위 팝업 대신 자연스럽게 이어지는 전용 화면으로 표시합니다.</p></div></article>
-          <article><span>MOBILE</span><div><h3>고정 모바일 탐색</h3><p>모바일 관리 메뉴를 화면 아래 네 칸으로 고정해 긴 설정 화면에서도 바로 이동할 수 있습니다.</p></div></article>
+          <article><span>FOCUS</span><div><h3>간결해진 모바일 HUD</h3><p>최고 기록 등 영업 중 불필요한 정보를 숨기고 시간·점수·환불·대기 위험을 더 크게 표시합니다.</p></div></article>
+          <article><span>TOOLS</span><div><h3>읽기 쉬운 3×2 도구판</h3><p>여섯 도구를 두 줄로 배치하고 이름을 키워 빠른 터치 선택이 쉬워졌습니다.</p></div></article>
+          <article><span>RESULT</span><div><h3>결과에서 바로 홈으로</h3><p>영업 결과의 핵심 요약과 다음 행동을 먼저 보여주고, 홈으로 돌아가는 버튼을 추가했습니다.</p></div></article>
+          <article><span>TYPE</span><div><h3>모바일 가독성 강화</h3><p>준비·결과·관리·설정 화면의 작은 설명과 버튼 글자를 키우고 상세 정보는 접어서 볼 수 있습니다.</p></div></article>
         </div>
       </section>
     </div>
@@ -531,41 +536,45 @@
         <div class="shift-earnings"><span>이번 영업 수익</span><strong>+ ◈ <b id="result-coins">0</b></strong><small>보유 <b id="result-wallet">0</b></small></div>
         <div class="result-manager-progress"><span>점장 성장</span><strong>+<b id="result-xp">0</b> XP</strong><em id="result-reputation">명성 +0</em><small id="result-next-level">다음 레벨까지 180 XP</small></div>
         <div class="achievement-unlock-banner" id="achievement-unlock-banner" hidden><span>♛</span><strong id="achievement-unlock-text">새 업적 달성!</strong></div>
-        <section class="result-objectives" aria-labelledby="result-objectives-title">
-          <div><span>BONUS GOALS</span><h3 id="result-objectives-title">추가 목표 결과</h3><em id="result-objective-reward">보상 ◈ 0 · 0 XP</em></div>
-          <div id="result-objective-list"></div>
-        </section>
         <div class="result-stats">
           <div><small>최종 점수</small><strong id="result-score">0</strong></div>
           <div><small>청소 완료</small><strong><b id="result-cleaned">0</b>건</strong></div>
           <div><small>환불</small><strong><b id="result-refunds">0</b>건</strong></div>
           <div><small>받은 손님</small><strong><b id="result-served">0</b>명</strong></div>
         </div>
-        <div class="result-performance">
-          <div><span>⚡</span><small>최고 콤보</small><strong><b id="result-max-combo">0</b> COMBO</strong></div>
-          <div><span>◷</span><small>평균 대기</small><strong><b id="result-average-wait">0.0</b>초</strong></div>
-          <div><span>♥</span><small>만족 손님</small><strong><b id="result-happy-rate">100</b>%</strong></div>
-        </div>
-        <div class="result-guest-types">
-          <span><i>⚡</i><small>성격 급한</small><strong id="result-impatient">0</strong></span>
-          <span><i>★</i><small>단골</small><strong id="result-regular">0</strong></span>
-          <span><i>▦</i><small>대량 세탁</small><strong id="result-bulk">0</strong></span>
-        </div>
-        <section class="result-analysis" aria-labelledby="result-analysis-title">
-          <div class="result-analysis-heading"><span>SHIFT REPORT</span><h3 id="result-analysis-title">오늘의 영업 분석</h3></div>
-          <div class="result-analysis-grid">
-            <span><small>평균 사건 대응</small><strong id="result-event-response">–</strong></span>
-            <span><small>가장 놓친 오염</small><strong id="result-missed-dirt">없음</strong></span>
-            <span><small>주요 환불 원인</small><strong id="result-refund-cause">환불 없음</strong></span>
-            <span><small>최고 대기 인원</small><strong><b id="result-peak-queue">0</b>명</strong></span>
-          </div>
-          <p class="result-advice"><span>TIP</span><strong id="result-advice">오염을 빠르게 처리해 콤보를 이어가 보세요.</strong></p>
-        </section>
         <div class="result-rank">
           <span>오늘의 등급 · <b id="result-difficulty">표준 영업</b></span><strong id="result-rank">S</strong><p id="rank-copy">빨래방의 전설</p>
         </div>
+        <details class="result-details" id="result-details">
+          <summary><span>상세 영업 기록</span><small>목표 · 손님 · 운영 분석</small><b aria-hidden="true">⌄</b></summary>
+          <section class="result-objectives" aria-labelledby="result-objectives-title">
+            <div><span>BONUS GOALS</span><h3 id="result-objectives-title">추가 목표 결과</h3><em id="result-objective-reward">보상 ◈ 0 · 0 XP</em></div>
+            <div id="result-objective-list"></div>
+          </section>
+          <div class="result-performance">
+            <div><span>⚡</span><small>최고 콤보</small><strong><b id="result-max-combo">0</b> COMBO</strong></div>
+            <div><span>◷</span><small>평균 대기</small><strong><b id="result-average-wait">0.0</b>초</strong></div>
+            <div><span>♥</span><small>만족 손님</small><strong><b id="result-happy-rate">100</b>%</strong></div>
+          </div>
+          <div class="result-guest-types">
+            <span><i>⚡</i><small>성격 급한</small><strong id="result-impatient">0</strong></span>
+            <span><i>★</i><small>단골</small><strong id="result-regular">0</strong></span>
+            <span><i>▦</i><small>대량 세탁</small><strong id="result-bulk">0</strong></span>
+          </div>
+          <section class="result-analysis" aria-labelledby="result-analysis-title">
+            <div class="result-analysis-heading"><span>SHIFT REPORT</span><h3 id="result-analysis-title">오늘의 영업 분석</h3></div>
+            <div class="result-analysis-grid">
+              <span><small>평균 사건 대응</small><strong id="result-event-response">–</strong></span>
+              <span><small>가장 놓친 오염</small><strong id="result-missed-dirt">없음</strong></span>
+              <span><small>주요 환불 원인</small><strong id="result-refund-cause">환불 없음</strong></span>
+              <span><small>최고 대기 인원</small><strong><b id="result-peak-queue">0</b>명</strong></span>
+            </div>
+            <p class="result-advice"><span>TIP</span><strong id="result-advice">오염을 빠르게 처리해 콤보를 이어가 보세요.</strong></p>
+          </section>
+        </details>
         <div class="result-retry-actions">
           <button class="primary-button" id="restart-button" type="button"><span>같은 조건으로 재도전</span><b>↻</b></button>
+          <button class="result-home-button" id="result-home-button" type="button"><span>홈으로 돌아가기</span><b>⌂</b></button>
           <button id="new-plan-button" type="button"><span>새 목표로 준비</span><b>◆</b></button>
           <button id="next-difficulty-button" type="button"><span>다음 난이도 도전</span><b>↑</b></button>
           <button id="share-result-button" type="button"><span>결과 카드 공유</span><b>↗</b></button>

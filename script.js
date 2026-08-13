@@ -7,7 +7,7 @@ const STORAGE_KEY = "bubbleTime75.bestRecord.v1";
 const PROGRESSION_KEY = "bubbleTime75.progression.v1";
 const CHECKPOINT_KEY = "bubbleTime.shiftCheckpoint.v1";
 const SEEN_VERSION_KEY = "bubbleTime75.seenVersion";
-const APP_VERSION = "2.7.0";
+const APP_VERSION = "2.8.0";
 const DATA_SCHEMA_VERSION = 7;
 
 const GAME_MODES = {
@@ -293,6 +293,7 @@ const els = {
   startButton: document.querySelector("#start-button"),
   confirmStartButton: document.querySelector("#confirm-start-button"),
   restartButton: document.querySelector("#restart-button"),
+  resultHomeButton: document.querySelector("#result-home-button"),
   resumeButton: document.querySelector("#resume-button"),
   pauseRestartButton: document.querySelector("#pause-restart-button"),
   pauseTime: document.querySelector("#pause-time"),
@@ -380,6 +381,7 @@ const els = {
   statsModal: document.querySelector("#stats-modal"),
   statsCloseButton: document.querySelector("#stats-close-button"),
   managerButton: document.querySelector("#manager-button"),
+  mobileManagerButton: document.querySelector("#mobile-manager-button"),
   resultStatsButton: document.querySelector("#result-stats-button"),
   skipOnboardingButton: document.querySelector("#skip-onboarding-button"),
   screenReaderLive: document.querySelector("#screen-reader-live"),
@@ -398,6 +400,7 @@ const els = {
   newPlanButton: document.querySelector("#new-plan-button"),
   nextDifficultyButton: document.querySelector("#next-difficulty-button"),
   resultUnlockButton: document.querySelector("#result-unlock-button"),
+  resultDetails: document.querySelector("#result-details"),
   weatherLayer: document.querySelector("#weather-layer"),
 };
 
@@ -1970,6 +1973,7 @@ function endGame(success, reason) {
     ? `${unlockedAchievements.map((item) => item.title).join(" · ")} 달성!`
     : "새 업적 달성!";
   configureResultActions(progressionResult, isNewRecord);
+  els.resultDetails.open = window.matchMedia("(min-width: 521px)").matches;
   updateRecordUi();
   updateProgressionUi();
   els.resultModal.classList.add("open");
@@ -2028,6 +2032,18 @@ function openFreshShiftPlan(higherDifficulty = false) {
     state.difficulty = order[Math.min(order.length - 1, order.indexOf(state.difficulty) + 1)] || "standard";
   }
   openPrepModal(true, true);
+}
+
+function returnHomeFromResult() {
+  clearShiftCheckpoint();
+  resetGame();
+  els.resultModal.classList.remove("open");
+  els.resultModal.setAttribute("aria-hidden", "true");
+  els.introModal.classList.add("open");
+  els.introModal.setAttribute("aria-hidden", "false");
+  els.introModal.scrollTop = 0;
+  updateCheckpointUi();
+  window.setTimeout(() => els.startButton.focus({ preventScroll: true }), 80);
 }
 
 function openResultUnlock() {
@@ -2756,6 +2772,8 @@ function updateProgressionUi() {
   document.querySelector("#daily-challenge-progress").textContent = dailyLabel;
   document.querySelector("#intro-daily-title").textContent = dailyDefinition.title;
   document.querySelector("#intro-daily-progress").textContent = dailyLabel;
+  document.querySelector("#mobile-manager-wallet").textContent = progression.wallet.toLocaleString("ko-KR");
+  document.querySelector("#mobile-manager-daily").textContent = `오늘의 도전 · ${dailyLabel}`;
   document.querySelector("#achievement-daily-title").textContent = dailyDefinition.title;
   document.querySelector("#achievement-daily-progress").textContent = dailyLabel;
   document.querySelector("#achievement-daily-bar").style.width = `${Math.min(100, (dailyProgress / dailyDefinition.target) * 100)}%`;
@@ -2784,6 +2802,7 @@ function updateManagerUi() {
     "manager-xp": currentXp,
     "manager-next-xp": targetXp,
     "manager-badge": current.level,
+    "mobile-manager-level": current.level,
     "stats-manager-level": current.level,
     "stats-manager-title": current.title,
     "stats-manager-reputation": progression.manager.reputation,
@@ -3499,6 +3518,7 @@ els.helpTutorialButton.addEventListener("click", startTutorial);
 els.tutorialExitButton.addEventListener("click", exitTutorial);
 els.tutorialFinishButton.addEventListener("click", exitTutorial);
 els.restartButton.addEventListener("click", retrySameShift);
+els.resultHomeButton.addEventListener("click", returnHomeFromResult);
 els.newPlanButton.addEventListener("click", () => openFreshShiftPlan(false));
 els.nextDifficultyButton.addEventListener("click", () => openFreshShiftPlan(true));
 els.resultUnlockButton.addEventListener("click", openResultUnlock);
@@ -3543,6 +3563,7 @@ els.settingsButton.addEventListener("click", () => {
 els.introSettingsButton.addEventListener("click", () => openProgressionModal(els.settingsModal));
 els.resultSettingsButton.addEventListener("click", () => openProgressionModal(els.settingsModal));
 els.managerButton.addEventListener("click", () => openProgressionModal(els.statsModal));
+els.mobileManagerButton.addEventListener("click", () => openProgressionModal(els.statsModal));
 els.resultStatsButton.addEventListener("click", () => openProgressionModal(els.statsModal));
 els.helpButton.addEventListener("click", () => openUtilityModal(els.helpModal));
 els.updatesButton.addEventListener("click", () => {

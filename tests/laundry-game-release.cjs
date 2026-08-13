@@ -56,6 +56,9 @@ const pngSize = (file) => {
   "resume-shift-card",
   "endless-cashout-button",
   "share-result-button",
+  "mobile-manager-button",
+  "result-home-button",
+  "result-details",
 ].forEach((id) => assert.match(html, new RegExp(`id=["']${id}["']`), `${id} UI가 필요합니다.`));
 
 assert.equal(manifest.display, "standalone", "PWA는 독립 실행형으로 열려야 합니다.");
@@ -67,7 +70,7 @@ assert.ok(manifest.screenshots.some((item) => item.form_factor === "narrow"), "�
   .forEach((asset) => assert.match(worker, new RegExp(asset.replace(".", "\\.")), `${asset}이 오프라인 캐시에 포함되어야 합니다.`));
 
 assert.match(script, /DATA_SCHEMA_VERSION\s*=\s*7/, "저장 데이터 스키마 버전 7이 필요합니다.");
-assert.match(script, /APP_VERSION\s*=\s*"2\.7\.0"/, "화면 전환 업데이트 버전 2.7.0이 필요합니다.");
+assert.match(script, /APP_VERSION\s*=\s*"2\.8\.0"/, "모바일 집중 업데이트 버전 2.8.0이 필요합니다.");
 assert.match(script, /const GAME_MODES/, "네 가지 영업 모드 정의가 필요합니다.");
 assert.match(script, /const MANAGEMENT_GROUPS/, "관리 센터 네 그룹 정의가 필요합니다.");
 assert.match(script, /saveShiftCheckpoint/, "영업 체크포인트 저장 함수가 필요합니다.");
@@ -94,6 +97,7 @@ assert.match(script, /prepareShiftObjectives/, "영업별 목표 배정 함수�
 assert.match(script, /evaluateShiftObjectives/, "영업 목표 평가 함수가 필요합니다.");
 assert.match(script, /retrySameShift/, "같은 조건 재도전 함수가 필요합니다.");
 assert.match(script, /playResultCelebration/, "성과별 결과 연출 함수가 필요합니다.");
+assert.match(script, /returnHomeFromResult/, "결과에서 홈으로 돌아가는 전환 함수가 필요합니다.");
 assert.match(script, /MAX_QUEUE\s*-\s*1\s*-\s*state\.queue\.length/, "단체 손님 사건은 즉시 패배를 만들지 않아야 합니다.");
 assert.match(worker, /SKIP_WAITING/, "서비스 워커 업데이트 적용 메시지가 필요합니다.");
 assert.match(styles, /@media \(max-width: 520px\)/, "모바일 레이아웃 기준이 필요합니다.");
@@ -108,6 +112,8 @@ assert.match(styles, /\.management-subnav/, "관리 그룹 내부 탐색 스타�
 assert.match(styles, /\.management-screen\.during-shift/, "영업 중 설정만 모달로 표시해야 합니다.");
 assert.match(styles, /\.result-celebration/, "결과 축하 연출 스타일이 필요합니다.");
 assert.match(styles, /\.shift-modes/, "영업 모드 선택 스타일이 필요합니다.");
+assert.match(styles, /\.mobile-manager-entry/, "모바일 홈의 통합 관리 진입 UI가 필요합니다.");
+assert.match(styles, /\.result-details/, "모바일 결과 상세 접기 UI가 필요합니다.");
 assert.ok(fs.existsSync(path.join(root, "tests", "laundry-game-ui.cjs")), "자동 UI 회귀 검사 파일이 필요합니다.");
 ["icon-192.png", "icon-512.png", "icon-maskable-512.png", "share-card.png", "screenshot-wide.png", "screenshot-mobile.png"]
   .forEach((asset) => assert.ok(fs.existsSync(path.join(root, "assets", asset)), `${asset} 파일이 필요합니다.`));
