@@ -71,7 +71,7 @@ assert.ok(manifest.screenshots.some((item) => item.form_factor === "narrow"), "�
   .forEach((asset) => assert.match(worker, new RegExp(asset.replace(".", "\\.")), `${asset}이 오프라인 캐시에 포함되어야 합니다.`));
 
 assert.match(script, /DATA_SCHEMA_VERSION\s*=\s*7/, "저장 데이터 스키마 버전 7이 필요합니다.");
-assert.match(script, /APP_VERSION\s*=\s*"2\.12\.0"/, "모바일 보드 연결감 업데이트 버전 2.12.0이 필요합니다.");
+assert.match(script, /APP_VERSION\s*=\s*"2\.13\.0"/, "모바일 전환·조작 밀착 업데이트 버전 2.13.0이 필요합니다.");
 assert.match(script, /const GAME_MODES/, "네 가지 영업 모드 정의가 필요합니다.");
 assert.match(script, /const MANAGEMENT_GROUPS/, "관리 센터 네 그룹 정의가 필요합니다.");
 assert.match(script, /saveShiftCheckpoint/, "영업 체크포인트 저장 함수가 필요합니다.");
@@ -123,6 +123,8 @@ assert.match(styles, /@keyframes mobile-page-forward/, "모바일 화면 진입 
 assert.match(styles, /@keyframes mobile-page-back/, "모바일 화면 복귀 슬라이드가 필요합니다.");
 assert.match(styles, /@keyframes management-page-in-right/, "모바일 관리 탭의 오른쪽 진입 애니메이션이 필요합니다.");
 assert.match(styles, /\.toast\.routine/, "일상적인 손님 완료 메시지는 간결한 스타일이어야 합니다.");
+assert.match(styles, /screen-view\.open:not\(\.mobile-page-entering\)/, "모바일 페이지 슬라이드 후 재페이드를 막아야 합니다.");
+assert.match(styles, /168\.1579vw - 16\.8158px/, "모바일 기계 보드의 고정 비율 계산이 필요합니다.");
 assert.ok(fs.existsSync(path.join(root, "tests", "laundry-game-ui.cjs")), "자동 UI 회귀 검사 파일이 필요합니다.");
 ["icon-192.png", "icon-512.png", "icon-maskable-512.png", "share-card.png", "screenshot-wide.png", "screenshot-mobile.png"]
   .forEach((asset) => assert.ok(fs.existsSync(path.join(root, "assets", asset)), `${asset} 파일이 필요합니다.`));

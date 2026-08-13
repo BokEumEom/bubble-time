@@ -24,9 +24,9 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./assets/icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=2.12.0" />
-    <script src="./game-config.js?v=2.12.0" defer></script>
-    <script src="./script.js?v=2.12.0" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=2.13.0" />
+    <script src="./game-config.js?v=2.13.0" defer></script>
+    <script src="./script.js?v=2.13.0" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#play-area">게임 화면으로 바로가기</a>
@@ -492,14 +492,14 @@
     <div class="modal-backdrop" id="updates-modal" role="dialog" aria-modal="true" aria-labelledby="updates-title" aria-hidden="true">
       <section class="modal progression-modal updates-card">
         <button class="modal-close utility-page-back" id="updates-close-button" type="button" aria-label="업데이트 안내에서 홈으로 돌아가기"><span class="utility-close-mark" aria-hidden="true">×</span><span class="utility-back-arrow" aria-hidden="true">←</span><b>홈</b></button>
-        <div class="modal-kicker">VERSION <span id="app-version-label">2.12.0</span></div>
-        <h2 id="updates-title">모바일 보드 연결감 업데이트</h2>
-        <p>2026.08 · 보드 비율은 유지하면서 헤더 설비와 안내를 정리하고, 마지막 기계와 액션 도구를 더 가깝게 연결했습니다.</p>
+        <div class="modal-kicker">VERSION <span id="app-version-label">2.13.0</span></div>
+        <h2 id="updates-title">모바일 전환·조작 밀착 업데이트</h2>
+        <p>2026.08 · 설정 화면의 재페이드를 제거하고, 모바일 헤더를 압축해 기계 보드와 액션 도구를 빈틈없이 연결했습니다.</p>
         <div class="update-list">
-          <article><span>RATIO</span><div><h3>그대로 유지한 보드 비율</h3><p>390×844 기준 639px 보드 높이를 유지해 기계와 대기 줄의 비율이 달라지지 않습니다.</p></div></article>
-          <article><span>HEADER</span><div><h3>정돈된 매장 헤더</h3><p>세제 탱크와 차단기를 헤더 오른쪽에 배치하고 안내 칩은 왼쪽에서만 표시합니다.</p></div></article>
-          <article><span>ACTION</span><div><h3>가까워진 액션 도구</h3><p>하단 설비 여백을 걷어내 마지막 기계에서 도구 버튼까지의 거리를 절반으로 줄였습니다.</p></div></article>
-          <article><span>GUIDE</span><div><h3>조작을 가리지 않는 도움말</h3><p>첫 영업 안내도 매장 헤더의 작은 칩으로 표시해 기계 조작 영역을 비워 둡니다.</p></div></article>
+          <article><span>STABLE</span><div><h3>다시 깜박이지 않는 설정</h3><p>진입과 탭 슬라이드가 끝난 뒤 기본 페이드가 재실행되던 원인을 제거했습니다.</p></div></article>
+          <article><span>RATIO</span><div><h3>기기 폭에 맞춘 고정 비율</h3><p>세탁기·건조기 보드는 390×844와 360×800에서 같은 비율을 유지합니다.</p></div></article>
+          <article><span>HEADER</span><div><h3>82px로 압축한 HUD</h3><p>상단·상태·목표 행을 각각 34px·26px·22px로 정리했습니다.</p></div></article>
+          <article><span>ACTION</span><div><h3>빈틈없이 붙은 도구</h3><p>마지막 기계와 50px 액션 버튼 사이의 빈 공간을 0px로 줄였습니다.</p></div></article>
         </div>
       </section>
     </div>

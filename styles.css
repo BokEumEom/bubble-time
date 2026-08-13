@@ -4800,3 +4800,52 @@ body:has(.screen-view.open) {
   }
   .first-shift-guide button { width: 22px; height: 22px; border-radius: 6px; }
 }
+
+/* v2.13 settle page transitions once, lock the mobile board ratio when space allows,
+   and anchor the action tools directly to the machine floor. */
+@media (max-width: 520px) {
+  .screen-view.open:not(.mobile-page-entering):not(.mobile-page-leaving):not(.mobile-page-returning):not(.management-page-in-right):not(.management-page-in-left):not(.management-page-out-left):not(.management-page-out-right) {
+    opacity: 1;
+    animation: none !important;
+  }
+
+  .game-shell {
+    grid-template-rows:
+      34px
+      26px
+      22px
+      minmax(0, min(calc(168.1579vw - 16.8158px), calc(100dvh - 198px)))
+      minmax(103px, 1fr);
+    gap: 1px;
+  }
+  .topbar {
+    min-height: 34px;
+    grid-template-columns: 26px minmax(0, 1fr) 30px;
+    grid-template-rows: 34px;
+    gap: 2px;
+  }
+  .brand-bubbles { width: 24px; height: 24px; border-radius: 8px; }
+  .hud { height: 34px; padding: 2px; }
+  .hud-card { min-height: 28px; padding: 1px 3px; }
+  .round-control { width: 28px; height: 28px; }
+  .mission-strip { height: 26px; padding: 1px; }
+  .combo-meter,
+  .satisfaction-meter,
+  .queue-meter { height: 24px; padding-block: 0; }
+  .shift-objectives-hud { height: 22px; padding: 1px; }
+  .shift-objectives-hud > div > span { min-height: 20px; padding: 0 3px; }
+  .shift-objectives-hud i { width: 14px; height: 14px; border-radius: 5px; font-size: 7px; }
+  .shift-objectives-hud b,
+  .shift-objectives-hud em { font-size: 7px; }
+
+  .shop-floor { padding-bottom: 0; }
+  .shop-floor::after { display: none; }
+  .machine-zone { padding-bottom: 1px; }
+
+  .tool-dock {
+    align-items: start;
+    padding: 0 3px 3px;
+    transform: translateY(-8px);
+  }
+  .tool { height: 50px; }
+}

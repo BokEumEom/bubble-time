@@ -443,11 +443,15 @@ async function run() {
   const settingsPage = await evaluate(`({
     role: document.querySelector('#settings-modal').getAttribute('role'),
     position: getComputedStyle(document.querySelector('#settings-modal')).position,
-    borderRadius: getComputedStyle(document.querySelector('#settings-modal .modal')).borderRadius
+    borderRadius: getComputedStyle(document.querySelector('#settings-modal .modal')).borderRadius,
+    animation: getComputedStyle(document.querySelector('#settings-modal')).animationName,
+    opacity: getComputedStyle(document.querySelector('#settings-modal')).opacity
   })`);
   assert.equal(settingsPage.role, "region", "모바일 설정은 모달이 아닌 독립 페이지여야 합니다.");
   assert.equal(settingsPage.position, "fixed", "모바일 설정은 화면 전체를 차지해야 합니다.");
   assert.equal(settingsPage.borderRadius, "0px", "모바일 설정의 바깥 카드는 제거되어야 합니다.");
+  assert.equal(settingsPage.animation, "none", "설정 진입 슬라이드가 끝난 뒤 기본 페이드가 다시 시작되면 안 됩니다.");
+  assert.equal(settingsPage.opacity, "1", "설정 진입이 끝난 화면은 완전히 불투명해야 합니다.");
   const settingsToGrowth = await evaluate(`(() => {
     document.querySelector('#settings-modal .management-nav [data-management-group="growth"]').click();
     return {
@@ -459,6 +463,11 @@ async function run() {
   })()`);
   assert.deepEqual(settingsToGrowth, { settingsOut: true, shopIn: true, settingsOpen: true, shopOpen: true }, "설정에서 이전 탭으로 이동할 때 두 페이지가 이전 화면 방향으로 전환되어야 합니다.");
   await waitFor("document.querySelector('#shop-modal').classList.contains('open') && !document.querySelector('#settings-modal').classList.contains('open')");
+  const growthSettled = await evaluate(`({
+    animation: getComputedStyle(document.querySelector('#shop-modal')).animationName,
+    opacity: getComputedStyle(document.querySelector('#shop-modal')).opacity
+  })`);
+  assert.deepEqual(growthSettled, { animation: "none", opacity: "1" }, "관리 탭 슬라이드가 끝난 화면은 재페이드 없이 유지되어야 합니다.");
   const growthToSettings = await evaluate(`(() => {
     document.querySelector('#shop-modal .management-nav [data-management-group="settings"]').click();
     return {
@@ -468,6 +477,11 @@ async function run() {
   })()`);
   assert.deepEqual(growthToSettings, { shopOut: true, settingsIn: true }, "설정 탭으로 이동할 때 다음 페이지가 오른쪽에서 들어와야 합니다.");
   await waitFor("document.querySelector('#settings-modal').classList.contains('open') && !document.querySelector('#shop-modal').classList.contains('open')");
+  const settingsSettled = await evaluate(`({
+    animation: getComputedStyle(document.querySelector('#settings-modal')).animationName,
+    opacity: getComputedStyle(document.querySelector('#settings-modal')).opacity
+  })`);
+  assert.deepEqual(settingsSettled, { animation: "none", opacity: "1" }, "설정 탭 전환 완료 후 화면이 다시 깜박이면 안 됩니다.");
   await evaluate("document.querySelector('#settings-close-button').click()");
   await waitFor("document.querySelector('#intro-modal').classList.contains('open') && !document.querySelector('#settings-modal').classList.contains('open')");
 
@@ -489,6 +503,9 @@ async function run() {
     toolHeight: document.querySelector('.tool').getBoundingClientRect().height,
     bodyFits: document.body.scrollHeight <= innerHeight + 1,
     topbarHeight: document.querySelector('.topbar').getBoundingClientRect().height,
+    missionHeight: document.querySelector('.mission-strip').getBoundingClientRect().height,
+    objectivesHeight: document.querySelector('.shift-objectives-hud').getBoundingClientRect().height,
+    playTop: document.querySelector('.play-area').getBoundingClientRect().top,
     dockBottom: document.querySelector('.tool-dock').getBoundingClientRect().bottom,
     playBottom: document.querySelector('.play-area').getBoundingClientRect().bottom,
     dockTop: document.querySelector('.tool-dock').getBoundingClientRect().top,
@@ -517,14 +534,16 @@ async function run() {
   assert.equal(mobileGame.dockPosition, "relative", "모바일 도구판은 한 화면 그리드의 마지막 행이어야 합니다.");
   assert.ok(mobileGame.playHeight >= 635, "모바일 실제 매장은 635px 이상의 높이를 확보해야 합니다.");
   assert.ok(mobileGame.playHeight <= 641, "모바일 매장은 기존 639px 보드 비율을 유지해야 합니다.");
-  assert.ok(mobileGame.dockHeight <= 95, "모바일 도구판은 조작성을 유지하면서 95px 이하여야 합니다.");
+  assert.ok(mobileGame.dockHeight <= 111, "모바일 도구판은 확대된 버튼을 포함하면서 111px 이하여야 합니다.");
   assert.equal(mobileGame.toolGap, 2, "모바일 액션 버튼 간격은 2px로 촘촘해야 합니다.");
-  assert.equal(mobileGame.toolHeight, 42, "모바일 액션 버튼은 42px 높이로 공간을 절약해야 합니다.");
+  assert.equal(mobileGame.toolHeight, 50, "모바일 액션 버튼은 50px 높이로 터치 영역을 확보해야 합니다.");
   assert.equal(mobileGame.bodyFits, true, "모바일 영업 화면은 세로 스크롤 없이 한 화면에 들어와야 합니다.");
-  assert.ok(mobileGame.topbarHeight <= 46, "모바일 상단 HUD는 기계 공간을 위해 46px 이하여야 합니다.");
-  assert.ok(mobileGame.playBottom <= mobileGame.dockTop + 1, "매장과 도구판은 겹치지 않아야 합니다.");
-  assert.ok(Math.abs(mobileGame.dockTop - mobileGame.playBottom) <= 1, "도구판은 매장 테두리에 바로 연결되어야 합니다.");
-  assert.ok(mobileGame.toolsTop - mobileGame.lastMachineBottom <= 18, "마지막 기계와 액션 버튼의 시각적 간격은 18px 이하여야 합니다.");
+  assert.equal(mobileGame.topbarHeight, 34, "모바일 상단 HUD는 34px로 압축되어야 합니다.");
+  assert.equal(mobileGame.missionHeight, 26, "모바일 상태 HUD는 26px로 압축되어야 합니다.");
+  assert.equal(mobileGame.objectivesHeight, 22, "모바일 목표 HUD는 22px로 압축되어야 합니다.");
+  assert.equal(mobileGame.playTop, 89, "압축된 헤더 아래에서 보드는 89px 지점에 시작해야 합니다.");
+  assert.ok(mobileGame.dockTop - mobileGame.playBottom >= -8 && mobileGame.dockTop - mobileGame.playBottom <= -6, "도구판은 매장 하단 프레임에만 6~8px 겹쳐야 합니다.");
+  assert.ok(Math.abs(mobileGame.toolsTop - mobileGame.lastMachineBottom) <= 1, "마지막 기계와 액션 버튼 사이에는 빈 공간이 없어야 합니다.");
   assert.ok(mobileGame.facilityTop >= mobileGame.shopHeaderTop && mobileGame.facilityBottom <= mobileGame.shopHeaderBottom, "세제 탱크와 차단기는 매장 헤더 안에 배치되어야 합니다.");
   assert.equal(mobileGame.hudGap, 1, "모바일 주요 HUD 카드 간격은 1px이어야 합니다.");
   assert.equal(mobileGame.missionGap, 2, "모바일 상태 카드 간격은 2px이어야 합니다.");
@@ -562,6 +581,24 @@ async function run() {
   assert.ok(noticeLayout.guideBottom < noticeLayout.firstMachineTop && noticeLayout.guideHeight >= 28 && noticeLayout.guideHeight <= 32, "첫 영업 도움말은 기계를 가리지 않는 상단 칩이어야 합니다.");
   assert.ok(Math.max(noticeLayout.alertRight, noticeLayout.toastRight, noticeLayout.guideRight) < mobileGame.facilityLeft, "헤더 안내와 세제·차단기 조작 영역은 겹치지 않아야 합니다.");
   assert.equal(noticeLayout.faultCopy, "none", "모바일 고장 기계에는 조작을 가리는 긴 문구를 숨겨야 합니다.");
+  await cdp("Emulation.setDeviceMetricsOverride", { width: 360, height: 800, deviceScaleFactor: 1, mobile: true });
+  await wait(60);
+  const compactMobileGame = await evaluate(`(() => {
+    const play = document.querySelector('.play-area').getBoundingClientRect();
+    const tools = document.querySelector('.tools').getBoundingClientRect();
+    const lastMachine = [...document.querySelectorAll('.machine')].at(-1).getBoundingClientRect();
+    return {
+      playHeight: play.height,
+      expectedHeight: (innerWidth - 10) * 639 / 380,
+      machineToolGap: tools.top - lastMachine.bottom,
+      bodyFits: document.body.scrollHeight <= innerHeight + 1
+    };
+  })()`);
+  assert.ok(Math.abs(compactMobileGame.playHeight - compactMobileGame.expectedHeight) <= 1, "360px 모바일에서도 기계 보드 비율이 유지되어야 합니다.");
+  assert.ok(Math.abs(compactMobileGame.machineToolGap) <= 1, "360px 모바일에서도 기계와 액션 버튼이 바로 연결되어야 합니다.");
+  assert.equal(compactMobileGame.bodyFits, true, "360×800에서도 게임 화면이 세로 스크롤 없이 보여야 합니다.");
+  await cdp("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  await wait(60);
   if (process.env.CAPTURE_UI_REVIEW === "1") {
     const gameReview = await cdp("Page.captureScreenshot", { format: "png", fromSurface: true, captureBeyondViewport: false });
     fs.writeFileSync(path.join(os.tmpdir(), "bubble-time-mobile-game-review.png"), Buffer.from(gameReview.data, "base64"));
