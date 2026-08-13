@@ -24,9 +24,9 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./assets/icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=2.8.0" />
-    <script src="./game-config.js?v=2.8.0" defer></script>
-    <script src="./script.js?v=2.8.0" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=2.9.0" />
+    <script src="./game-config.js?v=2.9.0" defer></script>
+    <script src="./script.js?v=2.9.0" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#play-area">게임 화면으로 바로가기</a>
@@ -475,7 +475,7 @@
 
     <div class="modal-backdrop" id="help-modal" role="dialog" aria-modal="true" aria-labelledby="help-title" aria-hidden="true">
       <section class="modal progression-modal help-card">
-        <button class="modal-close" id="help-close-button" type="button" aria-label="도움말 닫기">×</button>
+        <button class="modal-close utility-page-back" id="help-close-button" type="button" aria-label="도움말에서 홈으로 돌아가기"><span class="utility-close-mark" aria-hidden="true">×</span><span class="utility-back-arrow" aria-hidden="true">←</span><b>홈</b></button>
         <div class="modal-kicker">HOW TO PLAY</div>
         <h2 id="help-title">점장 업무 안내</h2>
         <p>선택한 도구와 눌러야 할 대상을 빠르게 연결하세요.</p>
@@ -491,15 +491,15 @@
 
     <div class="modal-backdrop" id="updates-modal" role="dialog" aria-modal="true" aria-labelledby="updates-title" aria-hidden="true">
       <section class="modal progression-modal updates-card">
-        <button class="modal-close" id="updates-close-button" type="button" aria-label="업데이트 안내 닫기">×</button>
-        <div class="modal-kicker">VERSION <span id="app-version-label">2.8.0</span></div>
-        <h2 id="updates-title">모바일 플레이 집중 업데이트</h2>
-        <p>2026.08 · 작은 화면에서는 지금 필요한 정보와 행동이 먼저 보이도록 다시 정리했습니다.</p>
+        <button class="modal-close utility-page-back" id="updates-close-button" type="button" aria-label="업데이트 안내에서 홈으로 돌아가기"><span class="utility-close-mark" aria-hidden="true">×</span><span class="utility-back-arrow" aria-hidden="true">←</span><b>홈</b></button>
+        <div class="modal-kicker">VERSION <span id="app-version-label">2.9.0</span></div>
+        <h2 id="updates-title">모바일 한 화면 영업 업데이트</h2>
+        <p>2026.08 · 홈의 보조 화면은 슬라이드로 이어지고, 영업 화면은 세로 스크롤 없이 핵심 조작이 보입니다.</p>
         <div class="update-list">
-          <article><span>FOCUS</span><div><h3>간결해진 모바일 HUD</h3><p>최고 기록 등 영업 중 불필요한 정보를 숨기고 시간·점수·환불·대기 위험을 더 크게 표시합니다.</p></div></article>
-          <article><span>TOOLS</span><div><h3>읽기 쉬운 3×2 도구판</h3><p>여섯 도구를 두 줄로 배치하고 이름을 키워 빠른 터치 선택이 쉬워졌습니다.</p></div></article>
-          <article><span>RESULT</span><div><h3>결과에서 바로 홈으로</h3><p>영업 결과의 핵심 요약과 다음 행동을 먼저 보여주고, 홈으로 돌아가는 버튼을 추가했습니다.</p></div></article>
-          <article><span>TYPE</span><div><h3>모바일 가독성 강화</h3><p>준비·결과·관리·설정 화면의 작은 설명과 버튼 글자를 키우고 상세 정보는 접어서 볼 수 있습니다.</p></div></article>
+          <article><span>SLIDE</span><div><h3>페이지처럼 이어지는 보조 화면</h3><p>설정·도움말·업데이트가 오른쪽에서 들어오고 홈으로 돌아갈 때 다시 오른쪽으로 빠집니다.</p></div></article>
+          <article><span>HUD</span><div><h3>두 줄로 압축한 영업 정보</h3><p>시간·점수·환불과 콤보·만족도·대기를 짧은 두 줄에 모아 보드 공간을 넓혔습니다.</p></div></article>
+          <article><span>BOARD</span><div><h3>한 화면에 보이는 매장</h3><p>390×844 기준으로 세탁기·건조기 12대와 도구판을 스크롤 없이 확인할 수 있습니다.</p></div></article>
+          <article><span>PAUSE</span><div><h3>일시정지에서 빠른 설정</h3><p>영업 헤더에서는 일시정지에 집중하고 소리·진동·화면 옵션은 일시정지 화면에서 엽니다.</p></div></article>
         </div>
       </section>
     </div>
@@ -519,6 +519,7 @@
           <span><small>현재 점수</small><strong id="pause-score">0</strong></span>
         </div>
         <button class="primary-button" id="resume-button" type="button"><span>계속 영업하기</span><b>▶</b></button>
+        <button class="pause-settings-action" id="pause-settings-button" type="button"><span>⚙ 빠른 설정</span><b>→</b></button>
         <button class="endless-cashout-button" id="endless-cashout-button" type="button" hidden><span>현재 점수로 영업 정산</span><b>✓</b></button>
         <button class="text-button" id="pause-restart-button" type="button">처음부터 다시 시작</button>
         <small class="keyboard-hint">P 또는 Esc 키로도 계속할 수 있어요</small>

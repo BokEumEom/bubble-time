@@ -128,6 +128,7 @@ async function run() {
   await cdp("Page.enable");
   await waitFor("document.readyState === 'complete' && typeof state !== 'undefined'");
 
+  console.log("UI 회귀: 데스크톱 핵심 흐름 확인");
   const firstScreen = await evaluate(`({
     intro: document.querySelector('#intro-modal').classList.contains('open'),
     role: document.querySelector('#intro-modal').getAttribute('role'),
@@ -287,6 +288,7 @@ async function run() {
   `);
   await waitFor("state.running === true && !document.querySelector('#result-modal').classList.contains('open')");
   assert.equal(await evaluate("state.shiftObjectives.map((item) => item.id).join(',')"), retryIds, "재도전은 같은 목표를 유지해야 합니다.");
+  console.log("UI 회귀: 모바일 관리 화면 확인");
   await evaluate("resetGame(); state.progression.onboarding.firstShiftComplete = true; updateProgressionUi(); openProgressionModal(els.statsModal)");
   await waitFor("document.querySelector('#stats-modal').classList.contains('open')");
   await cdp("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
@@ -314,6 +316,68 @@ async function run() {
   assert.ok(mobileHome.utilityFont >= 11, "모바일 보조 버튼 글자는 11px 이상이어야 합니다.");
   assert.equal(mobileHome.fitsViewport, true, "모바일 홈 핵심 행동은 첫 화면 안에 들어와야 합니다.");
 
+  console.log("UI 회귀: 모바일 페이지 슬라이드 확인");
+  const helpEntering = await evaluate(`(() => {
+    document.querySelector('#help-button').click();
+    const modal = document.querySelector('#help-modal');
+    return {
+      entering: modal.classList.contains('mobile-page-entering'),
+      role: modal.getAttribute('role'),
+      homeStillOpen: document.querySelector('#intro-modal').classList.contains('open')
+    };
+  })()`);
+  assert.equal(helpEntering.entering, true, "모바일 도움말은 오른쪽에서 들어오는 페이지 전환을 시작해야 합니다.");
+  assert.equal(helpEntering.role, "region", "모바일 도움말은 팝업이 아닌 독립 페이지로 안내되어야 합니다.");
+  assert.equal(helpEntering.homeStillOpen, true, "슬라이드 중에는 홈이 뒤쪽 페이지로 남아 있어야 합니다.");
+  await waitFor("document.querySelector('#help-modal').classList.contains('open') && !document.querySelector('#help-modal').classList.contains('mobile-page-entering') && !document.querySelector('#intro-modal').classList.contains('open')");
+  const helpPage = await evaluate(`({
+    borderRadius: getComputedStyle(document.querySelector('#help-modal .modal')).borderRadius,
+    backdropFilter: getComputedStyle(document.querySelector('#help-modal')).backdropFilter,
+    ariaModal: document.querySelector('#help-modal').getAttribute('aria-modal')
+  })`);
+  assert.equal(helpPage.borderRadius, "0px", "모바일 도움말은 카드 모서리가 없는 전체 페이지여야 합니다.");
+  assert.ok(helpPage.backdropFilter === "none" || helpPage.backdropFilter === "", "모바일 도움말 뒤에는 팝업 블러가 없어야 합니다.");
+  assert.equal(helpPage.ariaModal, null, "모바일 도움말은 모달로 노출되지 않아야 합니다.");
+  const helpLeaving = await evaluate(`(() => {
+    document.querySelector('#help-close-button').click();
+    return document.querySelector('#help-modal').classList.contains('mobile-page-leaving');
+  })()`);
+  assert.equal(helpLeaving, true, "모바일 도움말의 홈 버튼은 왼쪽으로 돌아가는 전환을 시작해야 합니다.");
+  await waitFor("document.querySelector('#intro-modal').classList.contains('open') && !document.querySelector('#help-modal').classList.contains('open')");
+
+  const updatesEntering = await evaluate(`(() => {
+    document.querySelector('#updates-button').click();
+    return document.querySelector('#updates-modal').classList.contains('mobile-page-entering');
+  })()`);
+  assert.equal(updatesEntering, true, "모바일 업데이트 안내도 페이지 슬라이드로 열려야 합니다.");
+  await waitFor("document.querySelector('#updates-modal').classList.contains('open') && !document.querySelector('#updates-modal').classList.contains('mobile-page-entering') && !document.querySelector('#intro-modal').classList.contains('open')");
+  const updatesPage = await evaluate(`({
+    role: document.querySelector('#updates-modal').getAttribute('role'),
+    borderRadius: getComputedStyle(document.querySelector('#updates-modal .modal')).borderRadius
+  })`);
+  assert.equal(updatesPage.role, "region", "모바일 업데이트 안내는 독립 페이지여야 합니다.");
+  assert.equal(updatesPage.borderRadius, "0px", "모바일 업데이트 안내는 팝업 카드처럼 보이지 않아야 합니다.");
+  await evaluate("document.querySelector('#updates-close-button').click()");
+  await waitFor("document.querySelector('#intro-modal').classList.contains('open') && !document.querySelector('#updates-modal').classList.contains('open')");
+
+  const settingsEntering = await evaluate(`(() => {
+    document.querySelector('#intro-settings-button').click();
+    return document.querySelector('#settings-modal').classList.contains('mobile-page-entering');
+  })()`);
+  assert.equal(settingsEntering, true, "모바일 설정도 페이지 슬라이드로 열려야 합니다.");
+  await waitFor("document.querySelector('#settings-modal').classList.contains('open') && !document.querySelector('#settings-modal').classList.contains('mobile-page-entering') && !document.querySelector('#intro-modal').classList.contains('open')");
+  const settingsPage = await evaluate(`({
+    role: document.querySelector('#settings-modal').getAttribute('role'),
+    position: getComputedStyle(document.querySelector('#settings-modal')).position,
+    borderRadius: getComputedStyle(document.querySelector('#settings-modal .modal')).borderRadius
+  })`);
+  assert.equal(settingsPage.role, "region", "모바일 설정은 모달이 아닌 독립 페이지여야 합니다.");
+  assert.equal(settingsPage.position, "fixed", "모바일 설정은 화면 전체를 차지해야 합니다.");
+  assert.equal(settingsPage.borderRadius, "0px", "모바일 설정의 바깥 카드는 제거되어야 합니다.");
+  await evaluate("document.querySelector('#settings-close-button').click()");
+  await waitFor("document.querySelector('#intro-modal').classList.contains('open') && !document.querySelector('#settings-modal').classList.contains('open')");
+
+  console.log("UI 회귀: 모바일 한 화면 영업 확인");
   await evaluate(`
     state.shiftObjectives = [shiftObjectiveById('clean_6'), shiftObjectiveById('refundless')];
     startGame();
@@ -324,13 +388,33 @@ async function run() {
     toolLabelFont: parseFloat(getComputedStyle(document.querySelector('.tool'), '::before').fontSize),
     hudLabelFont: parseFloat(getComputedStyle(document.querySelector('.hud-card small')).fontSize),
     bestVisible: getComputedStyle(document.querySelector('.best-card')).display,
-    dockPosition: getComputedStyle(document.querySelector('.tool-dock')).position
+    dockPosition: getComputedStyle(document.querySelector('.tool-dock')).position,
+    bodyFits: document.body.scrollHeight <= innerHeight + 1,
+    topbarHeight: document.querySelector('.topbar').getBoundingClientRect().height,
+    dockBottom: document.querySelector('.tool-dock').getBoundingClientRect().bottom,
+    playBottom: document.querySelector('.play-area').getBoundingClientRect().bottom,
+    dockTop: document.querySelector('.tool-dock').getBoundingClientRect().top,
+    machineCount: document.querySelectorAll('.machine').length,
+    allMachinesVisible: [...document.querySelectorAll('.machine')].every((machine) => {
+      const rect = machine.getBoundingClientRect();
+      return rect.top >= 0 && rect.bottom <= innerHeight;
+    }),
+    visibleHeaderActions: [...document.querySelectorAll('.header-actions button')]
+      .filter((button) => button.offsetWidth > 0)
+      .map((button) => button.getAttribute('aria-label'))
   })`);
   assert.equal(mobileGame.toolColumns, 3, "모바일 도구판은 읽기 쉬운 3열 2행이어야 합니다.");
   assert.ok(mobileGame.toolLabelFont >= 11, "모바일 도구 이름은 11px 이상이어야 합니다.");
-  assert.ok(mobileGame.hudLabelFont >= 10, "모바일 HUD 라벨은 10px 이상이어야 합니다.");
+  assert.ok(mobileGame.hudLabelFont >= 9, "모바일 HUD 라벨은 압축 레이아웃에서도 9px 이상이어야 합니다.");
   assert.equal(mobileGame.bestVisible, "none", "영업 중 모바일 HUD에서는 최고 기록을 숨겨야 합니다.");
-  assert.equal(mobileGame.dockPosition, "sticky", "모바일 도구판은 화면 아래에서 계속 접근할 수 있어야 합니다.");
+  assert.equal(mobileGame.dockPosition, "relative", "모바일 도구판은 한 화면 그리드의 마지막 행이어야 합니다.");
+  assert.equal(mobileGame.bodyFits, true, "모바일 영업 화면은 세로 스크롤 없이 한 화면에 들어와야 합니다.");
+  assert.ok(mobileGame.topbarHeight <= 46, "모바일 상단 HUD는 기계 공간을 위해 46px 이하여야 합니다.");
+  assert.ok(mobileGame.playBottom <= mobileGame.dockTop + 1, "매장과 도구판은 겹치지 않아야 합니다.");
+  assert.ok(mobileGame.dockBottom <= 844, "도구판 전체가 모바일 화면 안에 보여야 합니다.");
+  assert.equal(mobileGame.machineCount, 12, "세탁기와 건조기 12대가 렌더링되어야 합니다.");
+  assert.equal(mobileGame.allMachinesVisible, true, "세탁기와 건조기 12대가 모두 첫 화면에 보여야 합니다.");
+  assert.deepEqual(mobileGame.visibleHeaderActions, ["게임 일시정지"], "모바일 헤더에는 일시정지 한 개만 남겨야 합니다.");
 
   await evaluate("state.score = 900; state.cleaned = 2; endGame(true, 'time')");
   await waitFor("document.querySelector('#result-modal').classList.contains('open')");
@@ -342,6 +426,7 @@ async function run() {
     location.reload();
   `);
   await waitFor("document.readyState === 'complete' && typeof state !== 'undefined'");
+  console.log("UI 회귀: 저장 데이터 이전 확인");
   const migrated = await evaluate("({ version: state.progression.schemaVersion, objectives: state.progression.stats.objectives, standardRecord: state.progression.records.standard.score, lastMode: state.progression.preferences.lastMode })");
   assert.equal(migrated.version, 7, "v5 저장 데이터는 v7으로 이전되어야 합니다.");
   assert.equal(migrated.objectives, 0, "이전 데이터의 목표 통계 기본값은 0이어야 합니다.");

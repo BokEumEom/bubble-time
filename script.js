@@ -7,8 +7,10 @@ const STORAGE_KEY = "bubbleTime75.bestRecord.v1";
 const PROGRESSION_KEY = "bubbleTime75.progression.v1";
 const CHECKPOINT_KEY = "bubbleTime.shiftCheckpoint.v1";
 const SEEN_VERSION_KEY = "bubbleTime75.seenVersion";
-const APP_VERSION = "2.8.0";
+const APP_VERSION = "2.9.0";
 const DATA_SCHEMA_VERSION = 7;
+const MOBILE_PAGE_MEDIA = "(max-width: 520px)";
+const MOBILE_SLIDE_PAGE_IDS = new Set(["settings-modal", "help-modal", "updates-modal"]);
 
 const GAME_MODES = {
   quick: { label: "45초 빠른 영업", shortLabel: "45초", seconds: 45, objectiveScale: 0.75, rankScale: 0.72 },
@@ -296,6 +298,7 @@ const els = {
   resultHomeButton: document.querySelector("#result-home-button"),
   resumeButton: document.querySelector("#resume-button"),
   pauseRestartButton: document.querySelector("#pause-restart-button"),
+  pauseSettingsButton: document.querySelector("#pause-settings-button"),
   pauseTime: document.querySelector("#pause-time"),
   pauseScore: document.querySelector("#pause-score"),
   soundButton: document.querySelector("#sound-button"),
@@ -3059,16 +3062,55 @@ function shakePlayArea() {
   window.setTimeout(() => els.playArea.classList.remove("screen-shake"), 420);
 }
 
+function usesMobilePageSlide(modal, target = null) {
+  if (state.running || !modal || !MOBILE_SLIDE_PAGE_IDS.has(modal.id) || !window.matchMedia(MOBILE_PAGE_MEDIA).matches) return false;
+  return !target || target === els.introModal;
+}
+
+function startMobilePageEntry(modal, source) {
+  if (!usesMobilePageSlide(modal, source)) return;
+  modal.classList.remove("mobile-page-leaving");
+  modal.classList.add("mobile-page-entering");
+  source.classList.add("mobile-page-underlay");
+  window.setTimeout(() => {
+    if (!modal.classList.contains("open") || modal.classList.contains("mobile-page-leaving")) return;
+    source.classList.remove("open", "mobile-page-underlay");
+    source.setAttribute("aria-hidden", "true");
+    modal.classList.remove("mobile-page-entering");
+  }, 280);
+}
+
+function closeWithMobilePageSlide(modal, target, finish) {
+  if (!usesMobilePageSlide(modal, target)) return false;
+  target.classList.add("open", "mobile-page-returning");
+  target.setAttribute("aria-hidden", "false");
+  modal.classList.remove("mobile-page-entering");
+  modal.classList.add("mobile-page-leaving");
+  modal.setAttribute("aria-hidden", "true");
+  window.setTimeout(() => {
+    modal.classList.remove("open", "mobile-page-leaving");
+    target.classList.remove("mobile-page-returning", "mobile-page-underlay");
+    finish();
+    if (state.lastFocusedElement instanceof HTMLElement) state.lastFocusedElement.focus({ preventScroll: true });
+  }, 280);
+  return true;
+}
+
 function openProgressionModal(modal) {
   if (state.running) return;
   const current = managementModalElements().find((item) => item.classList.contains("open"));
+  let slideSource = null;
   if (!current) {
     state.lastFocusedElement = document.activeElement;
     state.returnModal = els.resultModal.classList.contains("open") ? "result-modal" : "intro-modal";
-    [els.introModal, els.resultModal].forEach((item) => {
-      item.classList.remove("open");
-      item.setAttribute("aria-hidden", "true");
-    });
+    const source = document.querySelector(`#${state.returnModal}`) || els.introModal;
+    if (usesMobilePageSlide(modal, source) && source.classList.contains("open")) slideSource = source;
+    else {
+      [els.introModal, els.resultModal].forEach((item) => {
+        item.classList.remove("open");
+        item.setAttribute("aria-hidden", "true");
+      });
+    }
   } else if (current !== modal) {
     current.classList.remove("open");
     current.setAttribute("aria-hidden", "true");
@@ -3078,6 +3120,7 @@ function openProgressionModal(modal) {
   modal.setAttribute("role", "region");
   modal.removeAttribute("aria-modal");
   modal.classList.add("open");
+  if (slideSource) startMobilePageEntry(modal, slideSource);
   if (current && current !== modal) modal.classList.add("switching-in");
   modal.setAttribute("aria-hidden", "false");
   window.setTimeout(() => modal.classList.remove("switching-in"), 160);
@@ -3095,9 +3138,10 @@ function openProgressionModal(modal) {
 }
 
 function closeProgressionModal(modal) {
+  const target = document.querySelector(`#${state.returnModal}`) || els.introModal;
+  if (closeWithMobilePageSlide(modal, target, () => {})) return;
   modal.classList.remove("open");
   modal.setAttribute("aria-hidden", "true");
-  const target = document.querySelector(`#${state.returnModal}`) || els.introModal;
   target.classList.add("open");
   target.setAttribute("aria-hidden", "false");
   if (state.lastFocusedElement instanceof HTMLElement) window.setTimeout(() => state.lastFocusedElement.focus(), 80);
@@ -3181,10 +3225,14 @@ function openUtilityModal(modal) {
   } else {
     state.returnModal = els.resultModal.classList.contains("open") ? "result-modal" : "intro-modal";
   }
-  [els.introModal, els.resultModal, els.pauseModal].forEach((item) => {
-    item.classList.remove("open");
-    item.setAttribute("aria-hidden", "true");
-  });
+  const source = document.querySelector(`#${state.returnModal}`) || els.introModal;
+  const slideFromHome = usesMobilePageSlide(modal, source) && source.classList.contains("open");
+  if (!slideFromHome) {
+    [els.introModal, els.resultModal, els.pauseModal].forEach((item) => {
+      item.classList.remove("open");
+      item.setAttribute("aria-hidden", "true");
+    });
+  }
   modal.classList.add("open");
   modal.classList.toggle("during-shift", state.running);
   if (modal === els.settingsModal && state.running) {
@@ -3192,21 +3240,33 @@ function openUtilityModal(modal) {
     modal.setAttribute("aria-modal", "true");
     updateSettingsBackButton(true);
   }
+  if (slideFromHome && modal !== els.settingsModal) {
+    modal.setAttribute("role", "region");
+    modal.removeAttribute("aria-modal");
+  }
   modal.setAttribute("aria-hidden", "false");
+  if (slideFromHome) startMobilePageEntry(modal, source);
   updateSettingsUi();
   focusFirstInModal(modal);
 }
 
 function closeUtilityModal(modal) {
+  const target = document.querySelector(`#${state.returnModal}`) || els.introModal;
+  const finish = () => {
+    modal.classList.remove("during-shift");
+    if (modal === els.settingsModal) {
+      modal.setAttribute("role", "region");
+      modal.removeAttribute("aria-modal");
+      updateSettingsBackButton(false);
+    } else {
+      modal.setAttribute("role", "dialog");
+      modal.setAttribute("aria-modal", "true");
+    }
+  };
+  if (closeWithMobilePageSlide(modal, target, finish)) return;
   modal.classList.remove("open");
   modal.setAttribute("aria-hidden", "true");
-  modal.classList.remove("during-shift");
-  if (modal === els.settingsModal) {
-    modal.setAttribute("role", "region");
-    modal.removeAttribute("aria-modal");
-    updateSettingsBackButton(false);
-  }
-  const target = document.querySelector(`#${state.returnModal}`) || els.introModal;
+  finish();
   target.classList.add("open");
   target.setAttribute("aria-hidden", "false");
   if (state.lastFocusedElement instanceof HTMLElement) window.setTimeout(() => state.lastFocusedElement.focus(), 80);
@@ -3523,6 +3583,7 @@ els.newPlanButton.addEventListener("click", () => openFreshShiftPlan(false));
 els.nextDifficultyButton.addEventListener("click", () => openFreshShiftPlan(true));
 els.resultUnlockButton.addEventListener("click", openResultUnlock);
 els.pauseRestartButton.addEventListener("click", () => openPrepModal(true, false));
+els.pauseSettingsButton.addEventListener("click", () => openUtilityModal(els.settingsModal));
 els.confirmStartButton.addEventListener("click", confirmPreparedShift);
 els.prepCloseButton.addEventListener("click", closePrepModal);
 els.shiftPlans.forEach((plan) => {
