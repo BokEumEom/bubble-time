@@ -4489,3 +4489,107 @@ body:has(.screen-view.open) {
 
   .pause-settings-action { min-height: 46px; font-size: 12px; }
 }
+
+/* v2.10 edge-to-edge mobile pages, steady navigation and denser controls */
+@media (max-width: 520px) {
+  .screen-view { scrollbar-gutter: auto; }
+
+  /* The home is the first page of the app, not a card floating over it. */
+  .home-screen {
+    padding: 0;
+    background: #f6f8f5;
+  }
+  .home-screen::before,
+  .home-screen::after { display: none; }
+  .home-screen.open { animation: none !important; }
+  .home-screen .intro-card {
+    width: 100%;
+    min-height: 100dvh;
+    padding: max(22px, env(safe-area-inset-top)) 18px max(24px, env(safe-area-inset-bottom));
+    border-radius: 0;
+  }
+  .intro-dashboard {
+    display: grid;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .mobile-manager-entry,
+  .intro-dashboard > .resume-shift-card,
+  .intro-card .primary-button,
+  .intro-utility-actions { margin: 0; }
+  .intro-utility-actions { gap: 8px; }
+
+  /* Home remains fully painted behind the outgoing page, preventing a flash. */
+  .home-screen.mobile-page-returning {
+    display: block;
+    opacity: 1;
+    transform: none;
+    animation: none !important;
+  }
+
+  /* Results use one predictable vertical rhythm. */
+  .workflow-screen .result-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: max(16px, env(safe-area-inset-top));
+  }
+  .result-card > .result-badge { align-self: center; }
+  .result-face { margin: 2px auto 0; }
+  .result-card h2,
+  .result-card > p,
+  .new-record-banner,
+  .shift-earnings,
+  .result-manager-progress,
+  .achievement-unlock-banner,
+  .result-stats,
+  .result-rank,
+  .result-details,
+  .result-unlock-button,
+  .result-secondary-actions { margin: 0; }
+  .shift-earnings,
+  .result-manager-progress,
+  .result-stats,
+  .result-rank,
+  .result-details,
+  .result-retry-actions,
+  .result-unlock-button { width: 100%; }
+  .result-retry-actions { gap: 6px; margin-top: 2px; }
+
+  /* Reclaim chrome height for the machines without shrinking the key labels. */
+  .game-shell { gap: 3px; }
+  .topbar {
+    min-height: 40px;
+    grid-template-rows: 40px;
+  }
+  .brand-bubbles { width: 30px; height: 30px; }
+  .hud { height: 40px; }
+  .hud-card { min-height: 34px; }
+  .round-control { width: 34px; height: 34px; }
+  .mission-strip {
+    height: 34px;
+    min-height: 0;
+    padding: 1px;
+  }
+  .combo-meter,
+  .satisfaction-meter,
+  .queue-meter { height: 32px; }
+  .shift-objectives-hud {
+    height: 30px;
+    min-height: 0;
+    padding: 1px;
+  }
+  .shift-objectives-hud > div > span {
+    min-height: 28px;
+    padding: 2px 4px;
+  }
+  .shift-objectives-hud i { width: 19px; height: 19px; }
+  .tool-dock { padding: 5px; }
+  .tools { gap: 3px; }
+  .tool {
+    height: 44px;
+    grid-template-columns: 27px minmax(0, 1fr);
+    padding: 3px 5px;
+  }
+  .tool-art { width: 27px; height: 28px; transform: scale(.53); }
+}

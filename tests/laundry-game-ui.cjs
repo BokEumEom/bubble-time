@@ -302,21 +302,89 @@ async function run() {
   assert.equal(mobileNavigation.position, "fixed", "모바일 관리 메뉴는 긴 화면에서도 아래에 고정되어야 합니다.");
 
   await evaluate("closeProgressionModal(els.statsModal)");
-  await waitFor("document.querySelector('#intro-modal').classList.contains('open')");
-  const mobileHome = await evaluate(`({
-    hubDisplay: getComputedStyle(document.querySelector('#mobile-manager-button')).display,
-    legacyActions: getComputedStyle(document.querySelector('.progression-actions')).display,
-    startFont: parseFloat(getComputedStyle(document.querySelector('#start-button')).fontSize),
-    utilityFont: parseFloat(getComputedStyle(document.querySelector('#tutorial-button')).fontSize),
-    fitsViewport: document.querySelector('#intro-modal').scrollHeight <= document.querySelector('#intro-modal').clientHeight + 2
-  })`);
+  await waitFor("document.querySelector('#intro-modal').classList.contains('open') && !document.querySelector('#stats-modal').classList.contains('open')");
+  const mobileHome = await evaluate(`(() => {
+    const card = document.querySelector('#intro-modal .intro-card');
+    const rect = card.getBoundingClientRect();
+    return {
+      hubDisplay: getComputedStyle(document.querySelector('#mobile-manager-button')).display,
+      legacyActions: getComputedStyle(document.querySelector('.progression-actions')).display,
+      startFont: parseFloat(getComputedStyle(document.querySelector('#start-button')).fontSize),
+      utilityFont: parseFloat(getComputedStyle(document.querySelector('#tutorial-button')).fontSize),
+      fitsViewport: document.querySelector('#intro-modal').scrollHeight <= document.querySelector('#intro-modal').clientHeight + 2,
+      cardWidth: rect.width,
+      cardHeight: rect.height,
+      cardRadius: getComputedStyle(card).borderRadius,
+      dashboardGap: parseFloat(getComputedStyle(document.querySelector('.intro-dashboard')).gap),
+      utilityGap: parseFloat(getComputedStyle(document.querySelector('.intro-utility-actions')).gap),
+      animation: getComputedStyle(document.querySelector('#intro-modal')).animationName
+    };
+  })()`);
   assert.equal(mobileHome.hubDisplay, "grid", "모바일 홈에는 통합 관리 센터 진입 카드가 보여야 합니다.");
   assert.equal(mobileHome.legacyActions, "none", "모바일 홈에서는 네 개 관리 버튼을 한꺼번에 노출하지 않아야 합니다.");
   assert.ok(mobileHome.startFont >= 15, "모바일 시작 버튼 글자는 15px 이상이어야 합니다.");
   assert.ok(mobileHome.utilityFont >= 11, "모바일 보조 버튼 글자는 11px 이상이어야 합니다.");
   assert.equal(mobileHome.fitsViewport, true, "모바일 홈 핵심 행동은 첫 화면 안에 들어와야 합니다.");
+  assert.ok(mobileHome.cardWidth >= 389 && mobileHome.cardHeight >= 844, "모바일 홈은 여백 없는 전체 화면 페이지여야 합니다.");
+  assert.equal(mobileHome.cardRadius, "0px", "모바일 홈은 팝업 카드처럼 둥글지 않아야 합니다.");
+  assert.equal(mobileHome.dashboardGap, 10, "모바일 홈의 주요 버튼 간격은 10px로 일정해야 합니다.");
+  assert.equal(mobileHome.utilityGap, 8, "모바일 홈의 보조 버튼 간격은 8px로 일정해야 합니다.");
+  assert.equal(mobileHome.animation, "none", "모바일 홈은 복귀할 때 다시 페이드되어 깜박이지 않아야 합니다.");
 
   console.log("UI 회귀: 모바일 페이지 슬라이드 확인");
+  const managerEntering = await evaluate(`(() => {
+    document.querySelector('#mobile-manager-button').click();
+    return {
+      entering: document.querySelector('#stats-modal').classList.contains('mobile-page-entering'),
+      homeStillOpen: document.querySelector('#intro-modal').classList.contains('open')
+    };
+  })()`);
+  assert.equal(managerEntering.entering, true, "MANAGER DESK는 오른쪽에서 들어오는 페이지여야 합니다.");
+  assert.equal(managerEntering.homeStillOpen, true, "MANAGER DESK 진입 중에는 홈이 아래에 남아 있어야 합니다.");
+  await waitFor("document.querySelector('#stats-modal').classList.contains('open') && !document.querySelector('#stats-modal').classList.contains('mobile-page-entering') && !document.querySelector('#intro-modal').classList.contains('open')");
+  const managerPage = await evaluate(`(() => {
+    const card = document.querySelector('#stats-modal .modal');
+    const rect = card.getBoundingClientRect();
+    return { width: rect.width, radius: getComputedStyle(card).borderRadius };
+  })()`);
+  assert.ok(managerPage.width >= 389, "MANAGER DESK는 모바일 화면 너비를 모두 사용해야 합니다.");
+  assert.equal(managerPage.radius, "0px", "MANAGER DESK는 팝업 카드 형태가 아니어야 합니다.");
+  const managerLeaving = await evaluate(`(() => {
+    document.querySelector('#stats-close-button').click();
+    const home = document.querySelector('#intro-modal');
+    return {
+      leaving: document.querySelector('#stats-modal').classList.contains('mobile-page-leaving'),
+      homeOpen: home.classList.contains('open'),
+      homeAnimation: getComputedStyle(home).animationName,
+      homeOpacity: getComputedStyle(home).opacity
+    };
+  })()`);
+  assert.equal(managerLeaving.leaving, true, "MANAGER DESK 뒤로가기는 오른쪽으로 빠지는 전환이어야 합니다.");
+  assert.equal(managerLeaving.homeOpen, true, "뒤로가기 시작과 동시에 완성된 홈이 아래에 보여야 합니다.");
+  assert.equal(managerLeaving.homeAnimation, "none", "뒤로가기 중 홈이 다시 페이드되면 안 됩니다.");
+  assert.equal(managerLeaving.homeOpacity, "1", "뒤로가기 중 홈은 완전히 불투명해야 합니다.");
+  await waitFor("document.querySelector('#intro-modal').classList.contains('open') && !document.querySelector('#stats-modal').classList.contains('open')");
+
+  const prepEntering = await evaluate(`(() => {
+    document.querySelector('#start-button').click();
+    return document.querySelector('#prep-modal').classList.contains('mobile-page-entering');
+  })()`);
+  assert.equal(prepEntering, true, "영업 준비도 오른쪽에서 들어오는 페이지여야 합니다.");
+  await waitFor("document.querySelector('#prep-modal').classList.contains('open') && !document.querySelector('#prep-modal').classList.contains('mobile-page-entering') && !document.querySelector('#intro-modal').classList.contains('open')");
+  const prepPage = await evaluate(`(() => {
+    const card = document.querySelector('#prep-modal .modal');
+    const rect = card.getBoundingClientRect();
+    return { width: rect.width, radius: getComputedStyle(card).borderRadius };
+  })()`);
+  assert.ok(prepPage.width >= 389, "영업 준비는 모바일 화면 너비를 모두 사용해야 합니다.");
+  assert.equal(prepPage.radius, "0px", "영업 준비는 팝업 카드 형태가 아니어야 합니다.");
+  const prepLeaving = await evaluate(`(() => {
+    document.querySelector('#prep-close-button').click();
+    return document.querySelector('#prep-modal').classList.contains('mobile-page-leaving');
+  })()`);
+  assert.equal(prepLeaving, true, "영업 준비 뒤로가기도 같은 페이지 복귀 전환이어야 합니다.");
+  await waitFor("document.querySelector('#intro-modal').classList.contains('open') && !document.querySelector('#prep-modal').classList.contains('open')");
+
   const helpEntering = await evaluate(`(() => {
     document.querySelector('#help-button').click();
     const modal = document.querySelector('#help-modal');
@@ -389,6 +457,10 @@ async function run() {
     hudLabelFont: parseFloat(getComputedStyle(document.querySelector('.hud-card small')).fontSize),
     bestVisible: getComputedStyle(document.querySelector('.best-card')).display,
     dockPosition: getComputedStyle(document.querySelector('.tool-dock')).position,
+    playHeight: document.querySelector('.play-area').getBoundingClientRect().height,
+    dockHeight: document.querySelector('.tool-dock').getBoundingClientRect().height,
+    toolGap: parseFloat(getComputedStyle(document.querySelector('#tools')).gap),
+    toolHeight: document.querySelector('.tool').getBoundingClientRect().height,
     bodyFits: document.body.scrollHeight <= innerHeight + 1,
     topbarHeight: document.querySelector('.topbar').getBoundingClientRect().height,
     dockBottom: document.querySelector('.tool-dock').getBoundingClientRect().bottom,
@@ -408,6 +480,10 @@ async function run() {
   assert.ok(mobileGame.hudLabelFont >= 9, "모바일 HUD 라벨은 압축 레이아웃에서도 9px 이상이어야 합니다.");
   assert.equal(mobileGame.bestVisible, "none", "영업 중 모바일 HUD에서는 최고 기록을 숨겨야 합니다.");
   assert.equal(mobileGame.dockPosition, "relative", "모바일 도구판은 한 화면 그리드의 마지막 행이어야 합니다.");
+  assert.ok(mobileGame.playHeight >= 615, "모바일 실제 매장은 615px 이상의 높이를 확보해야 합니다.");
+  assert.ok(mobileGame.dockHeight <= 104, "모바일 도구판은 조작성을 유지하면서 104px 이하여야 합니다.");
+  assert.equal(mobileGame.toolGap, 3, "모바일 액션 버튼 간격은 3px로 촘촘해야 합니다.");
+  assert.equal(mobileGame.toolHeight, 44, "모바일 액션 버튼은 44px 터치 높이를 유지해야 합니다.");
   assert.equal(mobileGame.bodyFits, true, "모바일 영업 화면은 세로 스크롤 없이 한 화면에 들어와야 합니다.");
   assert.ok(mobileGame.topbarHeight <= 46, "모바일 상단 HUD는 기계 공간을 위해 46px 이하여야 합니다.");
   assert.ok(mobileGame.playBottom <= mobileGame.dockTop + 1, "매장과 도구판은 겹치지 않아야 합니다.");
@@ -415,11 +491,30 @@ async function run() {
   assert.equal(mobileGame.machineCount, 12, "세탁기와 건조기 12대가 렌더링되어야 합니다.");
   assert.equal(mobileGame.allMachinesVisible, true, "세탁기와 건조기 12대가 모두 첫 화면에 보여야 합니다.");
   assert.deepEqual(mobileGame.visibleHeaderActions, ["게임 일시정지"], "모바일 헤더에는 일시정지 한 개만 남겨야 합니다.");
+  if (process.env.CAPTURE_UI_REVIEW === "1") {
+    const gameReview = await cdp("Page.captureScreenshot", { format: "png", fromSurface: true, captureBeyondViewport: false });
+    fs.writeFileSync(path.join(os.tmpdir(), "bubble-time-mobile-game-review.png"), Buffer.from(gameReview.data, "base64"));
+  }
 
   await evaluate("state.score = 900; state.cleaned = 2; endGame(true, 'time')");
   await waitFor("document.querySelector('#result-modal').classList.contains('open')");
   assert.equal(await evaluate("document.querySelector('#result-details').open"), false, "모바일 결과의 상세 기록은 기본적으로 접혀야 합니다.");
   assert.equal(await evaluate("getComputedStyle(document.querySelector('.result-secondary-actions')).display"), "none", "모바일 결과에서는 보조 관리 버튼 묶음을 숨겨야 합니다.");
+  const mobileResultSpacing = await evaluate(`({
+    layout: getComputedStyle(document.querySelector('#result-modal .result-card')).display,
+    gap: parseFloat(getComputedStyle(document.querySelector('#result-modal .result-card')).gap),
+    actionGap: parseFloat(getComputedStyle(document.querySelector('.result-retry-actions')).gap),
+    statsMargin: getComputedStyle(document.querySelector('.result-stats')).margin
+  })`);
+  assert.equal(mobileResultSpacing.layout, "flex", "모바일 결과는 일정한 세로 리듬을 위한 플렉스 레이아웃이어야 합니다.");
+  assert.equal(mobileResultSpacing.gap, 8, "모바일 결과의 주요 정보 간격은 8px로 일정해야 합니다.");
+  assert.equal(mobileResultSpacing.actionGap, 6, "모바일 결과 행동 버튼 간격은 6px이어야 합니다.");
+  assert.equal(mobileResultSpacing.statsMargin, "0px", "모바일 결과 통계에 중복 여백이 남지 않아야 합니다.");
+  if (process.env.CAPTURE_UI_REVIEW === "1") {
+    await wait(250);
+    const resultReview = await cdp("Page.captureScreenshot", { format: "png", fromSurface: true, captureBeyondViewport: false });
+    fs.writeFileSync(path.join(os.tmpdir(), "bubble-time-mobile-result-review.png"), Buffer.from(resultReview.data, "base64"));
+  }
 
   await evaluate(`
     localStorage.setItem('bubbleTime75.progression.v1', JSON.stringify({ schemaVersion: 5, stats: { shifts: 1 }, preferences: {}, tutorial: { completed: true } }));

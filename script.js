@@ -7,10 +7,10 @@ const STORAGE_KEY = "bubbleTime75.bestRecord.v1";
 const PROGRESSION_KEY = "bubbleTime75.progression.v1";
 const CHECKPOINT_KEY = "bubbleTime.shiftCheckpoint.v1";
 const SEEN_VERSION_KEY = "bubbleTime75.seenVersion";
-const APP_VERSION = "2.9.0";
+const APP_VERSION = "2.10.0";
 const DATA_SCHEMA_VERSION = 7;
 const MOBILE_PAGE_MEDIA = "(max-width: 520px)";
-const MOBILE_SLIDE_PAGE_IDS = new Set(["settings-modal", "help-modal", "updates-modal"]);
+const MOBILE_SLIDE_PAGE_IDS = new Set(["prep-modal", "stats-modal", "settings-modal", "help-modal", "updates-modal"]);
 
 const GAME_MODES = {
   quick: { label: "45초 빠른 영업", shortLabel: "45초", seconds: 45, objectiveScale: 0.75, rankScale: 0.72 },
@@ -779,12 +779,17 @@ function openPrepModal(fromRestart = false, rerollObjectives = true) {
   }
   prepareShiftObjectives(rerollObjectives || !state.shiftObjectives.length);
   state.returnModal = els.resultModal.classList.contains("open") ? "result-modal" : "intro-modal";
-  [els.introModal, els.resultModal, els.pauseModal].forEach((modal) => {
-    modal.classList.remove("open");
-    modal.setAttribute("aria-hidden", "true");
-  });
+  const source = document.querySelector(`#${state.returnModal}`) || els.introModal;
+  const slideFromHome = usesMobilePageSlide(els.prepModal, source) && source.classList.contains("open");
+  if (!slideFromHome) {
+    [els.introModal, els.resultModal, els.pauseModal].forEach((modal) => {
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+    });
+  }
   els.prepModal.classList.add("open");
   els.prepModal.setAttribute("aria-hidden", "false");
+  if (slideFromHome) startMobilePageEntry(els.prepModal, source);
   updatePrepUi();
   window.setTimeout(() => {
     els.prepModal.querySelector(".modal").scrollTop = 0;
@@ -793,9 +798,10 @@ function openPrepModal(fromRestart = false, rerollObjectives = true) {
 }
 
 function closePrepModal() {
+  const target = document.querySelector(`#${state.returnModal}`) || els.introModal;
+  if (closeWithMobilePageSlide(els.prepModal, target, () => {})) return;
   els.prepModal.classList.remove("open");
   els.prepModal.setAttribute("aria-hidden", "true");
-  const target = document.querySelector(`#${state.returnModal}`) || els.introModal;
   target.classList.add("open");
   target.setAttribute("aria-hidden", "false");
   if (state.lastFocusedElement instanceof HTMLElement) window.setTimeout(() => state.lastFocusedElement.focus(), 80);
