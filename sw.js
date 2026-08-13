@@ -1,12 +1,12 @@
 "use strict";
 
-const CACHE_NAME = "bubble-time-v2.11.0-r1";
+const CACHE_NAME = "bubble-time-v2.12.0-r1";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=2.11.0",
-  "./game-config.js?v=2.11.0",
-  "./script.js?v=2.11.0",
+  "./styles.css?v=2.12.0",
+  "./game-config.js?v=2.12.0",
+  "./script.js?v=2.12.0",
   "./manifest.webmanifest",
   "./icon.svg",
   "./icon-maskable.svg",

@@ -71,7 +71,7 @@ assert.ok(manifest.screenshots.some((item) => item.form_factor === "narrow"), "�
   .forEach((asset) => assert.match(worker, new RegExp(asset.replace(".", "\\.")), `${asset}이 오프라인 캐시에 포함되어야 합니다.`));
 
 assert.match(script, /DATA_SCHEMA_VERSION\s*=\s*7/, "저장 데이터 스키마 버전 7이 필요합니다.");
-assert.match(script, /APP_VERSION\s*=\s*"2\.11\.0"/, "모바일 조작 집중 업데이트 버전 2.11.0이 필요합니다.");
+assert.match(script, /APP_VERSION\s*=\s*"2\.12\.0"/, "모바일 보드 연결감 업데이트 버전 2.12.0이 필요합니다.");
 assert.match(script, /const GAME_MODES/, "네 가지 영업 모드 정의가 필요합니다.");
 assert.match(script, /const MANAGEMENT_GROUPS/, "관리 센터 네 그룹 정의가 필요합니다.");
 assert.match(script, /saveShiftCheckpoint/, "영업 체크포인트 저장 함수가 필요합니다.");

@@ -4733,3 +4733,70 @@ body:has(.screen-view.open) {
   .machine-fault b { font-size: 14px; }
   .machine-fault small { display: none; }
 }
+
+/* v2.12 keep the board proportions while joining its controls more tightly */
+@media (max-width: 520px) {
+  .hud { gap: 1px; }
+  .mission-status,
+  .shift-objectives-hud > div { gap: 2px; }
+
+  /* Move utility targets out of the floor rail so the last machines sit near the tools. */
+  .shop-floor { padding-bottom: 5px; }
+  .shop-floor::after { height: 4px; }
+  .event-facilities {
+    top: -34px;
+    right: 4px;
+    bottom: auto;
+    left: auto;
+    gap: 2px;
+    transform: none;
+  }
+  .detergent-station,
+  .breaker-panel {
+    min-width: 0;
+    height: 24px;
+    padding: 2px 3px;
+  }
+  .detergent-station { width: 50px; }
+  .breaker-panel { width: 25px; }
+  .breaker-panel > span:nth-child(2) { display: none; }
+  .event-facilities .facility-icon { width: 17px; height: 17px; }
+  .event-facilities strong { font-size: 7px; }
+
+  .event-alert,
+  .event-forecast,
+  .toast-region,
+  .first-shift-guide { right: 85px; }
+
+  /* The action dock visually continues the board instead of floating below it. */
+  .play-area { box-shadow: 0 2px 0 #082d33; }
+  .tool-dock {
+    z-index: 25;
+    transform: translateY(-2px);
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
+    box-shadow: 0 3px 10px rgba(18, 60, 67, .12);
+  }
+
+  /* First-shift help uses the same compact header lane as store notices. */
+  .first-shift-guide {
+    top: 2px;
+    bottom: auto;
+    left: 64px;
+    width: auto;
+    min-height: 30px;
+    grid-template-columns: minmax(0, 1fr) 22px;
+    gap: 5px;
+    padding: 3px 4px 3px 7px;
+    border-radius: 8px;
+    transform: none;
+  }
+  .first-shift-guide > span { display: none; }
+  .first-shift-guide strong {
+    overflow: hidden;
+    font-size: 9px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .first-shift-guide button { width: 22px; height: 22px; border-radius: 6px; }
+}

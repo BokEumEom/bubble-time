@@ -492,6 +492,15 @@ async function run() {
     dockBottom: document.querySelector('.tool-dock').getBoundingClientRect().bottom,
     playBottom: document.querySelector('.play-area').getBoundingClientRect().bottom,
     dockTop: document.querySelector('.tool-dock').getBoundingClientRect().top,
+    toolsTop: document.querySelector('.tools').getBoundingClientRect().top,
+    lastMachineBottom: [...document.querySelectorAll('.machine')].at(-1).getBoundingClientRect().bottom,
+    facilityTop: document.querySelector('.event-facilities').getBoundingClientRect().top,
+    facilityBottom: document.querySelector('.event-facilities').getBoundingClientRect().bottom,
+    facilityLeft: document.querySelector('.event-facilities').getBoundingClientRect().left,
+    shopHeaderTop: document.querySelector('.shop-header').getBoundingClientRect().top,
+    shopHeaderBottom: document.querySelector('.shop-header').getBoundingClientRect().bottom,
+    hudGap: parseFloat(getComputedStyle(document.querySelector('.hud')).gap),
+    missionGap: parseFloat(getComputedStyle(document.querySelector('.mission-status')).gap),
     machineCount: document.querySelectorAll('.machine').length,
     allMachinesVisible: [...document.querySelectorAll('.machine')].every((machine) => {
       const rect = machine.getBoundingClientRect();
@@ -507,12 +516,18 @@ async function run() {
   assert.equal(mobileGame.bestVisible, "none", "영업 중 모바일 HUD에서는 최고 기록을 숨겨야 합니다.");
   assert.equal(mobileGame.dockPosition, "relative", "모바일 도구판은 한 화면 그리드의 마지막 행이어야 합니다.");
   assert.ok(mobileGame.playHeight >= 635, "모바일 실제 매장은 635px 이상의 높이를 확보해야 합니다.");
+  assert.ok(mobileGame.playHeight <= 641, "모바일 매장은 기존 639px 보드 비율을 유지해야 합니다.");
   assert.ok(mobileGame.dockHeight <= 95, "모바일 도구판은 조작성을 유지하면서 95px 이하여야 합니다.");
   assert.equal(mobileGame.toolGap, 2, "모바일 액션 버튼 간격은 2px로 촘촘해야 합니다.");
   assert.equal(mobileGame.toolHeight, 42, "모바일 액션 버튼은 42px 높이로 공간을 절약해야 합니다.");
   assert.equal(mobileGame.bodyFits, true, "모바일 영업 화면은 세로 스크롤 없이 한 화면에 들어와야 합니다.");
   assert.ok(mobileGame.topbarHeight <= 46, "모바일 상단 HUD는 기계 공간을 위해 46px 이하여야 합니다.");
   assert.ok(mobileGame.playBottom <= mobileGame.dockTop + 1, "매장과 도구판은 겹치지 않아야 합니다.");
+  assert.ok(Math.abs(mobileGame.dockTop - mobileGame.playBottom) <= 1, "도구판은 매장 테두리에 바로 연결되어야 합니다.");
+  assert.ok(mobileGame.toolsTop - mobileGame.lastMachineBottom <= 18, "마지막 기계와 액션 버튼의 시각적 간격은 18px 이하여야 합니다.");
+  assert.ok(mobileGame.facilityTop >= mobileGame.shopHeaderTop && mobileGame.facilityBottom <= mobileGame.shopHeaderBottom, "세제 탱크와 차단기는 매장 헤더 안에 배치되어야 합니다.");
+  assert.equal(mobileGame.hudGap, 1, "모바일 주요 HUD 카드 간격은 1px이어야 합니다.");
+  assert.equal(mobileGame.missionGap, 2, "모바일 상태 카드 간격은 2px이어야 합니다.");
   assert.ok(mobileGame.dockBottom <= 844, "도구판 전체가 모바일 화면 안에 보여야 합니다.");
   assert.equal(mobileGame.machineCount, 12, "세탁기와 건조기 12대가 렌더링되어야 합니다.");
   assert.equal(mobileGame.allMachinesVisible, true, "세탁기와 건조기 12대가 모두 첫 화면에 보여야 합니다.");
@@ -522,19 +537,30 @@ async function run() {
     showEventAlert('breakdown');
     const alertRect = document.querySelector('#event-alert').getBoundingClientRect();
     hideEventAlert();
+    const firstGuide = document.querySelector('#first-shift-guide');
+    firstGuide.hidden = false;
+    const guideRect = firstGuide.getBoundingClientRect();
+    firstGuide.hidden = true;
     showToast('손님이 돌아갔어요!', 'good routine', '♥', 1500);
     const toastRect = document.querySelector('.toast-region .toast').getBoundingClientRect();
     return {
       firstMachineTop,
       alertBottom: alertRect.bottom,
+      alertRight: alertRect.right,
       alertHeight: alertRect.height,
       toastBottom: toastRect.bottom,
+      toastRight: toastRect.right,
       toastHeight: toastRect.height,
+      guideBottom: guideRect.bottom,
+      guideRight: guideRect.right,
+      guideHeight: guideRect.height,
       faultCopy: getComputedStyle(document.querySelector('.machine-fault small')).display
     };
   })()`);
   assert.ok(noticeLayout.alertBottom < noticeLayout.firstMachineTop && noticeLayout.alertHeight >= 28 && noticeLayout.alertHeight <= 32, "기계 고장 알림은 첫 기계를 가리지 않는 상단 칩이어야 합니다.");
   assert.ok(noticeLayout.toastBottom < noticeLayout.firstMachineTop && noticeLayout.toastHeight >= 28 && noticeLayout.toastHeight <= 32, "손님 완료 메시지는 기계를 가리지 않는 상단 칩이어야 합니다.");
+  assert.ok(noticeLayout.guideBottom < noticeLayout.firstMachineTop && noticeLayout.guideHeight >= 28 && noticeLayout.guideHeight <= 32, "첫 영업 도움말은 기계를 가리지 않는 상단 칩이어야 합니다.");
+  assert.ok(Math.max(noticeLayout.alertRight, noticeLayout.toastRight, noticeLayout.guideRight) < mobileGame.facilityLeft, "헤더 안내와 세제·차단기 조작 영역은 겹치지 않아야 합니다.");
   assert.equal(noticeLayout.faultCopy, "none", "모바일 고장 기계에는 조작을 가리는 긴 문구를 숨겨야 합니다.");
   if (process.env.CAPTURE_UI_REVIEW === "1") {
     const gameReview = await cdp("Page.captureScreenshot", { format: "png", fromSurface: true, captureBeyondViewport: false });
