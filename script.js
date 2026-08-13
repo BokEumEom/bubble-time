@@ -7,7 +7,7 @@ const STORAGE_KEY = "bubbleTime75.bestRecord.v1";
 const PROGRESSION_KEY = "bubbleTime75.progression.v1";
 const CHECKPOINT_KEY = "bubbleTime.shiftCheckpoint.v1";
 const SEEN_VERSION_KEY = "bubbleTime75.seenVersion";
-const APP_VERSION = "2.10.0";
+const APP_VERSION = "2.11.0";
 const DATA_SCHEMA_VERSION = 7;
 const MOBILE_PAGE_MEDIA = "(max-width: 520px)";
 const MOBILE_SLIDE_PAGE_IDS = new Set(["prep-modal", "stats-modal", "settings-modal", "help-modal", "updates-modal"]);
@@ -247,6 +247,7 @@ const state = {
   updateRegistration: null,
   reloadForUpdate: false,
   lastFocusedElement: null,
+  managementTransitioning: false,
   tutorialActive: false,
   tutorialStep: 0,
   decorTab: "sign",
@@ -1501,7 +1502,7 @@ function finishCycle(machine) {
         ? "아주 만족한 손님이 돌아갔어요!"
         : "조금 기다렸지만 세탁을 마쳤어요.";
     const guestIcon = guest.type === "collector" ? "◆" : guest.type === "regular" ? "★" : guest.type === "bulk" ? "▦" : guest.cleaned ? "✦" : guest.satisfaction >= CONFIG.satisfaction.happyThreshold ? "♥" : "☺";
-    showToast(guestMessage, "good", guestIcon, 1150);
+    showToast(guestMessage, "good routine", guestIcon, 1150);
     playTone(650, 0.08, "sine", 0.035);
   }
 
@@ -3102,10 +3103,32 @@ function closeWithMobilePageSlide(modal, target, finish) {
   return true;
 }
 
+function usesMobileManagementSwitch(current, target) {
+  return Boolean(current && target && current !== target && window.matchMedia(MOBILE_PAGE_MEDIA).matches);
+}
+
+function startMobileManagementSwitch(current, target) {
+  const currentIndex = MANAGEMENT_SCREENS.findIndex((screen) => screen.id === current.id);
+  const targetIndex = MANAGEMENT_SCREENS.findIndex((screen) => screen.id === target.id);
+  const forward = targetIndex >= currentIndex;
+  const outgoingClass = forward ? "management-page-out-left" : "management-page-out-right";
+  const incomingClass = forward ? "management-page-in-right" : "management-page-in-left";
+  state.managementTransitioning = true;
+  current.classList.add(outgoingClass);
+  current.setAttribute("aria-hidden", "true");
+  target.classList.add(incomingClass);
+  window.setTimeout(() => {
+    current.classList.remove("open", outgoingClass);
+    target.classList.remove(incomingClass);
+    state.managementTransitioning = false;
+  }, 280);
+}
+
 function openProgressionModal(modal) {
-  if (state.running) return;
+  if (state.running || state.managementTransitioning) return;
   const current = managementModalElements().find((item) => item.classList.contains("open"));
   let slideSource = null;
+  const mobileManagementSwitch = usesMobileManagementSwitch(current, modal);
   if (!current) {
     state.lastFocusedElement = document.activeElement;
     state.returnModal = els.resultModal.classList.contains("open") ? "result-modal" : "intro-modal";
@@ -3117,7 +3140,7 @@ function openProgressionModal(modal) {
         item.setAttribute("aria-hidden", "true");
       });
     }
-  } else if (current !== modal) {
+  } else if (current !== modal && !mobileManagementSwitch) {
     current.classList.remove("open");
     current.setAttribute("aria-hidden", "true");
   }
@@ -3127,9 +3150,10 @@ function openProgressionModal(modal) {
   modal.removeAttribute("aria-modal");
   modal.classList.add("open");
   if (slideSource) startMobilePageEntry(modal, slideSource);
-  if (current && current !== modal) modal.classList.add("switching-in");
+  if (mobileManagementSwitch) startMobileManagementSwitch(current, modal);
+  else if (current && current !== modal) modal.classList.add("switching-in");
   modal.setAttribute("aria-hidden", "false");
-  window.setTimeout(() => modal.classList.remove("switching-in"), 160);
+  if (!mobileManagementSwitch) window.setTimeout(() => modal.classList.remove("switching-in"), 160);
   updateManagementNavigation(modal.id);
   updateProgressionUi();
   if (modal === els.decorModal) renderDecorations();
@@ -3137,7 +3161,7 @@ function openProgressionModal(modal) {
   if (modal === els.settingsModal) updateSettingsUi();
   modal.scrollTop = 0;
   if (current && current !== modal) {
-    window.setTimeout(() => modal.querySelector(".management-subnav button.active, .management-nav button.active")?.focus(), 40);
+    window.setTimeout(() => modal.querySelector(".management-subnav button.active, .management-nav button.active")?.focus(), mobileManagementSwitch ? 300 : 40);
   } else {
     focusFirstInModal(modal);
   }

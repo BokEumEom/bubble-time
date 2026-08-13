@@ -317,6 +317,9 @@ async function run() {
       cardRadius: getComputedStyle(card).borderRadius,
       dashboardGap: parseFloat(getComputedStyle(document.querySelector('.intro-dashboard')).gap),
       utilityGap: parseFloat(getComputedStyle(document.querySelector('.intro-utility-actions')).gap),
+      managerWidth: document.querySelector('#mobile-manager-button').getBoundingClientRect().width,
+      startWidth: document.querySelector('#start-button').getBoundingClientRect().width,
+      utilityWidth: document.querySelector('.intro-utility-actions').getBoundingClientRect().width,
       animation: getComputedStyle(document.querySelector('#intro-modal')).animationName
     };
   })()`);
@@ -329,6 +332,9 @@ async function run() {
   assert.equal(mobileHome.cardRadius, "0px", "모바일 홈은 팝업 카드처럼 둥글지 않아야 합니다.");
   assert.equal(mobileHome.dashboardGap, 10, "모바일 홈의 주요 버튼 간격은 10px로 일정해야 합니다.");
   assert.equal(mobileHome.utilityGap, 8, "모바일 홈의 보조 버튼 간격은 8px로 일정해야 합니다.");
+  assert.ok(mobileHome.managerWidth >= 350, "모바일 MANAGER DESK 버튼은 좌우 콘텐츠 폭을 넓게 사용해야 합니다.");
+  assert.ok(mobileHome.startWidth >= 350, "모바일 영업 준비 버튼은 좌우 콘텐츠 폭을 넓게 사용해야 합니다.");
+  assert.ok(mobileHome.utilityWidth >= 350, "모바일 보조 버튼 묶음도 좌우 콘텐츠 폭을 넓게 사용해야 합니다.");
   assert.equal(mobileHome.animation, "none", "모바일 홈은 복귀할 때 다시 페이드되어 깜박이지 않아야 합니다.");
 
   console.log("UI 회귀: 모바일 페이지 슬라이드 확인");
@@ -442,6 +448,26 @@ async function run() {
   assert.equal(settingsPage.role, "region", "모바일 설정은 모달이 아닌 독립 페이지여야 합니다.");
   assert.equal(settingsPage.position, "fixed", "모바일 설정은 화면 전체를 차지해야 합니다.");
   assert.equal(settingsPage.borderRadius, "0px", "모바일 설정의 바깥 카드는 제거되어야 합니다.");
+  const settingsToGrowth = await evaluate(`(() => {
+    document.querySelector('#settings-modal .management-nav [data-management-group="growth"]').click();
+    return {
+      settingsOut: document.querySelector('#settings-modal').classList.contains('management-page-out-right'),
+      shopIn: document.querySelector('#shop-modal').classList.contains('management-page-in-left'),
+      settingsOpen: document.querySelector('#settings-modal').classList.contains('open'),
+      shopOpen: document.querySelector('#shop-modal').classList.contains('open')
+    };
+  })()`);
+  assert.deepEqual(settingsToGrowth, { settingsOut: true, shopIn: true, settingsOpen: true, shopOpen: true }, "설정에서 이전 탭으로 이동할 때 두 페이지가 이전 화면 방향으로 전환되어야 합니다.");
+  await waitFor("document.querySelector('#shop-modal').classList.contains('open') && !document.querySelector('#settings-modal').classList.contains('open')");
+  const growthToSettings = await evaluate(`(() => {
+    document.querySelector('#shop-modal .management-nav [data-management-group="settings"]').click();
+    return {
+      shopOut: document.querySelector('#shop-modal').classList.contains('management-page-out-left'),
+      settingsIn: document.querySelector('#settings-modal').classList.contains('management-page-in-right')
+    };
+  })()`);
+  assert.deepEqual(growthToSettings, { shopOut: true, settingsIn: true }, "설정 탭으로 이동할 때 다음 페이지가 오른쪽에서 들어와야 합니다.");
+  await waitFor("document.querySelector('#settings-modal').classList.contains('open') && !document.querySelector('#shop-modal').classList.contains('open')");
   await evaluate("document.querySelector('#settings-close-button').click()");
   await waitFor("document.querySelector('#intro-modal').classList.contains('open') && !document.querySelector('#settings-modal').classList.contains('open')");
 
@@ -480,10 +506,10 @@ async function run() {
   assert.ok(mobileGame.hudLabelFont >= 9, "모바일 HUD 라벨은 압축 레이아웃에서도 9px 이상이어야 합니다.");
   assert.equal(mobileGame.bestVisible, "none", "영업 중 모바일 HUD에서는 최고 기록을 숨겨야 합니다.");
   assert.equal(mobileGame.dockPosition, "relative", "모바일 도구판은 한 화면 그리드의 마지막 행이어야 합니다.");
-  assert.ok(mobileGame.playHeight >= 615, "모바일 실제 매장은 615px 이상의 높이를 확보해야 합니다.");
-  assert.ok(mobileGame.dockHeight <= 104, "모바일 도구판은 조작성을 유지하면서 104px 이하여야 합니다.");
-  assert.equal(mobileGame.toolGap, 3, "모바일 액션 버튼 간격은 3px로 촘촘해야 합니다.");
-  assert.equal(mobileGame.toolHeight, 44, "모바일 액션 버튼은 44px 터치 높이를 유지해야 합니다.");
+  assert.ok(mobileGame.playHeight >= 635, "모바일 실제 매장은 635px 이상의 높이를 확보해야 합니다.");
+  assert.ok(mobileGame.dockHeight <= 95, "모바일 도구판은 조작성을 유지하면서 95px 이하여야 합니다.");
+  assert.equal(mobileGame.toolGap, 2, "모바일 액션 버튼 간격은 2px로 촘촘해야 합니다.");
+  assert.equal(mobileGame.toolHeight, 42, "모바일 액션 버튼은 42px 높이로 공간을 절약해야 합니다.");
   assert.equal(mobileGame.bodyFits, true, "모바일 영업 화면은 세로 스크롤 없이 한 화면에 들어와야 합니다.");
   assert.ok(mobileGame.topbarHeight <= 46, "모바일 상단 HUD는 기계 공간을 위해 46px 이하여야 합니다.");
   assert.ok(mobileGame.playBottom <= mobileGame.dockTop + 1, "매장과 도구판은 겹치지 않아야 합니다.");
@@ -491,9 +517,33 @@ async function run() {
   assert.equal(mobileGame.machineCount, 12, "세탁기와 건조기 12대가 렌더링되어야 합니다.");
   assert.equal(mobileGame.allMachinesVisible, true, "세탁기와 건조기 12대가 모두 첫 화면에 보여야 합니다.");
   assert.deepEqual(mobileGame.visibleHeaderActions, ["게임 일시정지"], "모바일 헤더에는 일시정지 한 개만 남겨야 합니다.");
+  const noticeLayout = await evaluate(`(() => {
+    const firstMachineTop = document.querySelector('.machine').getBoundingClientRect().top;
+    showEventAlert('breakdown');
+    const alertRect = document.querySelector('#event-alert').getBoundingClientRect();
+    hideEventAlert();
+    showToast('손님이 돌아갔어요!', 'good routine', '♥', 1500);
+    const toastRect = document.querySelector('.toast-region .toast').getBoundingClientRect();
+    return {
+      firstMachineTop,
+      alertBottom: alertRect.bottom,
+      alertHeight: alertRect.height,
+      toastBottom: toastRect.bottom,
+      toastHeight: toastRect.height,
+      faultCopy: getComputedStyle(document.querySelector('.machine-fault small')).display
+    };
+  })()`);
+  assert.ok(noticeLayout.alertBottom < noticeLayout.firstMachineTop && noticeLayout.alertHeight >= 28 && noticeLayout.alertHeight <= 32, "기계 고장 알림은 첫 기계를 가리지 않는 상단 칩이어야 합니다.");
+  assert.ok(noticeLayout.toastBottom < noticeLayout.firstMachineTop && noticeLayout.toastHeight >= 28 && noticeLayout.toastHeight <= 32, "손님 완료 메시지는 기계를 가리지 않는 상단 칩이어야 합니다.");
+  assert.equal(noticeLayout.faultCopy, "none", "모바일 고장 기계에는 조작을 가리는 긴 문구를 숨겨야 합니다.");
   if (process.env.CAPTURE_UI_REVIEW === "1") {
     const gameReview = await cdp("Page.captureScreenshot", { format: "png", fromSurface: true, captureBeyondViewport: false });
     fs.writeFileSync(path.join(os.tmpdir(), "bubble-time-mobile-game-review.png"), Buffer.from(gameReview.data, "base64"));
+    await evaluate("showEventAlert('breakdown')");
+    await wait(160);
+    const noticeReview = await cdp("Page.captureScreenshot", { format: "png", fromSurface: true, captureBeyondViewport: false });
+    fs.writeFileSync(path.join(os.tmpdir(), "bubble-time-mobile-notice-review.png"), Buffer.from(noticeReview.data, "base64"));
+    await evaluate("hideEventAlert()");
   }
 
   await evaluate("state.score = 900; state.cleaned = 2; endGame(true, 'time')");

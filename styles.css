@@ -4593,3 +4593,143 @@ body:has(.screen-view.open) {
   }
   .tool-art { width: 27px; height: 28px; transform: scale(.53); }
 }
+
+/* v2.11 wider home actions, directional management tabs and unobtrusive play notices */
+@keyframes management-page-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes management-page-in-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes management-page-out-left {
+  from { transform: translateX(0); }
+  to { transform: translateX(-22%); }
+}
+
+@keyframes management-page-out-right {
+  from { transform: translateX(0); }
+  to { transform: translateX(22%); }
+}
+
+@media (max-width: 520px) {
+  .intro-dashboard {
+    width: 100%;
+    max-width: none;
+    align-self: stretch;
+  }
+
+  .management-screen.management-page-in-right,
+  .management-screen.management-page-in-left {
+    z-index: 192;
+    box-shadow: -16px 0 30px rgba(7, 38, 43, .14);
+  }
+  .management-screen.management-page-out-left,
+  .management-screen.management-page-out-right {
+    z-index: 191;
+    pointer-events: none;
+  }
+  .management-screen.management-page-in-right { animation: management-page-in-right .26s cubic-bezier(.22, .78, .25, 1) both !important; }
+  .management-screen.management-page-in-left { animation: management-page-in-left .26s cubic-bezier(.22, .78, .25, 1) both !important; }
+  .management-screen.management-page-out-left { animation: management-page-out-left .26s ease both !important; }
+  .management-screen.management-page-out-right { animation: management-page-out-right .26s ease both !important; }
+
+  .game-shell { gap: 2px; }
+  .topbar {
+    min-height: 38px;
+    grid-template-columns: 30px minmax(0, 1fr) 32px;
+    grid-template-rows: 38px;
+    gap: 3px;
+  }
+  .brand-bubbles { width: 28px; height: 28px; border-radius: 9px; }
+  .hud { height: 38px; padding: 2px; }
+  .hud-card { min-height: 32px; padding-block: 2px; }
+  .round-control { width: 32px; height: 32px; }
+  .mission-strip {
+    height: 30px;
+    min-height: 0;
+    padding: 1px;
+  }
+  .combo-meter,
+  .satisfaction-meter,
+  .queue-meter { height: 28px; padding-block: 1px; }
+  .shift-objectives-hud {
+    height: 26px;
+    min-height: 0;
+    padding: 1px;
+  }
+  .shift-objectives-hud > div > span {
+    min-height: 24px;
+    padding: 1px 3px;
+  }
+  .shift-objectives-hud i { width: 17px; height: 17px; font-size: 8px; }
+  .tool-dock { padding: 3px; border-radius: 11px; }
+  .tools { gap: 2px; }
+  .tool {
+    height: 42px;
+    grid-template-columns: 26px minmax(0, 1fr);
+    padding: 2px 4px;
+    border-radius: 8px;
+  }
+  .tool-art { width: 26px; height: 27px; transform: scale(.5); }
+
+  /* Notices live in the store header, leaving every machine target clear. */
+  .event-alert,
+  .event-forecast {
+    top: 2px;
+    left: 64px;
+    right: 4px;
+    z-index: 90;
+    width: auto;
+    min-height: 30px;
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+    gap: 5px;
+    padding: 3px 6px;
+    border-width: 2px;
+    border-radius: 8px;
+    box-shadow: 0 3px 0 rgba(7, 38, 43, .3);
+    transform: none;
+  }
+  .event-alert > span,
+  .event-forecast > span { width: 22px; height: 22px; border-radius: 6px; font-size: 12px; }
+  .event-alert small,
+  .event-alert p,
+  .event-forecast small,
+  .event-forecast p { display: none; }
+  .event-alert strong,
+  .event-forecast strong { display: block; overflow: hidden; font-size: 10px; white-space: nowrap; text-overflow: ellipsis; }
+  .event-forecast > em { font-size: 8px; }
+  .event-forecast > em b { font-size: 13px; }
+  .event-forecast::after { height: 2px; }
+
+  .toast-region {
+    top: 2px;
+    left: 64px;
+    right: 4px;
+    width: auto;
+    gap: 2px;
+    transform: none;
+  }
+  .toast-region .toast:not(:first-child) { display: none; }
+  .toast {
+    min-height: 30px;
+    gap: 5px;
+    padding: 3px 7px;
+    border-width: 1px;
+    border-radius: 8px;
+    font-size: 9px;
+    box-shadow: 0 3px 0 rgba(9, 44, 50, .58);
+  }
+  .toast-icon { width: 20px; height: 20px; border-radius: 6px; font-size: 10px; }
+  .toast > span:last-child { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .toast.routine .toast-icon { display: none; }
+  .play-area:has(.event-alert:not([hidden])) .toast-region,
+  .play-area:has(.event-forecast:not([hidden])) .toast-region { display: none; }
+
+  .machine-fault { width: 36px; height: 36px; }
+  .machine-fault b { font-size: 14px; }
+  .machine-fault small { display: none; }
+}
