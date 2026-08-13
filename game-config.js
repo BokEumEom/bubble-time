@@ -23,12 +23,12 @@ const LAUNDRY_CONFIG = Object.freeze({
     collector: Object.freeze({ weight: 0, label: "세탁소 평론가", icon: "◆", patience: 0.72, cycle: 0.88, reward: 2.2 }),
   }),
   upgrades: Object.freeze({
-    maxLevel: 3,
-    machineCosts: Object.freeze([90, 190, 330]),
-    toolCosts: Object.freeze([80, 170, 300]),
-    machineSpeedPerLevel: 0.08,
-    toolScorePerLevel: 0.12,
-    comboWindowPerLevel: 350,
+    maxLevel: 8,
+    machineCosts: Object.freeze([90, 190, 330, 520, 760, 1050, 1400, 1800]),
+    toolCosts: Object.freeze([80, 170, 300, 480, 700, 960, 1250, 1600]),
+    machineSpeedBonuses: Object.freeze([0, 0.08, 0.16, 0.24, 0.31, 0.37, 0.42, 0.46, 0.5]),
+    toolScoreBonuses: Object.freeze([0, 0.12, 0.24, 0.36, 0.47, 0.58, 0.68, 0.77, 0.84]),
+    comboWindowBonuses: Object.freeze([0, 350, 700, 1050, 1350, 1600, 1850, 2050, 2200]),
   }),
   economy: Object.freeze({
     servedCoins: 10,

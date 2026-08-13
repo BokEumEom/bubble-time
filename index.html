@@ -24,9 +24,9 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./assets/icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=2.13.0" />
-    <script src="./game-config.js?v=2.13.0" defer></script>
-    <script src="./script.js?v=2.13.0" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=2.14.0" />
+    <script src="./game-config.js?v=2.14.0" defer></script>
+    <script src="./script.js?v=2.14.0" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#play-area">게임 화면으로 바로가기</a>
@@ -352,18 +352,18 @@
         <div class="upgrade-list">
           <article class="upgrade-card" data-upgrade="machine">
             <span class="upgrade-art machine-upgrade-art">◎</span>
-            <div><small>MACHINE</small><h3>고속 모터</h3><p>기계 작업 시간 레벨당 8% 단축</p></div>
-            <div class="level-pips" aria-label="고속 모터 레벨"><i></i><i></i><i></i></div>
+            <div><small>MACHINE</small><h3>고속 모터</h3><p>현재 작업 시간 0% 단축 · 최대 50%</p></div>
+            <div class="level-pips" aria-label="고속 모터 레벨 0/8"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
             <button class="upgrade-buy-button" id="buy-machine-upgrade" type="button"><span>강화</span><strong>◈ <b>90</b></strong></button>
           </article>
           <article class="upgrade-card" data-upgrade="tool">
             <span class="upgrade-art tool-upgrade-art">✦</span>
-            <div><small>TOOLS</small><h3>프로 청소 키트</h3><p>청소 점수 +12% · 콤보 여유 +0.35초</p></div>
-            <div class="level-pips" aria-label="프로 청소 키트 레벨"><i></i><i></i><i></i></div>
+            <div><small>TOOLS</small><h3>프로 청소 키트</h3><p>현재 청소 점수 +0% · 콤보 +0.00초</p></div>
+            <div class="level-pips" aria-label="프로 청소 키트 레벨 0/8"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
             <button class="upgrade-buy-button" id="buy-tool-upgrade" type="button"><span>강화</span><strong>◈ <b>80</b></strong></button>
           </article>
         </div>
-        <small class="keyboard-hint">최대 레벨은 3이며 구매 내역은 이 브라우저에 저장됩니다.</small>
+        <small class="keyboard-hint">최대 레벨은 8이며 후반 강화일수록 더 많은 수익이 필요합니다.</small>
       </section>
     </div>
 
@@ -404,7 +404,7 @@
         <div class="modal-kicker">STORE ATELIER</div>
         <h2 id="decor-title">매장 꾸미기</h2>
         <p>수익으로 장식을 모으고 원하는 분위기로 매장을 바꿔보세요. 성능에는 영향을 주지 않습니다.</p>
-        <div class="decor-wallet"><span>보유 수익</span><strong>◈ <b id="decor-wallet-value">0</b></strong><em id="decor-owned-count">4 / 9 보유</em></div>
+        <div class="decor-wallet"><span>보유 수익</span><strong>◈ <b id="decor-wallet-value">0</b></strong><em id="decor-owned-count">4 / 24 보유</em></div>
         <div class="decor-preview" id="decor-preview"><span class="preview-sign">OPEN</span><i></i><b></b><em>미리 보기</em></div>
         <div class="decor-tabs" role="tablist" aria-label="꾸미기 분류">
           <button class="active" type="button" role="tab" aria-selected="true" data-decor-tab="sign">간판</button>
@@ -492,14 +492,14 @@
     <div class="modal-backdrop" id="updates-modal" role="dialog" aria-modal="true" aria-labelledby="updates-title" aria-hidden="true">
       <section class="modal progression-modal updates-card">
         <button class="modal-close utility-page-back" id="updates-close-button" type="button" aria-label="업데이트 안내에서 홈으로 돌아가기"><span class="utility-close-mark" aria-hidden="true">×</span><span class="utility-back-arrow" aria-hidden="true">←</span><b>홈</b></button>
-        <div class="modal-kicker">VERSION <span id="app-version-label">2.13.0</span></div>
-        <h2 id="updates-title">모바일 전환·조작 밀착 업데이트</h2>
-        <p>2026.08 · 설정 화면의 재페이드를 제거하고, 모바일 헤더를 압축해 기계 보드와 액션 도구를 빈틈없이 연결했습니다.</p>
+        <div class="modal-kicker">VERSION <span id="app-version-label">2.14.0</span></div>
+        <h2 id="updates-title">성장·컬렉션 확장 업데이트</h2>
+        <p>2026.08 · 가게 업그레이드의 성장 구간을 늘리고, 매장 분위기를 바꿀 수 있는 꾸미기 컬렉션을 대폭 확장했습니다.</p>
         <div class="update-list">
-          <article><span>STABLE</span><div><h3>다시 깜박이지 않는 설정</h3><p>진입과 탭 슬라이드가 끝난 뒤 기본 페이드가 재실행되던 원인을 제거했습니다.</p></div></article>
-          <article><span>RATIO</span><div><h3>기기 폭에 맞춘 고정 비율</h3><p>세탁기·건조기 보드는 390×844와 360×800에서 같은 비율을 유지합니다.</p></div></article>
-          <article><span>HEADER</span><div><h3>82px로 압축한 HUD</h3><p>상단·상태·목표 행을 각각 34px·26px·22px로 정리했습니다.</p></div></article>
-          <article><span>ACTION</span><div><h3>빈틈없이 붙은 도구</h3><p>마지막 기계와 50px 액션 버튼 사이의 빈 공간을 0px로 줄였습니다.</p></div></article>
+          <article><span>LEVEL 8</span><div><h3>길어진 가게 성장</h3><p>고속 모터와 프로 청소 키트를 8단계까지 강화할 수 있습니다.</p></div></article>
+          <article><span>BALANCE</span><div><h3>안정적인 후반 효과</h3><p>기존 3단계 성능은 유지하면서 후반 보너스는 완만하게 증가합니다.</p></div></article>
+          <article><span>24 ITEMS</span><div><h3>24종으로 넓어진 컬렉션</h3><p>간판·바닥·벽지·화분을 각각 6종씩, 총 24종 모을 수 있습니다.</p></div></article>
+          <article><span>STYLE</span><div><h3>새로운 매장 테마</h3><p>네온, 테라조, 별밤, 라벤더 등 다양한 분위기를 조합할 수 있습니다.</p></div></article>
         </div>
       </section>
     </div>

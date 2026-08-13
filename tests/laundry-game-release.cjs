@@ -9,6 +9,7 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const html = read("index.html");
 const script = read("script.js");
 const styles = read("styles.css");
+const config = read("game-config.js");
 const worker = read("sw.js");
 const manifest = JSON.parse(read("manifest.webmanifest"));
 const pngSize = (file) => {
@@ -71,7 +72,16 @@ assert.ok(manifest.screenshots.some((item) => item.form_factor === "narrow"), "�
   .forEach((asset) => assert.match(worker, new RegExp(asset.replace(".", "\\.")), `${asset}이 오프라인 캐시에 포함되어야 합니다.`));
 
 assert.match(script, /DATA_SCHEMA_VERSION\s*=\s*7/, "저장 데이터 스키마 버전 7이 필요합니다.");
-assert.match(script, /APP_VERSION\s*=\s*"2\.13\.0"/, "모바일 전환·조작 밀착 업데이트 버전 2.13.0이 필요합니다.");
+assert.match(script, /APP_VERSION\s*=\s*"2\.14\.0"/, "성장·컬렉션 확장 업데이트 버전 2.14.0이 필요합니다.");
+assert.match(config, /maxLevel:\s*8/, "가게 업그레이드는 8단계까지 제공해야 합니다.");
+assert.match(config, /machineCosts:\s*Object\.freeze\(\[[^\]]*1800\]\)/, "고속 모터 8단계 비용표가 필요합니다.");
+assert.match(config, /toolCosts:\s*Object\.freeze\(\[[^\]]*1600\]\)/, "청소 도구 8단계 비용표가 필요합니다.");
+assert.match(config, /machineSpeedBonuses/, "후반 기계 강화의 단계별 밸런스 값이 필요합니다.");
+assert.match(config, /toolScoreBonuses/, "후반 도구 강화의 단계별 밸런스 값이 필요합니다.");
+assert.match(script, /sign_midnight/, "확장된 간판 컬렉션이 필요합니다.");
+assert.match(script, /floor_terrazzo/, "확장된 바닥 컬렉션이 필요합니다.");
+assert.match(script, /wall_pattern/, "확장된 벽지 컬렉션이 필요합니다.");
+assert.match(script, /plant_bonsai/, "확장된 화분 컬렉션이 필요합니다.");
 assert.match(script, /const GAME_MODES/, "네 가지 영업 모드 정의가 필요합니다.");
 assert.match(script, /const MANAGEMENT_GROUPS/, "관리 센터 네 그룹 정의가 필요합니다.");
 assert.match(script, /saveShiftCheckpoint/, "영업 체크포인트 저장 함수가 필요합니다.");

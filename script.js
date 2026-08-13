@@ -7,7 +7,7 @@ const STORAGE_KEY = "bubbleTime75.bestRecord.v1";
 const PROGRESSION_KEY = "bubbleTime75.progression.v1";
 const CHECKPOINT_KEY = "bubbleTime.shiftCheckpoint.v1";
 const SEEN_VERSION_KEY = "bubbleTime75.seenVersion";
-const APP_VERSION = "2.13.0";
+const APP_VERSION = "2.14.0";
 const DATA_SCHEMA_VERSION = 7;
 const MOBILE_PAGE_MEDIA = "(max-width: 520px)";
 const MOBILE_SLIDE_PAGE_IDS = new Set(["prep-modal", "stats-modal", "settings-modal", "help-modal", "updates-modal"]);
@@ -41,11 +41,11 @@ const PACE_MILESTONES = [
 ];
 
 const MANAGER_LEVELS = [
-  { level: 1, xp: 0, title: "신입 점장", unlock: "Lv.2 · 아쿠아 타일과 꽃화분" },
-  { level: 2, xp: 180, title: "동네 점장", unlock: "Lv.3 · 오션 벽지와 희귀 평론가" },
-  { level: 3, xp: 450, title: "숙련 점장", unlock: "Lv.4 · 선셋 체크 바닥" },
-  { level: 4, xp: 850, title: "인기 점장", unlock: "Lv.5 · 명성 보너스 칭호" },
-  { level: 5, xp: 1350, title: "스타 점장", unlock: "Lv.6 · 버블타임 마스터" },
+  { level: 1, xp: 0, title: "신입 점장", unlock: "Lv.2 · 민트 벽지와 새 화분" },
+  { level: 2, xp: 180, title: "동네 점장", unlock: "Lv.3 · 네온 간판과 테라조 바닥" },
+  { level: 3, xp: 450, title: "숙련 점장", unlock: "Lv.4 · 레트로 간판과 선셋 벽지" },
+  { level: 4, xp: 850, title: "인기 점장", unlock: "Lv.5 · 별밤 컬렉션" },
+  { level: 5, xp: 1350, title: "스타 점장", unlock: "Lv.6 · 프리미엄 매장 장식" },
   { level: 6, xp: 2000, title: "버블 마스터", unlock: "모든 점장 콘텐츠 해금" },
 ];
 
@@ -79,15 +79,30 @@ const WEEKLY_EVENT_RULES = [
 ];
 
 const DECORATIONS = [
-  { id: "sign_classic", type: "sign", icon: "OPEN", title: "클래식 간판", description: "버블타임의 기본 민트 간판", price: 0 },
-  { id: "sign_gold", type: "sign", icon: "★", title: "황금 점장 간판", description: "주간 목표 3개를 모두 달성한 증표", unlock: "weekly" },
+  { id: "sign_classic", type: "sign", icon: "OPEN", display: "OPEN", title: "클래식 간판", description: "버블타임의 기본 민트 간판", price: 0 },
+  { id: "sign_gold", type: "sign", icon: "★", display: "GOLD", title: "황금 점장 간판", description: "주간 목표 3개를 모두 달성한 증표", unlock: "weekly" },
+  { id: "sign_neon", type: "sign", icon: "BUB", display: "BUBBLE", title: "네온 버블 간판", description: "민트빛으로 반짝이는 야간 간판", price: 320, unlockLevel: 3 },
+  { id: "sign_retro", type: "sign", icon: "24H", display: "24H", title: "레트로 24시 간판", description: "코랄과 노랑으로 꾸민 복고풍 간판", price: 420, unlockLevel: 4 },
+  { id: "sign_cloud", type: "sign", icon: "☁", display: "CLOUD", title: "구름 세탁 간판", description: "포근한 거품 구름을 닮은 간판", price: 520, unlockLevel: 5 },
+  { id: "sign_midnight", type: "sign", icon: "☾", display: "MOON", title: "미드나이트 간판", description: "늦은 영업에 어울리는 달빛 간판", price: 650, unlockLevel: 6 },
   { id: "floor_classic", type: "floor", icon: "▦", title: "클래식 타일", description: "차분한 회백색 매장 바닥", price: 0 },
   { id: "floor_aqua", type: "floor", icon: "≈", title: "아쿠아 타일", description: "물결처럼 시원한 민트 타일", price: 180, unlockLevel: 2 },
   { id: "floor_checker", type: "floor", icon: "▥", title: "선셋 체크", description: "산뜻한 코랄 체크 바닥", price: 260, unlockLevel: 4 },
+  { id: "floor_terrazzo", type: "floor", icon: "∴", title: "버블 테라조", description: "알록달록한 거품 조각이 박힌 바닥", price: 340, unlockLevel: 3 },
+  { id: "floor_midnight", type: "floor", icon: "▧", title: "미드나이트 타일", description: "차분한 남색 체크 타일", price: 480, unlockLevel: 5 },
+  { id: "floor_sunshine", type: "floor", icon: "☀", title: "선샤인 타일", description: "매장을 밝히는 크림 옐로 타일", price: 620, unlockLevel: 6 },
   { id: "wall_cream", type: "wall", icon: "□", title: "크림 벽지", description: "포근하고 밝은 기본 벽지", price: 0 },
   { id: "wall_ocean", type: "wall", icon: "≋", title: "오션 벽지", description: "깊고 깨끗한 바다색 벽지", price: 220, unlockLevel: 3 },
-  { id: "plant_green", type: "plant", icon: "♣", title: "초록 화분", description: "익숙한 행운의 초록 식물", price: 0 },
-  { id: "plant_bloom", type: "plant", icon: "✿", title: "버블 꽃화분", description: "매장에 색을 더하는 작은 꽃", price: 160, unlockLevel: 2 },
+  { id: "wall_mint", type: "wall", icon: "◇", title: "민트 소다 벽지", description: "가볍고 청량한 민트색 벽지", price: 280, unlockLevel: 2 },
+  { id: "wall_sunset", type: "wall", icon: "◒", title: "선셋 그라데이션", description: "저녁 노을을 담은 코랄 벽지", price: 400, unlockLevel: 4 },
+  { id: "wall_night", type: "wall", icon: "✦", title: "별밤 벽지", description: "은은한 별빛이 번지는 남색 벽지", price: 560, unlockLevel: 5 },
+  { id: "wall_pattern", type: "wall", icon: "▤", title: "버블 패턴 벽지", description: "세탁 거품 무늬를 넣은 프리미엄 벽지", price: 700, unlockLevel: 6 },
+  { id: "plant_green", type: "plant", icon: "♣", display: "♣", title: "초록 화분", description: "익숙한 행운의 초록 식물", price: 0 },
+  { id: "plant_bloom", type: "plant", icon: "✿", display: "✿", title: "버블 꽃화분", description: "매장에 색을 더하는 작은 꽃", price: 160, unlockLevel: 2 },
+  { id: "plant_cactus", type: "plant", icon: "♠", display: "♠", title: "미니 선인장", description: "관리하기 쉬운 통통한 선인장", price: 220, unlockLevel: 2 },
+  { id: "plant_palm", type: "plant", icon: "♨", display: "♨", title: "트로피컬 야자", description: "휴양지 분위기를 만드는 야자 화분", price: 360, unlockLevel: 3 },
+  { id: "plant_lavender", type: "plant", icon: "❀", display: "❀", title: "라벤더 화분", description: "보랏빛 꽃망울이 피어난 향기 화분", price: 500, unlockLevel: 5 },
+  { id: "plant_bonsai", type: "plant", icon: "♧", display: "♧", title: "점장 보너스 분재", description: "오래 운영한 점장을 위한 단정한 분재", price: 680, unlockLevel: 6 },
 ];
 
 const TUTORIAL_STEPS = [
@@ -182,8 +197,8 @@ const CODEX_CONTENT = {
     { id: "inspection", icon: "◆", title: "위생 검사", tag: "매장 전체", description: "제한 시간 안에 모든 오염을 제거하면 보너스를 받고, 실패하면 점수가 차감됩니다." },
   ],
   upgrades: [
-    { id: "machine", icon: "◎", title: "고속 모터", tag: "MACHINE", description: "레벨마다 모든 기계 작업 시간이 8% 짧아집니다." },
-    { id: "tool", icon: "✦", title: "프로 청소 키트", tag: "TOOLS", description: "레벨마다 청소 점수 12%, 콤보 판정 시간이 0.35초 늘어납니다." },
+    { id: "machine", icon: "◎", title: "고속 모터", tag: "MACHINE", description: "8단계까지 강화하며 모든 기계 작업 시간을 최대 50% 줄입니다." },
+    { id: "tool", icon: "✦", title: "프로 청소 키트", tag: "TOOLS", description: "8단계까지 강화하며 청소 점수와 콤보 판정을 함께 높입니다." },
   ],
 };
 
@@ -1434,7 +1449,7 @@ function processQueue() {
 function beginCycle(machine, guest) {
   machine.guest = guest;
   machine.cycleStarted = performance.now();
-  const machineSpeed = 1 - state.progression.upgrades.machine * CONFIG.upgrades.machineSpeedPerLevel;
+  const machineSpeed = 1 - upgradeBonus("machineSpeedBonuses", state.progression.upgrades.machine);
   machine.cycleDuration = randomBetween(CONFIG.machine.cycleMin, CONFIG.machine.cycleMax) * guest.cycleMultiplier * machineSpeed * DIFFICULTIES[state.difficulty].cycle;
   machine.el.classList.add("busy");
   machine.el.querySelector(".machine-label small").textContent = guest.type === "bulk" ? "대량 세탁 중" : "작동 중";
@@ -1590,7 +1605,7 @@ function handleMachineClick(id) {
   const rect = machine.el.getBoundingClientRect();
   const cleanElapsed = performance.now() - machine.dirtCreatedAt;
   const combo = registerCleanCombo(cleanElapsed);
-  const toolBonus = 1 + state.progression.upgrades.tool * CONFIG.upgrades.toolScorePerLevel;
+  const toolBonus = 1 + upgradeBonus("toolScoreBonuses", state.progression.upgrades.tool);
   const earnedPoints = Math.round(140 * toolBonus * combo.multiplier);
   state.dirtCleanCounts[machine.dirt] += 1;
   machine.dirt = null;
@@ -1736,7 +1751,7 @@ function comboMultiplier(combo = state.combo) {
 }
 
 function registerCleanCombo(elapsedMs) {
-  const comboWindow = CONFIG.combo.fastWindow + state.progression.upgrades.tool * CONFIG.upgrades.comboWindowPerLevel;
+  const comboWindow = CONFIG.combo.fastWindow + upgradeBonus("comboWindowBonuses", state.progression.upgrades.tool);
   const fast = elapsedMs <= comboWindow;
   if (fast) {
     state.combo += 1;
@@ -2893,6 +2908,12 @@ function decorationById(id) {
   return DECORATIONS.find((item) => item.id === id);
 }
 
+function upgradeBonus(key, level) {
+  const bonuses = CONFIG.upgrades[key];
+  const safeLevel = Math.min(CONFIG.upgrades.maxLevel, Math.max(0, Number(level) || 0));
+  return bonuses?.[safeLevel] ?? 0;
+}
+
 function decorationIsUnlocked(decoration) {
   const weeklyUnlocked = decoration.unlock !== "weekly" || state.progression.cosmetics.weeklyBadges.length > 0;
   const levelUnlocked = !decoration.unlockLevel || managerLevelInfo().level >= decoration.unlockLevel;
@@ -2946,10 +2967,12 @@ function buyOrEquipDecoration(id) {
 function applyDecorations() {
   const shop = document.querySelector("#shop");
   const equipped = state.progression.decor.equipped;
+  const sign = decorationById(equipped.sign);
+  const plant = decorationById(equipped.plant);
   [...shop.classList].filter((name) => name.startsWith("decor-")).forEach((name) => shop.classList.remove(name));
   Object.values(equipped).forEach((id) => shop.classList.add(`decor-${id}`));
-  document.querySelector(".open-sign").textContent = equipped.sign === "sign_gold" ? "GOLD" : "OPEN";
-  document.querySelector(".center-aisle .plant").textContent = equipped.plant === "plant_bloom" ? "✿" : "♣";
+  document.querySelector(".open-sign").textContent = sign?.display || "OPEN";
+  document.querySelector(".center-aisle .plant").textContent = plant?.display || "♣";
   updateDecorPreview();
 }
 
@@ -2957,8 +2980,9 @@ function updateDecorPreview() {
   const preview = document.querySelector("#decor-preview");
   if (!preview) return;
   const equipped = state.progression.decor.equipped;
+  const sign = decorationById(equipped.sign);
   preview.className = `decor-preview preview-${equipped.sign} preview-${equipped.floor} preview-${equipped.wall} preview-${equipped.plant}`;
-  preview.querySelector(".preview-sign").textContent = equipped.sign === "sign_gold" ? "GOLD" : "OPEN";
+  preview.querySelector(".preview-sign").textContent = sign?.display || "OPEN";
 }
 
 function updateUpgradeCards() {
@@ -2967,7 +2991,18 @@ function updateUpgradeCards() {
     const costs = type === "machine" ? CONFIG.upgrades.machineCosts : CONFIG.upgrades.toolCosts;
     const card = document.querySelector(`.upgrade-card[data-upgrade="${type}"]`);
     const button = type === "machine" ? els.buyMachineUpgrade : els.buyToolUpgrade;
+    const pips = card.querySelector(".level-pips");
+    if (pips.children.length !== CONFIG.upgrades.maxLevel) {
+      pips.innerHTML = Array.from({ length: CONFIG.upgrades.maxLevel }, () => "<i></i>").join("");
+    }
+    pips.setAttribute("aria-label", `${type === "machine" ? "고속 모터" : "프로 청소 키트"} 레벨 ${level}/${CONFIG.upgrades.maxLevel}`);
     card.querySelectorAll(".level-pips i").forEach((pip, index) => pip.classList.toggle("active", index < level));
+    const description = card.querySelector("p");
+    if (type === "machine") {
+      description.textContent = `현재 작업 시간 ${Math.round(upgradeBonus("machineSpeedBonuses", level) * 100)}% 단축 · 최대 50%`;
+    } else {
+      description.textContent = `현재 청소 점수 +${Math.round(upgradeBonus("toolScoreBonuses", level) * 100)}% · 콤보 +${(upgradeBonus("comboWindowBonuses", level) / 1000).toFixed(2)}초`;
+    }
     card.classList.toggle("maxed", level >= CONFIG.upgrades.maxLevel);
     if (level >= CONFIG.upgrades.maxLevel) {
       button.disabled = true;

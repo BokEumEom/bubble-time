@@ -468,6 +468,47 @@ async function run() {
     opacity: getComputedStyle(document.querySelector('#shop-modal')).opacity
   })`);
   assert.deepEqual(growthSettled, { animation: "none", opacity: "1" }, "관리 탭 슬라이드가 끝난 화면은 재페이드 없이 유지되어야 합니다.");
+  const upgradeExpansion = await evaluate(`(() => {
+    state.progression.upgrades.machine = 3;
+    state.progression.upgrades.tool = 3;
+    state.progression.wallet = 99999;
+    updateUpgradeCards();
+    const machineCard = document.querySelector('.upgrade-card[data-upgrade="machine"]');
+    const toolCard = document.querySelector('.upgrade-card[data-upgrade="tool"]');
+    return {
+      maxLevel: CONFIG.upgrades.maxLevel,
+      machineCosts: CONFIG.upgrades.machineCosts.length,
+      toolCosts: CONFIG.upgrades.toolCosts.length,
+      machinePips: machineCard.querySelectorAll('.level-pips i').length,
+      toolPips: toolCard.querySelectorAll('.level-pips i').length,
+      machineActive: machineCard.querySelectorAll('.level-pips i.active').length,
+      toolActive: toolCard.querySelectorAll('.level-pips i.active').length,
+      machineMaxed: machineCard.classList.contains('maxed'),
+      toolMaxed: toolCard.classList.contains('maxed'),
+      machineAction: document.querySelector('#buy-machine-upgrade').innerText,
+      toolAction: document.querySelector('#buy-tool-upgrade').innerText,
+      machineEffect: machineCard.querySelector('p').textContent,
+      toolEffect: toolCard.querySelector('p').textContent
+    };
+  })()`);
+  assert.equal(upgradeExpansion.maxLevel, 8, "가게 업그레이드는 8단계까지 성장해야 합니다.");
+  assert.equal(upgradeExpansion.machineCosts, 8, "고속 모터는 8단계 비용을 가져야 합니다.");
+  assert.equal(upgradeExpansion.toolCosts, 8, "청소 도구는 8단계 비용을 가져야 합니다.");
+  assert.equal(upgradeExpansion.machinePips, 8, "고속 모터 진행 칸은 8개여야 합니다.");
+  assert.equal(upgradeExpansion.toolPips, 8, "청소 도구 진행 칸은 8개여야 합니다.");
+  assert.equal(upgradeExpansion.machineActive, 3, "기존 고속 모터 3레벨 저장은 그대로 유지되어야 합니다.");
+  assert.equal(upgradeExpansion.toolActive, 3, "기존 청소 도구 3레벨 저장은 그대로 유지되어야 합니다.");
+  assert.equal(upgradeExpansion.machineMaxed, false, "기존 3레벨은 더 이상 최고 레벨이 아니어야 합니다.");
+  assert.equal(upgradeExpansion.toolMaxed, false, "기존 3레벨 도구는 추가 강화할 수 있어야 합니다.");
+  assert.match(upgradeExpansion.machineAction, /Lv\.4/, "기존 3레벨 다음에 4레벨 강화를 안내해야 합니다.");
+  assert.match(upgradeExpansion.toolAction, /Lv\.4/, "기존 3레벨 도구 다음에 4레벨 강화를 안내해야 합니다.");
+  assert.match(upgradeExpansion.machineEffect, /24%/, "기존 3레벨 기계 효과는 24%로 유지되어야 합니다.");
+  assert.match(upgradeExpansion.toolEffect, /\+36%.*1\.05초/, "기존 3레벨 도구 효과는 그대로 유지되어야 합니다.");
+  await evaluate(`
+    state.progression.upgrades.machine = 0;
+    state.progression.upgrades.tool = 0;
+    updateUpgradeCards();
+  `);
   const growthToSettings = await evaluate(`(() => {
     document.querySelector('#shop-modal .management-nav [data-management-group="settings"]').click();
     return {
@@ -482,8 +523,44 @@ async function run() {
     opacity: getComputedStyle(document.querySelector('#settings-modal')).opacity
   })`);
   assert.deepEqual(settingsSettled, { animation: "none", opacity: "1" }, "설정 탭 전환 완료 후 화면이 다시 깜박이면 안 됩니다.");
-  await evaluate("document.querySelector('#settings-close-button').click()");
-  await waitFor("document.querySelector('#intro-modal').classList.contains('open') && !document.querySelector('#settings-modal').classList.contains('open')");
+  await evaluate("document.querySelector('#settings-modal .management-nav [data-management-group=\"collection\"]').click()");
+  await waitFor("document.querySelector('#codex-modal').classList.contains('open') && !document.querySelector('#settings-modal').classList.contains('open')");
+  await evaluate("document.querySelector('#codex-modal .management-subnav [data-management-target=\"decor-modal\"]').click()");
+  await waitFor("document.querySelector('#decor-modal').classList.contains('open') && !document.querySelector('#codex-modal').classList.contains('open')");
+  const decorExpansion = await evaluate(`(() => {
+    state.progression.manager.xp = 2000;
+    state.progression.wallet = 99999;
+    state.decorTab = 'floor';
+    renderDecorations();
+    document.querySelector('[data-decor-action="floor_terrazzo"]').click();
+    const counts = DECORATIONS.reduce((result, item) => {
+      result[item.type] = (result[item.type] || 0) + 1;
+      return result;
+    }, {});
+    const modal = document.querySelector('#decor-modal .modal');
+    return {
+      total: DECORATIONS.length,
+      counts,
+      visibleCards: document.querySelectorAll('#decor-grid .decor-item').length,
+      owned: state.progression.decor.owned.includes('floor_terrazzo'),
+      equipped: state.progression.decor.equipped.floor,
+      shopClass: document.querySelector('#shop').classList.contains('decor-floor_terrazzo'),
+      previewClass: document.querySelector('#decor-preview').classList.contains('preview-floor_terrazzo'),
+      ownedLabel: document.querySelector('#decor-owned-count').textContent,
+      fitsWidth: modal.scrollWidth <= modal.clientWidth + 1
+    };
+  })()`);
+  assert.equal(decorExpansion.total, 24, "꾸미기 컬렉션은 총 24종이어야 합니다.");
+  assert.deepEqual(decorExpansion.counts, { sign: 6, floor: 6, wall: 6, plant: 6 }, "간판·바닥·벽지·화분은 각각 6종이어야 합니다.");
+  assert.equal(decorExpansion.visibleCards, 6, "선택한 꾸미기 분류의 6종을 한 목록에서 확인할 수 있어야 합니다.");
+  assert.equal(decorExpansion.owned, true, "새 꾸미기 아이템을 구매할 수 있어야 합니다.");
+  assert.equal(decorExpansion.equipped, "floor_terrazzo", "구매한 꾸미기 아이템을 바로 장착해야 합니다.");
+  assert.equal(decorExpansion.shopClass, true, "장착한 바닥이 실제 매장에 적용되어야 합니다.");
+  assert.equal(decorExpansion.previewClass, true, "장착한 바닥이 꾸미기 미리 보기에 적용되어야 합니다.");
+  assert.match(decorExpansion.ownedLabel, /\/ 24 보유/, "꾸미기 보유 현황은 24종 기준으로 표시해야 합니다.");
+  assert.equal(decorExpansion.fitsWidth, true, "확장된 꾸미기 목록이 모바일 화면 너비를 넘지 않아야 합니다.");
+  await evaluate("document.querySelector('#decor-close-button').click()");
+  await waitFor("document.querySelector('#intro-modal').classList.contains('open') && !document.querySelector('#decor-modal').classList.contains('open')");
 
   console.log("UI 회귀: 모바일 한 화면 영업 확인");
   await evaluate(`

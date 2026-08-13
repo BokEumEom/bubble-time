@@ -723,10 +723,29 @@ button:focus-visible {
 
 .shop.decor-floor_aqua .shop-floor { background: linear-gradient(90deg, rgba(19,104,105,.06) 50%, transparent 50%), linear-gradient(rgba(19,104,105,.06) 50%, transparent 50%), #e4f6f1; background-size: 44px 44px; }
 .shop.decor-floor_checker .shop-floor { background: conic-gradient(from 90deg, #fff0e5 25%, #ffd9cf 0 50%, #fff0e5 0 75%, #ffd9cf 0) 0 0 / 48px 48px; }
+.shop.decor-floor_terrazzo .shop-floor { background: radial-gradient(circle at 10px 12px, #63c7b5 0 3px, transparent 4px), radial-gradient(circle at 30px 28px, #f08a76 0 4px, transparent 5px), radial-gradient(circle at 39px 8px, #e8bd48 0 2px, transparent 3px), #f7f1e5; background-size: 48px 48px; }
+.shop.decor-floor_midnight .shop-floor { background: conic-gradient(from 90deg, #253b4e 25%, #304f61 0 50%, #253b4e 0 75%, #304f61 0) 0 0 / 46px 46px; }
+.shop.decor-floor_sunshine .shop-floor { background: linear-gradient(90deg, rgba(222,171,43,.12) 50%, transparent 50%), linear-gradient(rgba(222,171,43,.12) 50%, transparent 50%), #fff4c7; background-size: 42px 42px; }
 .shop.decor-wall_ocean .shop-header { border-bottom-color: #164e58; background: radial-gradient(circle at 65% 0, rgba(138,216,232,.28), transparent 17rem), #164e58; color: white; }
 .shop.decor-wall_ocean .shop-header p { color: #b9dcd8; }
+.shop.decor-wall_mint .shop-header { border-bottom-color: #80cdbd; background: radial-gradient(circle at 72% 5%, rgba(255,255,255,.8), transparent 14rem), #dff6ef; color: #164d49; }
+.shop.decor-wall_mint .shop-header p { color: #4f7f77; }
+.shop.decor-wall_sunset .shop-header { border-bottom-color: #c85f67; background: linear-gradient(135deg, #ffe4c7, #f89c8c 62%, #cf7182); color: #5f3038; }
+.shop.decor-wall_sunset .shop-header p { color: #75444a; }
+.shop.decor-wall_night .shop-header { border-bottom-color: #152840; background: radial-gradient(circle at 74% 15%, rgba(255,232,146,.27) 0 3px, transparent 4px), radial-gradient(circle at 55% 30%, rgba(255,255,255,.2) 0 2px, transparent 3px), linear-gradient(145deg, #172a45, #274660); color: white; background-size: 90px 72px, 120px 95px, auto; }
+.shop.decor-wall_night .shop-header p { color: #c4d9e6; }
+.shop.decor-wall_pattern .shop-header { border-bottom-color: #417c77; background: radial-gradient(circle, rgba(255,255,255,.45) 0 4px, transparent 5px) 0 0 / 27px 27px, #8ed5c7; color: #123f3e; }
+.shop.decor-wall_pattern .shop-header p { color: #315f5b; }
 .shop.decor-sign_gold .open-sign { background: linear-gradient(135deg, #ffe77b, #e4ad24); color: #654806; box-shadow: 0 3px 0 #9c7014, 0 0 11px rgba(255,214,90,.5); }
+.shop.decor-sign_neon .open-sign { background: #173a42; color: #78ffe2; box-shadow: 0 3px 0 #071f24, 0 0 13px rgba(94,255,218,.62); text-shadow: 0 0 7px #63efd1; }
+.shop.decor-sign_retro .open-sign { background: linear-gradient(135deg, #f8896f 0 50%, #ffd861 50%); color: #653837; box-shadow: 0 3px 0 #a74f46; }
+.shop.decor-sign_cloud .open-sign { background: #e9f8ff; color: #35778f; box-shadow: 0 3px 0 #8ec7d7, 0 0 0 3px rgba(255,255,255,.55); }
+.shop.decor-sign_midnight .open-sign { background: linear-gradient(135deg, #172941, #354e75); color: #ffe98f; box-shadow: 0 3px 0 #0b1728, 0 0 11px rgba(255,226,107,.32); }
 .shop.decor-plant_bloom .center-aisle .plant { color: #e96c91; text-shadow: -7px -3px var(--yellow), 7px -2px var(--mint); }
+.shop.decor-plant_cactus .center-aisle .plant { color: #4c9f68; text-shadow: -5px 2px #9ad17a, 5px -1px #2f7654; }
+.shop.decor-plant_palm .center-aisle .plant { color: #21845a; text-shadow: -8px -3px #5abf72, 8px -2px #176b50; }
+.shop.decor-plant_lavender .center-aisle .plant { color: #9174c8; text-shadow: -6px -3px #c8a9ed, 6px -2px #7453ad; }
+.shop.decor-plant_bonsai .center-aisle .plant { color: #356d44; text-shadow: -7px 0 #6ca65c, 7px -1px #264d36; }
 
 .machine-zone {
   position: relative;
@@ -2483,8 +2502,8 @@ button:focus-visible {
 .upgrade-card h3 { margin: 2px 0; font-size: 13px; }
 .upgrade-card p { margin: 0; color: #728780; font-size: 8px; font-weight: 700; }
 
-.level-pips { display: flex; gap: 4px; align-self: end; }
-.level-pips i { width: 17px; height: 7px; border-radius: 5px; background: #d7e2de; }
+.level-pips { width: min(180px, 100%); display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; align-self: end; }
+.level-pips i { min-width: 10px; height: 7px; border-radius: 5px; background: #d7e2de; }
 .level-pips i.active { background: var(--mint); box-shadow: inset 0 -2px var(--mint-dark); }
 
 .upgrade-buy-button {
@@ -2624,11 +2643,30 @@ button:focus-visible {
 .decor-preview > b { position: absolute; z-index: 1; inset: 0; }
 .decor-preview > em { position: absolute; z-index: 3; right: 8px; top: 8px; color: #73857f; font-size: 6px; font-style: normal; font-weight: 900; }
 .decor-preview.preview-sign_gold .preview-sign { background: linear-gradient(135deg, #ffe77b, #e4ad24); box-shadow: 0 3px 0 #9c7014; }
+.decor-preview.preview-sign_neon .preview-sign { background: #173a42; color: #78ffe2; box-shadow: 0 3px 0 #071f24, 0 0 9px rgba(94,255,218,.55); text-shadow: 0 0 5px #63efd1; }
+.decor-preview.preview-sign_retro .preview-sign { background: linear-gradient(135deg, #f8896f 0 50%, #ffd861 50%); color: #653837; box-shadow: 0 3px 0 #a74f46; }
+.decor-preview.preview-sign_cloud .preview-sign { background: #e9f8ff; color: #35778f; box-shadow: 0 3px 0 #8ec7d7; }
+.decor-preview.preview-sign_midnight .preview-sign { background: linear-gradient(135deg, #172941, #354e75); color: #ffe98f; box-shadow: 0 3px 0 #0b1728; }
 .decor-preview.preview-floor_aqua { box-shadow: inset 0 -34px #e4f6f1; }
 .decor-preview.preview-floor_checker { box-shadow: inset 0 -34px #ffd9cf; }
+.decor-preview.preview-floor_terrazzo { box-shadow: inset 0 -34px #f7f1e5; }
+.decor-preview.preview-floor_terrazzo::before { background: radial-gradient(circle at 8px 9px, #63c7b5 0 2px, transparent 3px), radial-gradient(circle at 20px 19px, #f08a76 0 2px, transparent 3px), #f7f1e5; background-size: 28px 28px; }
+.decor-preview.preview-floor_midnight { box-shadow: inset 0 -34px #253b4e; }
+.decor-preview.preview-floor_midnight::before { background: conic-gradient(from 90deg, #253b4e 25%, #304f61 0 50%, #253b4e 0 75%, #304f61 0) 0 0 / 28px 28px; }
+.decor-preview.preview-floor_sunshine { box-shadow: inset 0 -34px #fff4c7; }
+.decor-preview.preview-floor_sunshine::before { background: linear-gradient(90deg, rgba(222,171,43,.12) 50%, transparent 50%), linear-gradient(rgba(222,171,43,.12) 50%, transparent 50%), #fff4c7; background-size: 28px 28px; }
 .decor-preview.preview-wall_ocean { background: #164e58; }
 .decor-preview.preview-wall_ocean > em { color: #c8e4e0; }
+.decor-preview.preview-wall_mint { background: #dff6ef; }
+.decor-preview.preview-wall_sunset { background: linear-gradient(135deg, #ffe4c7, #f89c8c 62%, #cf7182); }
+.decor-preview.preview-wall_night { background: radial-gradient(circle at 76% 18%, rgba(255,232,146,.38) 0 2px, transparent 3px), #1c3450; }
+.decor-preview.preview-wall_night > em { color: #d9e7ef; }
+.decor-preview.preview-wall_pattern { background: radial-gradient(circle, rgba(255,255,255,.5) 0 3px, transparent 4px) 0 0 / 22px 22px, #8ed5c7; }
 .decor-preview.preview-plant_bloom > i { background: #e96c91; box-shadow: -7px -3px 0 -3px var(--yellow), 7px -3px 0 -3px var(--mint), 0 6px 0 #bb7657; }
+.decor-preview.preview-plant_cactus > i { width: 21px; border-radius: 45% 45% 8px 8px; background: #4c9f68; box-shadow: -5px 6px 0 -3px #79ba72, 5px 1px 0 -3px #2f7654, 0 6px 0 #bb7657; }
+.decor-preview.preview-plant_palm > i { background: #21845a; box-shadow: -9px -4px 0 -4px #5abf72, 9px -3px 0 -4px #176b50, 0 6px 0 #bb7657; }
+.decor-preview.preview-plant_lavender > i { background: #9174c8; box-shadow: -7px -3px 0 -3px #c8a9ed, 7px -3px 0 -3px #7453ad, 0 6px 0 #bb7657; }
+.decor-preview.preview-plant_bonsai > i { width: 31px; height: 27px; background: #356d44; box-shadow: -8px 1px 0 -4px #6ca65c, 8px 0 0 -4px #264d36, 0 8px 0 -1px #8d623e; }
 .decor-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 8px; }
 .decor-tabs button { min-height: 34px; border: 1px solid #d5e2dd; border-radius: 9px; background: #f2f6f4; color: #748980; cursor: pointer; font-size: 8px; font-weight: 900; }
 .decor-tabs button.active { border-color: var(--mint-dark); background: #dff5ee; color: #176e64; box-shadow: inset 0 -3px #a9ded1; }
