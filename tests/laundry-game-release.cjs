@@ -84,7 +84,7 @@ assert.ok(manifest.screenshots.some((item) => item.form_factor === "narrow"), "�
   .forEach((asset) => assert.match(worker, new RegExp(asset.replace(".", "\\.")), `${asset}이 오프라인 캐시에 포함되어야 합니다.`));
 
 assert.match(script, /DATA_SCHEMA_VERSION\s*=\s*9/, "퀵 시프트 별·기록 저장을 위한 데이터 스키마 버전 9가 필요합니다.");
-assert.match(script, /APP_VERSION\s*=\s*"2\.18\.0"/, "퀵 시프트 루프 업데이트 버전 2.18.0이 필요합니다.");
+assert.match(script, /APP_VERSION\s*=\s*"2\.18\.1"/, "모바일 튜토리얼 레이아웃 수정 버전 2.18.1이 필요합니다.");
 assert.match(script, /QUICK_SHIFT_SCENARIOS/, "순환형 45초 퀵 시프트 시나리오가 필요합니다.");
 assert.match(script, /startQuickShift/, "홈 원터치 퀵 시프트 시작 함수가 필요합니다.");
 assert.match(script, /QUICK_STAR_MILESTONES/, "퀵 시프트 누적 별 보상이 필요합니다.");
@@ -136,6 +136,8 @@ assert.match(script, /recordWeeklyPace/, "부담 없는 주간 페이스 보상�
 assert.match(script, /exportSavedData/, "저장 데이터 내보내기가 필요합니다.");
 assert.match(script, /importSavedData/, "저장 데이터 가져오기가 필요합니다.");
 assert.match(script, /startTutorial/, "실습 튜토리얼 시작 함수가 필요합니다.");
+assert.match(script, /tutorialOverlay\.dataset\.step/, "튜토리얼 단계별 안내 위치 상태가 필요합니다.");
+assert.match(script, /tutorial-tool-target/, "튜토리얼에서 현재 필요한 도구를 강조해야 합니다.");
 assert.match(script, /buyOrEquipDecoration/, "꾸미기 구매와 장착 함수가 필요합니다.");
 assert.match(script, /currentStoreCondition/, "일일 매장 조건 생성 함수가 필요합니다.");
 assert.match(script, /currentWeeklyEventRule/, "주간 사건 규칙 생성 함수가 필요합니다.");
@@ -160,6 +162,8 @@ assert.match(styles, /@media \(max-width: 520px\)/, "모바일 레이아웃 기�
 assert.match(styles, /\.reduce-motion/, "모션 감소 스타일이 필요합니다.");
 assert.match(styles, /\.color-assist/, "색각 보조 스타일이 필요합니다.");
 assert.match(styles, /\.tutorial-coach/, "튜토리얼 코치 스타일이 필요합니다.");
+assert.match(styles, /\.game-shell\s*>\s*\.play-area\s*\{\s*grid-row:\s*4/, "튜토리얼에서도 모바일 게임 보드 행이 고정되어야 합니다.");
+assert.match(styles, /data-step="blackout"/, "정전·세제 튜토리얼 안내는 상단 설비를 가리지 않아야 합니다.");
 assert.match(styles, /\.decor-preview/, "매장 꾸미기 미리 보기 스타일이 필요합니다.");
 assert.match(styles, /\.high-contrast/, "고대비 화면 스타일이 필요합니다.");
 assert.match(styles, /\.management-nav/, "관리 화면 공통 탐색 스타일이 필요합니다.");

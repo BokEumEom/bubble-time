@@ -350,6 +350,36 @@ async function run() {
   assert.ok(mobileHome.utilityWidth >= 350, "모바일 보조 버튼 묶음도 좌우 콘텐츠 폭을 넓게 사용해야 합니다.");
   assert.equal(mobileHome.animation, "none", "모바일 홈은 복귀할 때 다시 페이드되어 깜박이지 않아야 합니다.");
 
+  console.log("UI 회귀: 모바일 튜토리얼 보드와 사건 대상 확인");
+  await evaluate("startTutorial()");
+  const tutorialFirstLayout = await evaluate(`(() => {
+    const play = document.querySelector('#play-area').getBoundingClientRect();
+    const dock = document.querySelector('.tool-dock').getBoundingClientRect();
+    const target = document.querySelector('.tutorial-target').getBoundingClientRect();
+    return { playHeight: play.height, dockHeight: dock.height, targetHeight: target.height, toolTarget: document.querySelector('.tutorial-tool-target')?.dataset.tool };
+  })()`);
+  assert.ok(tutorialFirstLayout.playHeight >= 630, "튜토리얼에서도 모바일 기계 보드는 정상 비율을 유지해야 합니다.");
+  assert.ok(tutorialFirstLayout.dockHeight <= 120, "튜토리얼 도구판이 기계 보드 높이를 차지하면 안 됩니다.");
+  assert.ok(tutorialFirstLayout.targetHeight >= 120, "튜토리얼 청소 대상은 누를 수 있는 정상 높이여야 합니다.");
+  assert.equal(tutorialFirstLayout.toolTarget, "squeegee", "현재 단계에 필요한 도구도 함께 강조해야 합니다.");
+  await evaluate("state.tutorialStep = 4; prepareTutorialStep()");
+  const tutorialBlackoutLayout = await evaluate(`(() => {
+    const coach = document.querySelector('.tutorial-coach').getBoundingClientRect();
+    const target = document.querySelector('#breaker-panel').getBoundingClientRect();
+    return { overlap: !(target.bottom <= coach.top || coach.bottom <= target.top || target.right <= coach.left || coach.right <= target.left), step: document.querySelector('#tutorial-overlay').dataset.step };
+  })()`);
+  assert.deepEqual(tutorialBlackoutLayout, { overlap: false, step: "blackout" }, "정전 단계 안내가 차단기를 가리면 안 됩니다.");
+  await evaluate("state.tutorialStep = 5; prepareTutorialStep()");
+  const tutorialDetergentLayout = await evaluate(`(() => {
+    const coach = document.querySelector('.tutorial-coach').getBoundingClientRect();
+    const facility = document.querySelector('#detergent-station').getBoundingClientRect();
+    const tool = document.querySelector('[data-tool=detergent]').getBoundingClientRect();
+    const overlaps = (target) => !(target.bottom <= coach.top || coach.bottom <= target.top || target.right <= coach.left || coach.right <= target.left);
+    return { facilityOverlap: overlaps(facility), toolOverlap: overlaps(tool), toolTarget: document.querySelector('.tutorial-tool-target')?.dataset.tool };
+  })()`);
+  assert.deepEqual(tutorialDetergentLayout, { facilityOverlap: false, toolOverlap: false, toolTarget: "detergent" }, "세제 단계 안내가 탱크나 보충 도구를 가리면 안 됩니다.");
+  await evaluate("exitTutorial()");
+
   console.log("UI 회귀: 모바일 페이지 슬라이드 확인");
   const managerEntering = await evaluate(`(() => {
     document.querySelector('#mobile-manager-button').click();

@@ -2915,6 +2915,7 @@ button:focus-visible {
 .tutorial-actions button { min-height: 34px; padding: 7px 12px; border: 1px solid rgba(255,255,255,.2); border-radius: 8px; background: rgba(255,255,255,.08); color: white; cursor: pointer; font-size: 8px; font-weight: 900; }
 .tutorial-actions #tutorial-finish-button { border-color: var(--yellow); background: var(--yellow); color: #674b0e; }
 .tutorial-target { position: relative; z-index: 20 !important; outline: 5px solid var(--yellow) !important; outline-offset: 4px; animation: tutorial-pulse .65s infinite alternate !important; }
+.tool.tutorial-tool-target { z-index: 28; outline: 4px solid var(--yellow); outline-offset: 1px; animation: tutorial-pulse .65s infinite alternate; }
 .help-tutorial-button { min-height: 46px; margin-top: 11px; font-size: 11px; }
 
 .pause-card {
@@ -5129,6 +5130,11 @@ body:has(.screen-view.open) {
       minmax(103px, 1fr);
     gap: 1px;
   }
+  .game-shell > .topbar { grid-row: 1; }
+  .game-shell > .mission-strip { grid-row: 2; }
+  .game-shell > .shift-objectives-hud { grid-row: 3; }
+  .game-shell > .play-area { grid-row: 4; }
+  .game-shell > .tool-dock { grid-row: 5; }
   .topbar {
     min-height: 34px;
     grid-template-columns: 26px minmax(0, 1fr) 30px;
@@ -5304,4 +5310,11 @@ body:has(.screen-view.open) {
   .quick-star-goals article em { font-size: 6px; }
   .quick-result-deltas { gap: 4px; }
   .quick-result-deltas > span { padding: 5px; }
+  .tutorial-overlay[data-step="blackout"] .tutorial-coach,
+  .tutorial-overlay[data-step="detergent"] .tutorial-coach,
+  .tutorial-overlay[data-step="complete"] .tutorial-coach {
+    top: 50%;
+    bottom: auto;
+    transform: translate(-50%, -50%);
+  }
 }

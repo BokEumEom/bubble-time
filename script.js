@@ -7,7 +7,7 @@ const STORAGE_KEY = "bubbleTime75.bestRecord.v1";
 const PROGRESSION_KEY = "bubbleTime75.progression.v1";
 const CHECKPOINT_KEY = "bubbleTime.shiftCheckpoint.v1";
 const SEEN_VERSION_KEY = "bubbleTime75.seenVersion";
-const APP_VERSION = "2.18.0";
+const APP_VERSION = "2.18.1";
 const DATA_SCHEMA_VERSION = 9;
 const MOBILE_PAGE_MEDIA = "(max-width: 520px)";
 const MOBILE_SLIDE_PAGE_IDS = new Set(["prep-modal", "stats-modal", "settings-modal", "help-modal", "updates-modal"]);
@@ -626,10 +626,10 @@ function resetGame(options = {}) {
   els.scorePopRegion.innerHTML = "";
   els.timerCard.classList.remove("danger");
   els.powerOverlay.classList.remove("active");
-  els.breakerPanel.classList.remove("active");
+  els.breakerPanel.classList.remove("active", "tutorial-target");
   els.breakerPanel.setAttribute("aria-label", "전기 차단기");
   document.querySelector("#shop").classList.remove("blackout");
-  els.detergentStation.classList.remove("empty", "target-ready");
+  els.detergentStation.classList.remove("empty", "target-ready", "tutorial-target");
   els.detergentLevel.textContent = "100%";
   els.detergentGauge.style.width = "100%";
   els.detergentStation.setAttribute("aria-label", "세제 탱크, 현재 100퍼센트");
@@ -648,7 +648,9 @@ function resetGame(options = {}) {
   els.resultCelebration.innerHTML = "";
   els.resultCelebration.className = "result-celebration";
   els.resultCard.classList.remove("rank-s", "spotless", "level-up");
+  els.toolButtons.forEach((button) => button.classList.remove("tutorial-tool-target"));
   els.tutorialOverlay.hidden = true;
+  delete els.tutorialOverlay.dataset.step;
   els.pauseModal.classList.remove("open");
   els.pauseModal.setAttribute("aria-hidden", "true");
   els.pauseButton.disabled = true;
@@ -713,12 +715,15 @@ function prepareTutorialStep() {
   state.machines.forEach((machine) => machine.el.classList.remove("tutorial-target"));
   els.detergentStation.classList.remove("tutorial-target");
   els.breakerPanel.classList.remove("tutorial-target");
+  els.toolButtons.forEach((button) => button.classList.remove("tutorial-tool-target"));
+  els.tutorialOverlay.dataset.step = step.id;
   document.querySelector("#tutorial-step-number").textContent = String(state.tutorialStep + 1);
   document.querySelector("#tutorial-progress-bar").style.width = `${((state.tutorialStep + 1) / TUTORIAL_STEPS.length) * 100}%`;
   document.querySelector("#tutorial-step-icon").textContent = step.icon;
   document.querySelector("#tutorial-step-kicker").textContent = step.kicker;
   document.querySelector("#tutorial-step-title").textContent = step.title;
   document.querySelector("#tutorial-step-copy").textContent = step.copy;
+  if (step.tool) els.toolButtons.find((button) => button.dataset.tool === step.tool)?.classList.add("tutorial-tool-target");
 
   if (step.action === "clean") {
     const machine = state.machines.find((item) => item.id === step.machineId);
@@ -774,7 +779,12 @@ function completeTutorial() {
   }
   saveProgression();
   updateProgressionUi();
+  state.machines.forEach((machine) => machine.el.classList.remove("tutorial-target"));
+  els.detergentStation.classList.remove("tutorial-target");
+  els.breakerPanel.classList.remove("tutorial-target");
   els.tutorialOverlay.classList.add("complete");
+  els.tutorialOverlay.dataset.step = "complete";
+  els.toolButtons.forEach((button) => button.classList.remove("tutorial-tool-target"));
   document.querySelector("#tutorial-step-number").textContent = String(TUTORIAL_STEPS.length);
   document.querySelector("#tutorial-progress-bar").style.width = "100%";
   document.querySelector("#tutorial-step-icon").textContent = "★";
