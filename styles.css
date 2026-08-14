@@ -2132,6 +2132,24 @@ button:focus-visible {
   outline: 3px dashed rgba(255, 214, 90, 0.9);
 }
 
+.guest.stained::before {
+  content: "SPRAY";
+  position: absolute;
+  z-index: 8;
+  left: 50%;
+  top: -11px;
+  padding: 2px 5px;
+  border: 1px solid #fff3a9;
+  border-radius: 999px;
+  background: #7a3d86;
+  color: white;
+  font-size: 5px;
+  font-weight: 950;
+  letter-spacing: .08em;
+  box-shadow: 0 2px 0 rgba(40, 13, 49, .32);
+  transform: translateX(-50%);
+}
+
 .guest.sparkled .guest-body {
   background: linear-gradient(135deg, #ffadbf, #ffd65a, #57d3bd, #8ad8e8);
   animation: sparkle 0.5s ease;
@@ -2576,6 +2594,8 @@ button:focus-visible {
 .shift-action-copy small { color: #9dc5ba; font-size: 6px; font-weight: 950; letter-spacing: .08em; }
 .shift-action-copy strong { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .shift-action-copy em { overflow: hidden; color: #bdd4ce; font-size: 7px; font-style: normal; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+.shift-action-copy > i { width: max-content; max-width: 100%; padding: 2px 5px; border-radius: 999px; background: rgba(255,255,255,.12); color: var(--yellow); font-size: 6px; font-style: normal; font-weight: 900; white-space: nowrap; }
+.shift-action-copy > i[hidden] { display: none; }
 .plan-shift-button .shift-action-copy small,
 .plan-shift-button .shift-action-copy em { color: #68847c; }
 .shift-action-button > b { color: var(--shift-accent); font-size: 17px; text-align: center; }
@@ -2915,6 +2935,7 @@ button:focus-visible {
 .tutorial-actions button { min-height: 34px; padding: 7px 12px; border: 1px solid rgba(255,255,255,.2); border-radius: 8px; background: rgba(255,255,255,.08); color: white; cursor: pointer; font-size: 8px; font-weight: 900; }
 .tutorial-actions #tutorial-finish-button { border-color: var(--yellow); background: var(--yellow); color: #674b0e; }
 .tutorial-target { position: relative; z-index: 20 !important; outline: 5px solid var(--yellow) !important; outline-offset: 4px; animation: tutorial-pulse .65s infinite alternate !important; }
+.tool.tool-needed:not(.selected) { border-color: #b45fbd; box-shadow: 0 0 0 3px rgba(180,95,189,.22), 0 5px 0 #c8d9d4; animation: stain-tool-pulse .7s infinite alternate; }
 .tool.tutorial-tool-target { z-index: 28; outline: 4px solid var(--yellow); outline-offset: 1px; animation: tutorial-pulse .65s infinite alternate; }
 .help-tutorial-button { min-height: 46px; margin-top: 11px; font-size: 11px; }
 
@@ -3295,6 +3316,7 @@ button:focus-visible {
 @keyframes collector-glow { to { box-shadow: 0 2px 0 rgba(9,44,50,.3), 0 0 0 4px rgba(255,214,90,.28); transform: translateY(-2px); } }
 @keyframes coach-up { from { opacity: 0; transform: translate(-50%, 24px) scale(.95); } }
 @keyframes tutorial-pulse { to { filter: brightness(1.12); box-shadow: 0 0 0 7px rgba(255,214,90,.28); } }
+@keyframes stain-tool-pulse { to { filter: brightness(1.08); transform: translateY(-2px); } }
 
 .play-area.screen-shake { animation: screen-shake .38s ease; }
 .color-assist .contamination { border-style: dashed; border-color: var(--deep); background: #fff; }
@@ -3562,7 +3584,14 @@ button:focus-visible {
 .quick-result-summary > p { display: flex; align-items: center; gap: 6px; margin: 7px 0 0; padding: 7px; border-radius: 8px; background: #fff4c8; color: #775912; font-size: 7px; }
 .quick-result-summary > p[hidden] { display: none; }
 .quick-result-summary > p span { font-size: 13px; }
-.result-card.quick-result #next-quick-button { background: #16665e; box-shadow: 0 6px 0 #0a413c; }
+.quick-result-summary > p.quick-next-star { border: 1px solid color-mix(in srgb, var(--quick-result-accent) 52%, #d5e1dd); background: rgba(255,255,255,.7); color: #465f58; }
+.quick-result-summary > p.quick-next-star[hidden] { display: none; }
+.result-comparison { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin: -2px 0 8px; }
+.result-comparison > span { min-width: 0; display: grid; gap: 2px; padding: 6px 7px; border: 1px solid #d8e4e0; border-radius: 9px; background: #f7faf8; text-align: left; }
+.result-comparison small { color: #748a82; font-size: 6px; font-weight: 800; }
+.result-comparison strong { overflow: hidden; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.result-comparison strong.improved { color: #0b8575; }
+.result-comparison strong.declined { color: #b05245; }
 .result-objectives { margin: 0 0 9px; padding: 10px; border: 1px solid #cfe2db; border-radius: 12px; background: #f7faf8; text-align: left; }
 .result-objectives > div:first-child { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 2px 8px; margin-bottom: 7px; }
 .result-objectives > div:first-child span { grid-column: 1 / 3; color: var(--mint-dark); font-size: 6px; font-weight: 950; letter-spacing: .1em; }
@@ -3586,6 +3615,7 @@ button:focus-visible {
 .result-retry-actions > button:not(.primary-button) { min-height: 43px; display: flex; align-items: center; justify-content: space-between; padding: 8px 11px; border: 1px solid #bad9d0; border-radius: 10px; background: #eff9f5; color: var(--ink); cursor: pointer; font-size: 8px; font-weight: 900; }
 .result-retry-actions > button:not(.primary-button) b { color: var(--mint-dark); font-size: 13px; }
 .result-retry-actions > button[hidden] { display: none; }
+.result-card.quick-result #next-quick-button.primary-button { background: #16665e; color: white; box-shadow: 0 6px 0 #0a413c; }
 .result-home-row { width: 100%; margin-top: 12px; padding-top: 12px; border-top: 1px solid #d9e5e0; }
 .result-home-button { width: 100%; min-height: 47px; display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; border: 2px solid #9bcfc3; border-radius: 11px; background: white; color: var(--ink); cursor: pointer; font-size: 9px; font-weight: 950; box-shadow: 0 3px 0 #c8ddd7; }
 .result-home-button b { color: var(--mint-dark); font-size: 15px; }
@@ -4706,8 +4736,8 @@ body:has(.screen-view.open) {
   .street-sign span { font-size: 7px; letter-spacing: .08em; }
   .street-sign strong { margin-top: 1px; font-size: 11px; }
   .queue-lane { min-height: 0; padding: 2px 0 4px; gap: 0; }
-  .guest { transform: scale(.58); margin-block: -15px; }
-  .guest:hover { transform: scale(.6); }
+  .guest { transform: scale(.7); margin-block: -11px; }
+  .guest:hover { transform: scale(.72); }
   .guest-bubble { left: 45px; }
   .empty-queue { inset: 38% 3px auto; }
   .empty-queue span { font-size: 20px; }
@@ -4855,6 +4885,7 @@ body:has(.screen-view.open) {
   .result-manager-progress,
   .achievement-unlock-banner,
   .result-stats,
+  .result-comparison,
   .result-rank,
   .result-details,
   .result-unlock-button,
@@ -4862,6 +4893,7 @@ body:has(.screen-view.open) {
   .shift-earnings,
   .result-manager-progress,
   .result-stats,
+  .result-comparison,
   .result-rank,
   .result-details,
   .result-retry-actions,
@@ -5310,6 +5342,10 @@ body:has(.screen-view.open) {
   .quick-star-goals article em { font-size: 6px; }
   .quick-result-deltas { gap: 4px; }
   .quick-result-deltas > span { padding: 5px; }
+  .result-comparison { gap: 4px; }
+  .result-comparison > span { padding: 5px; text-align: center; }
+  .result-comparison small { font-size: 7px; }
+  .result-comparison strong { font-size: 8px; }
   .tutorial-overlay[data-step="blackout"] .tutorial-coach,
   .tutorial-overlay[data-step="detergent"] .tutorial-coach,
   .tutorial-overlay[data-step="complete"] .tutorial-coach {

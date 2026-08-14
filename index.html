@@ -24,9 +24,9 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./assets/icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=2.18.1" />
-    <script src="./game-config.js?v=2.18.1" defer></script>
-    <script src="./script.js?v=2.18.1" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=2.19.0" />
+    <script src="./game-config.js?v=2.19.0" defer></script>
+    <script src="./script.js?v=2.19.0" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#play-area">게임 화면으로 바로가기</a>
@@ -218,10 +218,10 @@
             <span class="tool-art basket-art" aria-hidden="true"><i></i></span>
             <span class="tool-text"><strong>빨래 바구니</strong><small><i class="dirt-dot laundry"></i>놓고 간 빨래</small></span>
           </button>
-          <button class="tool secret-tool" type="button" data-tool="spray" aria-pressed="false">
+          <button class="tool stain-tool" type="button" data-tool="spray" aria-pressed="false">
             <span class="tool-key">4</span>
             <span class="tool-art spray-art" aria-hidden="true"><i></i></span>
-            <span class="tool-text"><strong>얼룩 제거제</strong><small><i class="dirt-dot stain"></i>수상한 손님?</small></span>
+            <span class="tool-text"><strong>얼룩 제거제</strong><small><i class="dirt-dot stain"></i>손님 전처리</small></span>
           </button>
           <button class="tool event-tool" type="button" data-tool="wrench" aria-pressed="false">
             <span class="tool-key">5</span>
@@ -293,7 +293,7 @@
         </div>
         <div class="shift-start-actions">
           <button class="shift-action-button quick-shift-button" id="start-button" type="button">
-            <span class="shift-action-icon" id="home-quick-icon">⚡</span><span class="shift-action-copy"><small>QUICK SHIFT · 45 SEC</small><strong id="start-button-title">영업 준비하기</strong><em id="home-quick-detail">한 번 눌러 바로 시작</em></span><b>→</b>
+            <span class="shift-action-icon" id="home-quick-icon">⚡</span><span class="shift-action-copy"><small id="home-quick-kicker">TODAY QUICK · 45 SEC</small><strong id="start-button-title">영업 준비하기</strong><em id="home-quick-detail">한 번 눌러 바로 시작</em><i id="home-quick-streak" hidden>연속 0일</i></span><b>→</b>
           </button>
           <button class="shift-action-button plan-shift-button" id="open-prep-button" type="button" hidden>
             <span class="shift-action-icon">◆</span><span class="shift-action-copy"><small>SHIFT PLAN</small><strong>계획 선택</strong><em>시간 · 난이도 · 목표</em></span><b>→</b>
@@ -465,9 +465,9 @@
 
     <div class="tutorial-overlay" id="tutorial-overlay" hidden>
       <section class="tutorial-coach" role="dialog" aria-modal="false" aria-labelledby="tutorial-step-title">
-        <div class="tutorial-progress"><span>TUTORIAL</span><i><b id="tutorial-progress-bar"></b></i><em><b id="tutorial-step-number">1</b> / 6</em></div>
+        <div class="tutorial-progress"><span>TUTORIAL</span><i><b id="tutorial-progress-bar"></b></i><em><b id="tutorial-step-number">1</b> / 7</em></div>
         <div class="tutorial-copy"><span id="tutorial-step-icon">💧</span><div><small id="tutorial-step-kicker">기본 청소</small><h2 id="tutorial-step-title">물때를 닦아볼까요?</h2><p id="tutorial-step-copy">스퀴지를 선택하고 반짝이는 세탁기를 눌러주세요.</p></div></div>
-        <div class="tutorial-actions"><button id="tutorial-exit-button" type="button">튜토리얼 종료</button><button id="tutorial-finish-button" type="button" hidden>보상 받고 돌아가기</button></div>
+        <div class="tutorial-actions"><button id="tutorial-exit-button" type="button">튜토리얼 종료</button><button id="tutorial-finish-button" type="button" hidden>보상 받고 첫 영업 시작</button></div>
       </section>
     </div>
 
@@ -491,7 +491,7 @@
           <button id="fullscreen-button" type="button"><span>⛶</span><b>전체 화면</b><small>모바일에서 더 넓게 플레이</small></button>
           <button class="install-button" id="settings-install-button" type="button" disabled><span>＋</span><b>앱 설치</b><small id="install-status">브라우저 메뉴에서도 설치 가능</small></button>
         </div>
-        <div class="save-data-row"><span><small>저장 데이터</small><strong id="save-version-label">DATA v9 · 자동 저장</strong></span><div><button id="export-data-button" type="button">내보내기</button><button id="import-data-button" type="button">가져오기</button><button class="danger" id="reset-data-button" type="button">초기화</button></div></div>
+        <div class="save-data-row"><span><small>저장 데이터</small><strong id="save-version-label">DATA v10 · 자동 저장</strong></span><div><button id="export-data-button" type="button">내보내기</button><button id="import-data-button" type="button">가져오기</button><button class="danger" id="reset-data-button" type="button">초기화</button></div></div>
         <input id="import-data-input" type="file" accept="application/json,.json" hidden />
         <p class="save-data-status" id="save-data-status" role="status" aria-live="polite">최고 기록과 진행 정보는 이 브라우저에 자동 저장됩니다.</p>
       </section>
@@ -516,14 +516,14 @@
     <div class="modal-backdrop" id="updates-modal" role="dialog" aria-modal="true" aria-labelledby="updates-title" aria-hidden="true">
       <section class="modal progression-modal updates-card">
         <button class="modal-close utility-page-back" id="updates-close-button" type="button" aria-label="업데이트 안내에서 홈으로 돌아가기"><span class="utility-close-mark" aria-hidden="true">×</span><span class="utility-back-arrow" aria-hidden="true">←</span><b>홈</b></button>
-        <div class="modal-kicker">VERSION <span id="app-version-label">2.18.1</span></div>
-        <h2 id="updates-title">퀵 시프트 루프·스타 챌린지 업데이트</h2>
-        <p>2026.08 · 퀵 시프트별 규칙·기록·3별 평가를 추가하고, 모바일 튜토리얼의 보드 비율과 사건 대상 클릭 영역을 안정화했습니다.</p>
+        <div class="modal-kicker">VERSION <span id="app-version-label">2.19.0</span></div>
+        <h2 id="updates-title">오늘의 퀵·첫 3판 가이드 업데이트</h2>
+        <p>2026.08 · 날짜별 오늘의 퀵 시프트와 연속 완주 보상, 실전 얼룩 전처리, 결과 비교와 다음 별 안내를 추가했습니다.</p>
         <div class="update-list">
-          <article><span>ROUTE</span><div><h3>독립된 2열 영업 버튼</h3><p>45초 바로 영업과 계획 선택을 같은 폭의 두 카드로 분리해 클릭 영역과 목적을 명확히 했습니다.</p></div></article>
-          <article><span>RULE</span><div><h3>시나리오별 실제 보너스</h3><p>물때 점수, 사건 해결, 특정 손님 보상·인내심, 콤보 판정 시간이 퀵 시프트마다 달라집니다.</p></div></article>
-          <article><span>STAR</span><div><h3>판마다 3별 평가</h3><p>완주·오조작·시나리오 특별 목표를 평가하고, 시나리오별 최고 점수와 직전 기록 변화를 저장합니다.</p></div></article>
-          <article><span>LOOP</span><div><h3>다음 퀵 즉시 시작</h3><p>결과에서 다음 시나리오로 바로 이어가며 누적 별 6·12·18개마다 전용 장식과 수익을 받습니다.</p></div></article>
+          <article><span>TODAY</span><div><h3>날짜별 고정 퀵 시프트</h3><p>하루 동안 같은 시나리오에 도전하며 오늘의 최고 점수·별과 연속 완주 기록을 저장합니다.</p></div></article>
+          <article><span>STAIN</span><div><h3>얼룩 제거제 실전 역할</h3><p>얼룩 손님에게 전처리 시간이 주어지고, 놓치면 만족도가 내려가며 전용 퀵 규칙과 튜토리얼이 제공됩니다.</p></div></article>
+          <article><span>GUIDE</span><div><h3>첫 3판 상황 안내</h3><p>얼룩·대기 줄·고장·정전·세제 부족 상황에서 필요한 도구와 위치를 짧게 안내합니다.</p></div></article>
+          <article><span>RESULT</span><div><h3>기록 비교와 다음 별</h3><p>점수·환불·오조작 변화를 비교하고 가장 가까운 별 목표에 맞춰 재도전과 다음 퀵의 우선순위를 바꿉니다.</p></div></article>
         </div>
       </section>
     </div>
@@ -564,6 +564,7 @@
           <header><span id="quick-result-icon">⚡</span><div><small>QUICK SHIFT REPORT</small><strong id="quick-result-title">퀵 시프트 결과</strong><em id="quick-result-best">최고 기록 0점</em></div><b id="quick-result-stars">☆☆☆</b></header>
           <div class="quick-star-goals" id="quick-star-goals"></div>
           <div class="quick-result-deltas"><span><small>직전 점수 대비</small><strong id="quick-score-delta">첫 기록</strong></span><span><small>오조작 변화</small><strong id="quick-wrong-delta">첫 기록</strong></span><span><small>누적 별</small><strong id="quick-total-stars">0 / 18</strong></span></div>
+          <p class="quick-next-star" id="quick-next-star"><span>☆</span><strong>다음 별 목표를 확인해 보세요.</strong></p>
           <p id="quick-reward-message" hidden><span>★</span><strong>별 누적 보상을 획득했어요!</strong></p>
         </section>
         <section class="result-master-impact" id="result-master-impact" aria-labelledby="result-master-title" hidden>
@@ -576,6 +577,11 @@
           <div><small>청소 완료</small><strong><b id="result-cleaned">0</b>건</strong></div>
           <div><small>환불</small><strong><b id="result-refunds">0</b>건</strong></div>
           <div><small>받은 손님</small><strong><b id="result-served">0</b>명</strong></div>
+        </div>
+        <div class="result-comparison" id="result-comparison">
+          <span><small>이전 점수 대비</small><strong id="result-score-compare">첫 기록</strong></span>
+          <span><small>환불 변화</small><strong id="result-refund-compare">첫 기록</strong></span>
+          <span><small>오조작 변화</small><strong id="result-wrong-compare">첫 기록</strong></span>
         </div>
         <div class="result-rank">
           <span>오늘의 등급 · <b id="result-difficulty">표준 영업</b></span><strong id="result-rank">S</strong><p id="rank-copy">빨래방의 전설</p>
@@ -613,7 +619,7 @@
           </section>
         </details>
         <div class="result-retry-actions">
-          <button class="primary-button" id="next-quick-button" type="button" hidden><span>다음 퀵 시프트</span><b>→</b></button>
+          <button id="next-quick-button" type="button" hidden><span>다음 퀵 시프트</span><b>→</b></button>
           <button class="primary-button" id="restart-button" type="button"><span>같은 조건으로 재도전</span><b>↻</b></button>
           <button id="new-plan-button" type="button"><span>새 목표로 준비</span><b>◆</b></button>
           <button id="next-difficulty-button" type="button"><span>다음 난이도 도전</span><b>↑</b></button>

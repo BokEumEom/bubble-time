@@ -14,6 +14,7 @@ const LAUNDRY_CONFIG = Object.freeze({
     minimumServed: 35,
     maximumWaitPenalty: 65,
     stainedBonus: 5,
+    stainedPenalty: 12,
   }),
   customerTypes: Object.freeze({
     normal: Object.freeze({ weight: 0.35, label: "일반 손님", icon: "●", patience: 1, cycle: 1, reward: 1 }),
@@ -68,7 +69,8 @@ const LAUNDRY_CONFIG = Object.freeze({
     spawnEnd: 1400,
     spawnJitter: 320,
     patience: 18500,
-    stainedChance: 0.18,
+    stainedChance: 0.24,
+    stainGrace: 4600,
   }),
   machine: Object.freeze({
     cycleMin: 10000,

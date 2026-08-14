@@ -167,6 +167,7 @@ async function run() {
   await evaluate(`
     state.progression.tutorial.completed = true;
     state.progression.onboarding.firstShiftComplete = true;
+    state.progression.onboarding.guidedShifts = 3;
     updateProgressionUi();
     closePrepModal();
     document.querySelector('#manager-button').click();
@@ -342,7 +343,7 @@ async function run() {
   assert.ok(mobileHome.managerWidth >= 350, "모바일 MANAGER DESK 버튼은 좌우 콘텐츠 폭을 넓게 사용해야 합니다.");
   assert.ok(mobileHome.actionsWidth >= 350, "모바일 영업 행동 묶음은 좌우 콘텐츠 폭을 넓게 사용해야 합니다.");
   assert.ok(mobileHome.startWidth >= 168 && mobileHome.planWidth >= 168, "퀵 시작과 계획 선택은 독립된 동일 폭 2열 버튼이어야 합니다.");
-  assert.match(mobileHome.quickLabel, /45초 바로 영업/, "재방문자 홈의 주 행동은 45초 퀵 시프트여야 합니다.");
+  assert.match(mobileHome.quickLabel, /오늘의 퀵 시프트/, "재방문자 홈의 주 행동은 날짜별 오늘의 퀵 시프트여야 합니다.");
   assert.equal(mobileHome.planVisible, true, "시간·난이도 계획 선택은 퀵 시작과 분리해 유지해야 합니다.");
   assert.equal(mobileHome.startHeight, mobileHome.planHeight, "계획 선택은 퀵 시작과 같은 터치 높이를 사용해야 합니다.");
   assert.ok(mobileHome.planHeight >= 66, "두 영업 행동은 충분한 모바일 터치 높이를 사용해야 합니다.");
@@ -362,14 +363,21 @@ async function run() {
   assert.ok(tutorialFirstLayout.dockHeight <= 120, "튜토리얼 도구판이 기계 보드 높이를 차지하면 안 됩니다.");
   assert.ok(tutorialFirstLayout.targetHeight >= 120, "튜토리얼 청소 대상은 누를 수 있는 정상 높이여야 합니다.");
   assert.equal(tutorialFirstLayout.toolTarget, "squeegee", "현재 단계에 필요한 도구도 함께 강조해야 합니다.");
-  await evaluate("state.tutorialStep = 4; prepareTutorialStep()");
+  await evaluate("state.tutorialStep = 3; prepareTutorialStep()");
+  const tutorialStain = await evaluate(`({
+    guestTarget: document.querySelector('.guest.tutorial-target')?.classList.contains('stained'),
+    toolTarget: document.querySelector('.tutorial-tool-target')?.dataset.tool,
+    step: document.querySelector('#tutorial-overlay').dataset.step
+  })`);
+  assert.deepEqual(tutorialStain, { guestTarget: true, toolTarget: "spray", step: "stain" }, "튜토리얼에서 얼룩 손님과 제거제를 직접 연습해야 합니다.");
+  await evaluate("state.tutorialStep = 5; prepareTutorialStep()");
   const tutorialBlackoutLayout = await evaluate(`(() => {
     const coach = document.querySelector('.tutorial-coach').getBoundingClientRect();
     const target = document.querySelector('#breaker-panel').getBoundingClientRect();
     return { overlap: !(target.bottom <= coach.top || coach.bottom <= target.top || target.right <= coach.left || coach.right <= target.left), step: document.querySelector('#tutorial-overlay').dataset.step };
   })()`);
   assert.deepEqual(tutorialBlackoutLayout, { overlap: false, step: "blackout" }, "정전 단계 안내가 차단기를 가리면 안 됩니다.");
-  await evaluate("state.tutorialStep = 5; prepareTutorialStep()");
+  await evaluate("state.tutorialStep = 6; prepareTutorialStep()");
   const tutorialDetergentLayout = await evaluate(`(() => {
     const coach = document.querySelector('.tutorial-coach').getBoundingClientRect();
     const facility = document.querySelector('#detergent-station').getBoundingClientRect();
@@ -821,22 +829,54 @@ async function run() {
   `);
   await waitFor("document.readyState === 'complete' && typeof state !== 'undefined'");
   console.log("UI 회귀: 저장 데이터 이전 확인");
-  const migrated = await evaluate("({ version: state.progression.schemaVersion, objectives: state.progression.stats.objectives, quickShifts: state.progression.stats.quickShifts, standardRecord: state.progression.records.standard.score, lastMode: state.progression.preferences.lastMode, master: state.progression.master, quick: state.progression.quick })");
-  assert.equal(migrated.version, 9, "v5 저장 데이터는 v9으로 이전되어야 합니다.");
+  const migrated = await evaluate("({ version: state.progression.schemaVersion, objectives: state.progression.stats.objectives, quickShifts: state.progression.stats.quickShifts, standardRecord: state.progression.records.standard.score, lastMode: state.progression.preferences.lastMode, master: state.progression.master, quickRecords: state.progression.quick.records, quickMilestones: state.progression.quick.claimedMilestones, quickToday: state.progression.quick.today, quickStreak: state.progression.quick.streak, guidedShifts: state.progression.onboarding.guidedShifts })");
+  assert.equal(migrated.version, 10, "v5 저장 데이터는 v10으로 이전되어야 합니다.");
   assert.equal(migrated.objectives, 0, "이전 데이터의 목표 통계 기본값은 0이어야 합니다.");
   assert.equal(migrated.quickShifts, 0, "이전 데이터에는 퀵 시프트 순환 횟수 기본값이 추가되어야 합니다.");
   assert.equal(migrated.standardRecord, 4200, "기존 최고 기록은 75초 기본 모드 기록으로 이전되어야 합니다.");
   assert.equal(migrated.lastMode, "standard", "이전 데이터는 75초 기본 영업을 유지해야 합니다.");
   assert.deepEqual(migrated.master, { machine: { path: null, level: 0 }, tool: { path: null, level: 0 } }, "이전 저장 데이터에는 안전한 마스터 개조 기본값이 추가되어야 합니다.");
-  assert.deepEqual(migrated.quick, { records: {}, claimedMilestones: [] }, "이전 저장 데이터에는 퀵 시프트 기록 기본값이 추가되어야 합니다.");
+  assert.deepEqual(migrated.quickRecords, {}, "이전 저장 데이터에는 빈 퀵 시프트 기록이 추가되어야 합니다.");
+  assert.deepEqual(migrated.quickMilestones, [], "이전 저장 데이터에는 빈 누적 별 보상 기록이 추가되어야 합니다.");
+  assert.equal(migrated.quickToday.attempts, 0, "이전 저장 데이터에는 오늘의 퀵 도전 기본값이 추가되어야 합니다.");
+  assert.deepEqual(migrated.quickStreak, { count: 0, best: 0, lastCompletedDate: null }, "이전 저장 데이터에는 연속 완주 기본값이 추가되어야 합니다.");
+  assert.equal(migrated.guidedShifts, 1, "기존 한 판 기록은 첫 3판 가이드 진행으로 이전되어야 합니다.");
+  const dailyQuickReward = await evaluate(`(() => {
+    state.isDailyQuick = true;
+    state.score = 1200;
+    const first = updateDailyQuickProgress(true, 2);
+    const repeat = updateDailyQuickProgress(true, 3);
+    state.isDailyQuick = false;
+    return { firstReward: first.rewardCoins, repeatReward: repeat.rewardCoins, streak: repeat.streak, bestStars: repeat.bestStars };
+  })()`);
+  assert.deepEqual(dailyQuickReward, { firstReward: 60, repeatReward: 0, streak: 1, bestStars: 3 }, "오늘의 퀵 첫 완주만 연속 보상을 지급하고 오늘 최고 별을 저장해야 합니다.");
 
   console.log("UI 회귀: 원터치 퀵 시프트와 LAST SAVE 확인");
   await evaluate("document.querySelector('#start-button').click(); clearGameTimers()");
-  const quickStart = await evaluate("({ mode: state.mode, seconds: state.seconds, scenario: state.quickScenario?.id, prepOpen: document.querySelector('#prep-modal').classList.contains('open') })");
+  const quickStart = await evaluate("({ mode: state.mode, seconds: state.seconds, scenario: state.quickScenario?.id, todayScenario: todayQuickScenario().id, daily: state.isDailyQuick, prepOpen: document.querySelector('#prep-modal').classList.contains('open') })");
   assert.equal(quickStart.mode, "quick", "홈 주 버튼은 45초 빠른 영업을 시작해야 합니다.");
   assert.equal(quickStart.seconds, 45, "원터치 퀵 시프트는 45초여야 합니다.");
   assert.ok(quickStart.scenario, "원터치 퀵 시프트에는 설계된 시나리오가 배정되어야 합니다.");
+  assert.equal(quickStart.scenario, quickStart.todayScenario, "원터치 퀵 시프트는 날짜별 고정 시나리오여야 합니다.");
+  assert.equal(quickStart.daily, true, "홈 퀵 시프트는 오늘의 연속 완주 대상으로 시작해야 합니다.");
   assert.equal(quickStart.prepOpen, false, "원터치 퀵 시프트는 준비 화면을 거치지 않아야 합니다.");
+  const stainPretreatment = await evaluate(`(() => {
+    const guest = makeGuest({ id: 99, type: 'normal', stained: true, cleaned: false, waitedMs: 2000, stainGraceRemainingMs: 3000 });
+    state.queue.push(guest);
+    document.querySelector('#queue-lane').appendChild(guest.el);
+    updateQueueVisuals();
+    syncToolTargets();
+    const highlighted = document.querySelector('[data-tool=spray]').classList.contains('tool-needed');
+    processQueue();
+    const heldForPretreatment = state.queue.some((item) => item.id === 99);
+    selectTool('spray');
+    handleGuestClick(99);
+    const result = { highlighted, heldForPretreatment, cleaned: guest.cleaned, stainCount: state.dirtCleanCounts.stain };
+    state.score = 0;
+    updateHud();
+    return result;
+  })()`);
+  assert.deepEqual(stainPretreatment, { highlighted: true, heldForPretreatment: true, cleaned: true, stainCount: 1 }, "얼룩 손님은 입장 전 처리 시간이 보장되고 제거제 도구가 강조되어야 합니다.");
   await evaluate("while (state.queue.length < MAX_QUEUE) enqueueGuest()");
   assert.equal(await evaluate("state.lastChanceActive && !document.querySelector('#last-chance-alert').hidden"), true, "대기 6명 첫 도달 시 3초 LAST SAVE가 보여야 합니다.");
   await evaluate("const savedGuest = state.queue.shift(); savedGuest.el.remove(); updateQueueVisuals()");

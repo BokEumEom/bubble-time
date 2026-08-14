@@ -83,8 +83,8 @@ assert.ok(manifest.screenshots.some((item) => item.form_factor === "narrow"), "�
 ["index.html", "styles.css", "game-config.js", "script.js", "manifest.webmanifest", "icon.svg", "icon-maskable.svg", "assets/icon-192.png", "assets/icon-512.png", "assets/icon-maskable-512.png", "assets/share-card.png", "assets/screenshot-wide.png", "assets/screenshot-mobile.png"]
   .forEach((asset) => assert.match(worker, new RegExp(asset.replace(".", "\\.")), `${asset}이 오프라인 캐시에 포함되어야 합니다.`));
 
-assert.match(script, /DATA_SCHEMA_VERSION\s*=\s*9/, "퀵 시프트 별·기록 저장을 위한 데이터 스키마 버전 9가 필요합니다.");
-assert.match(script, /APP_VERSION\s*=\s*"2\.18\.1"/, "모바일 튜토리얼 레이아웃 수정 버전 2.18.1이 필요합니다.");
+assert.match(script, /DATA_SCHEMA_VERSION\s*=\s*10/, "오늘의 퀵·연속 기록 저장을 위한 데이터 스키마 버전 10이 필요합니다.");
+assert.match(script, /APP_VERSION\s*=\s*"2\.19\.0"/, "오늘의 퀵과 얼룩 전처리 업데이트 버전 2.19.0이 필요합니다.");
 assert.match(script, /QUICK_SHIFT_SCENARIOS/, "순환형 45초 퀵 시프트 시나리오가 필요합니다.");
 assert.match(script, /startQuickShift/, "홈 원터치 퀵 시프트 시작 함수가 필요합니다.");
 assert.match(script, /QUICK_STAR_MILESTONES/, "퀵 시프트 누적 별 보상이 필요합니다.");
@@ -92,6 +92,12 @@ assert.match(script, /evaluateQuickStars/, "퀵 시프트 3별 평가 함수가 
 assert.match(script, /updateQuickProgress/, "시나리오별 최고 기록과 직전 기록 저장이 필요합니다.");
 assert.match(script, /renderQuickResultSummary/, "결과 화면에 퀵 시프트 별·기록 변화 요약이 필요합니다.");
 assert.match(script, /startNextQuickShift/, "결과에서 순서상 다음 퀵 시프트를 즉시 시작해야 합니다.");
+assert.match(script, /todayQuickScenario/, "날짜별 고정 오늘의 퀵 시프트가 필요합니다.");
+assert.match(script, /updateDailyQuickProgress/, "오늘 첫 완주와 연속 완주 보상이 필요합니다.");
+assert.match(script, /previousComparableShift/, "결과에서 같은 조건의 이전 기록을 비교해야 합니다.");
+assert.match(script, /quickNextStar/, "결과에서 다음 별 목표를 안내해야 합니다.");
+assert.match(script, /stainGraceUntil/, "얼룩 손님에게 전처리 기회를 보장해야 합니다.");
+assert.match(script, /stainsMissed/, "놓친 얼룩 전처리가 결과 코칭에 반영되어야 합니다.");
 assert.match(script, /comboWindowBonus/, "퀵 시프트별 실제 플레이 규칙이 필요합니다.");
 assert.match(script, /unlockQuickStars/, "누적 별로 해금되는 꾸미기 보상이 필요합니다.");
 assert.match(script, /beginLastChance/, "대기 한계의 3초 LAST SAVE가 필요합니다.");
@@ -184,6 +190,8 @@ assert.match(styles, /v2\.15 master progression/, "마스터 개조와 동일 �
 assert.match(styles, /\.result-home-row/, "결과의 홈 이동은 재도전 행동과 시각적으로 분리되어야 합니다.");
 assert.match(styles, /\.shift-start-actions\s*\{[^}]*grid-template-columns:\s*repeat\(2/, "홈의 퀵 시작과 계획 선택은 독립된 2열 버튼이어야 합니다.");
 assert.match(styles, /\.quick-result-summary/, "퀵 시프트 별 평가 카드 스타일이 필요합니다.");
+assert.match(styles, /\.tool\.tool-needed/, "얼룩 손님 대기 중 제거제 도구를 강조해야 합니다.");
+assert.match(styles, /\.result-comparison/, "결과 화면에 이전 기록 비교 UI가 필요합니다.");
 assert.ok(fs.existsSync(path.join(root, "tests", "laundry-game-ui.cjs")), "자동 UI 회귀 검사 파일이 필요합니다.");
 ["icon-192.png", "icon-512.png", "icon-maskable-512.png", "share-card.png", "screenshot-wide.png", "screenshot-mobile.png"]
   .forEach((asset) => assert.ok(fs.existsSync(path.join(root, "assets", asset)), `${asset} 파일이 필요합니다.`));

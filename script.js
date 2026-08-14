@@ -7,8 +7,8 @@ const STORAGE_KEY = "bubbleTime75.bestRecord.v1";
 const PROGRESSION_KEY = "bubbleTime75.progression.v1";
 const CHECKPOINT_KEY = "bubbleTime.shiftCheckpoint.v1";
 const SEEN_VERSION_KEY = "bubbleTime75.seenVersion";
-const APP_VERSION = "2.18.1";
-const DATA_SCHEMA_VERSION = 9;
+const APP_VERSION = "2.19.0";
+const DATA_SCHEMA_VERSION = 10;
 const MOBILE_PAGE_MEDIA = "(max-width: 520px)";
 const MOBILE_SLIDE_PAGE_IDS = new Set(["prep-modal", "stats-modal", "settings-modal", "help-modal", "updates-modal"]);
 
@@ -77,7 +77,7 @@ const QUICK_SHIFT_SCENARIOS = Object.freeze([
   Object.freeze({ id: "power_drill", icon: "ϟ", accent: "violet", title: "전력 불안정", copy: "정전 예고를 읽고 사건을 빠르게 복구하세요.", ruleLabel: "사건 해결 +35%", difficulty: "standard", condition: "inspection", objectiveIds: ["fast_event", "refundless"], eventDeck: ["blackout", "breakdown"], dirtBias: "dust", eventScore: 1.35, specialGoal: { kind: "fastEvent", label: "사건을 3초 내 해결" } }),
   Object.freeze({ id: "bulk_day", icon: "▦", accent: "gold", title: "이불 세탁의 날", copy: "대량 세탁 손님의 긴 작업 시간을 견뎌내세요.", ruleLabel: "대량 세탁 +30%", difficulty: "calm", condition: "weekend", objectiveIds: ["happy_6", "queue_control"], eventDeck: ["group", "detergent"], customerBias: "bulk", customerReward: { type: "bulk", multiplier: 1.3 }, specialGoal: { kind: "happy", target: 4, label: "만족 손님 4명" } }),
   Object.freeze({ id: "clean_chain", icon: "⚡", accent: "mint", title: "콤보 청소 도전", copy: "오염을 발견하는 즉시 처리해 콤보를 이어가세요.", ruleLabel: "콤보 판정 +1.2초", difficulty: "standard", condition: "rain", objectiveIds: ["clean_6", "combo_6"], eventDeck: ["inspection", "detergent"], dirtBias: "limescale", comboWindowBonus: 1200, specialGoal: { kind: "combo", target: 4, label: "4콤보 달성" } }),
-  Object.freeze({ id: "regular_hour", icon: "★", accent: "rose", title: "단골 집중 시간", copy: "단골의 긴 인내심을 활용해 안정적으로 운영하세요.", ruleLabel: "단골 인내심 +35%", difficulty: "rush", condition: "inspection", objectiveIds: ["happy_6", "fast_event"], eventDeck: ["breakdown", "inspection"], customerBias: "regular", dirtBias: "laundry", patienceBonus: { type: "regular", multiplier: 1.35 }, specialGoal: { kind: "regular", target: 3, label: "단골 3명 응대" } }),
+  Object.freeze({ id: "regular_hour", icon: "✦", accent: "rose", title: "얼룩 전처리 시간", copy: "얼룩 손님을 놓치지 말고 기계 입장 전에 전처리하세요.", ruleLabel: "얼룩 제거 +30%", difficulty: "rush", condition: "inspection", objectiveIds: ["happy_6", "fast_event"], eventDeck: ["breakdown", "inspection"], customerBias: "regular", dirtBias: "laundry", stainChance: 0.48, cleanStainScore: 1.3, specialGoal: { kind: "stain", target: 2, label: "얼룩 손님 2명 전처리" } }),
 ]);
 
 const QUICK_STAR_MILESTONES = Object.freeze([
@@ -152,6 +152,7 @@ const TUTORIAL_STEPS = [
   { id: "limescale", action: "clean", icon: "💧", kicker: "기본 청소", title: "물때를 닦아볼까요?", copy: "스퀴지를 선택하고 반짝이는 세탁기를 눌러주세요.", tool: "squeegee", machineId: "washer-1" },
   { id: "dust", action: "clean", icon: "☁", kicker: "기본 청소", title: "먼지를 털어내세요", copy: "먼지털이를 선택하고 먼지가 쌓인 건조기를 눌러주세요.", tool: "duster", machineId: "dryer-1" },
   { id: "laundry", action: "clean", icon: "🧦", kicker: "남은 세탁물", title: "빨래를 정리하세요", copy: "빨래 바구니를 선택하고 놓고 간 빨래를 담아주세요.", tool: "basket", machineId: "washer-2" },
+  { id: "stain", action: "guest", icon: "✦", kicker: "손님 전처리", title: "얼룩 손님을 도와주세요", copy: "얼룩 제거제를 선택하고 반짝이는 얼룩 표시가 있는 손님을 눌러주세요.", tool: "spray" },
   { id: "breakdown", action: "event", icon: "⚙", kicker: "매장 사건", title: "고장 난 기계를 수리하세요", copy: "정비 렌치를 선택하고 톱니 표시가 난 기계를 눌러주세요.", tool: "wrench", machineId: "dryer-2" },
   { id: "blackout", action: "event", icon: "ϟ", kicker: "매장 사건", title: "정전을 복구하세요", copy: "모든 기계가 멈췄어요. 매장 아래쪽 차단기를 눌러주세요." },
   { id: "detergent", action: "event", icon: "▰", kicker: "매장 사건", title: "세제를 채워주세요", copy: "세제 보충통을 선택하고 빈 세제 탱크를 눌러주세요.", tool: "detergent" },
@@ -255,7 +256,7 @@ const CODEX_CONTENT = {
     { id: "limescale", icon: "💧", title: "물때", tag: "스퀴지", description: "기계 문에 남은 물때입니다. 스퀴지로 닦아내세요." },
     { id: "dust", icon: "☁", title: "먼지", tag: "먼지털이", description: "기계 안팎에 쌓인 먼지입니다. 먼지털이로 제거하세요." },
     { id: "laundry", icon: "🧦", title: "놓고 간 빨래", tag: "빨래 바구니", description: "손님이 두고 간 세탁물입니다. 빨래 바구니에 담아 정리하세요." },
-    { id: "stain", icon: "◆", title: "수상한 얼룩", tag: "얼룩 제거제", description: "일부 손님 옷에 나타납니다. 제거하면 무지개 셔츠와 보너스를 얻습니다." },
+    { id: "stain", icon: "◆", title: "손님 옷 얼룩", tag: "얼룩 제거제", description: "기계 입장 전 제거제로 전처리하세요. 놓치면 손님 만족도가 내려갑니다." },
   ],
   events: [
     { id: "breakdown", icon: "⚙", title: "기계 고장", tag: "정비 렌치", description: "수리 전까지 해당 기계가 멈춥니다. 정비 렌치로 고장 기계를 누르세요." },
@@ -301,6 +302,8 @@ const state = {
   lastShiftPlan: null,
   quickScenario: null,
   quickResult: null,
+  isDailyQuick: false,
+  resultComparison: null,
   startSource: "plan",
   firstActionMs: null,
   wrongActions: 0,
@@ -320,6 +323,7 @@ const state = {
   eventsHandled: { breakdown: 0, blackout: 0, detergent: 0, group: 0, inspection: 0 },
   eventResponseTimes: [],
   dirtCleanCounts: { limescale: 0, dust: 0, laundry: 0, stain: 0 },
+  stainsMissed: 0,
   refundCauses: { limescale: 0, dust: 0, laundry: 0 },
   peakQueue: 0,
   selectedTool: "squeegee",
@@ -395,6 +399,8 @@ const els = {
   homeQuickIcon: document.querySelector("#home-quick-icon"),
   startButtonTitle: document.querySelector("#start-button-title"),
   homeQuickDetail: document.querySelector("#home-quick-detail"),
+  homeQuickKicker: document.querySelector("#home-quick-kicker"),
+  homeQuickStreak: document.querySelector("#home-quick-streak"),
   confirmStartButton: document.querySelector("#confirm-start-button"),
   restartButton: document.querySelector("#restart-button"),
   nextQuickButton: document.querySelector("#next-quick-button"),
@@ -515,6 +521,7 @@ const els = {
   quickWrongDelta: document.querySelector("#quick-wrong-delta"),
   quickTotalStars: document.querySelector("#quick-total-stars"),
   quickRewardMessage: document.querySelector("#quick-reward-message"),
+  quickNextStar: document.querySelector("#quick-next-star"),
   resultCelebration: document.querySelector("#result-celebration"),
   shareResultButton: document.querySelector("#share-result-button"),
   endlessCashoutButton: document.querySelector("#endless-cashout-button"),
@@ -592,6 +599,8 @@ function resetGame(options = {}) {
   state.masterScoreBonus = { machine: 0, tool: 0 };
   state.quickScenario = null;
   state.quickResult = null;
+  state.isDailyQuick = false;
+  state.resultComparison = null;
   state.startSource = "plan";
   state.firstActionMs = null;
   state.wrongActions = 0;
@@ -611,6 +620,7 @@ function resetGame(options = {}) {
   state.eventsHandled = { breakdown: 0, blackout: 0, detergent: 0, group: 0, inspection: 0 };
   state.eventResponseTimes = [];
   state.dirtCleanCounts = { limescale: 0, dust: 0, laundry: 0, stain: 0 };
+  state.stainsMissed = 0;
   state.refundCauses = { limescale: 0, dust: 0, laundry: 0 };
   state.peakQueue = 0;
   state.tutorialActive = false;
@@ -651,6 +661,7 @@ function resetGame(options = {}) {
   els.toolButtons.forEach((button) => button.classList.remove("tutorial-tool-target"));
   els.tutorialOverlay.hidden = true;
   delete els.tutorialOverlay.dataset.step;
+  delete els.tutorialOverlay.dataset.firstCompletion;
   els.pauseModal.classList.remove("open");
   els.pauseModal.setAttribute("aria-hidden", "true");
   els.pauseButton.disabled = true;
@@ -670,6 +681,7 @@ function startGame(options = {}) {
   resetGame({ condition: options.condition });
   state.quickScenario = options.scenario || null;
   state.startSource = options.source || "plan";
+  state.isDailyQuick = Boolean(options.dailyQuick);
   if (state.quickScenario?.eventDeck?.length) state.eventDeck = [...state.quickScenario.eventDeck];
   renderQuickScenarioIdentity();
   state.running = true;
@@ -685,7 +697,8 @@ function startGame(options = {}) {
   if (state.quickScenario) scheduleTimeout(() => els.quickScenarioRibbon.classList.add("compact"), 3600);
   saveShiftCheckpoint();
   startBgm();
-  showFirstShiftGuide("오염 아이콘을 확인한 뒤 같은 도구를 선택하세요", 0);
+  const guidedShift = Math.min(3, Math.max(0, Number(state.progression.onboarding.guidedShifts) || 0) + 1);
+  showFirstShiftGuide(`${guidedShift}/3 영업 · 오염 아이콘과 같은 도구를 선택하세요`, 0);
 }
 
 function startTutorial() {
@@ -713,6 +726,12 @@ function prepareTutorialStep() {
     return;
   }
   state.machines.forEach((machine) => machine.el.classList.remove("tutorial-target"));
+  state.queue = state.queue.filter((guest) => {
+    if (!guest.tutorial) return true;
+    guest.el.remove();
+    return false;
+  });
+  updateQueueVisuals();
   els.detergentStation.classList.remove("tutorial-target");
   els.breakerPanel.classList.remove("tutorial-target");
   els.toolButtons.forEach((button) => button.classList.remove("tutorial-tool-target"));
@@ -729,6 +748,13 @@ function prepareTutorialStep() {
     const machine = state.machines.find((item) => item.id === step.machineId);
     makeDirty(machine, step.id);
     machine.el.classList.add("tutorial-target");
+  } else if (step.id === "stain") {
+    const guest = makeGuest({ id: 1, type: "normal", stained: true, cleaned: false, waitedMs: 0, stainGraceRemainingMs: 60000 });
+    guest.tutorial = true;
+    state.queue.push(guest);
+    els.queueLane.appendChild(guest.el);
+    updateQueueVisuals();
+    guest.el.classList.add("tutorial-target");
   } else if (step.id === "breakdown") {
     const machine = state.machines.find((item) => item.id === step.machineId);
     state.activeEvent = { type: "breakdown", startedAt: performance.now(), targetId: machine.id };
@@ -784,6 +810,7 @@ function completeTutorial() {
   els.breakerPanel.classList.remove("tutorial-target");
   els.tutorialOverlay.classList.add("complete");
   els.tutorialOverlay.dataset.step = "complete";
+  els.tutorialOverlay.dataset.firstCompletion = String(firstCompletion);
   els.toolButtons.forEach((button) => button.classList.remove("tutorial-tool-target"));
   document.querySelector("#tutorial-step-number").textContent = String(TUTORIAL_STEPS.length);
   document.querySelector("#tutorial-progress-bar").style.width = "100%";
@@ -793,7 +820,16 @@ function completeTutorial() {
   document.querySelector("#tutorial-step-copy").textContent = firstCompletion ? "모든 기본 업무를 익혔습니다. 첫 완료 보상 100 수익이 지급됐어요." : "모든 기본 업무를 다시 연습했습니다.";
   els.tutorialExitButton.hidden = true;
   els.tutorialFinishButton.hidden = false;
+  els.tutorialFinishButton.textContent = firstCompletion ? "보상 받고 첫 영업 시작" : "연습 마치고 홈으로";
   els.tutorialFinishButton.focus();
+}
+
+function finishTutorialFlow() {
+  if (els.tutorialOverlay.dataset.firstCompletion === "true") {
+    startQuickShift();
+    return;
+  }
+  exitTutorial();
 }
 
 function exitTutorial() {
@@ -856,6 +892,58 @@ function nextQuickScenario() {
   return QUICK_SHIFT_SCENARIOS[index];
 }
 
+function todayQuickScenario(dateKey = localDateKey()) {
+  return QUICK_SHIFT_SCENARIOS[seedFromKey(dateKey) % QUICK_SHIFT_SCENARIOS.length];
+}
+
+function freshDailyQuickState(date = localDateKey()) {
+  return {
+    date,
+    scenarioId: todayQuickScenario(date).id,
+    attempts: 0,
+    bestScore: 0,
+    bestStars: 0,
+    rewarded: false,
+  };
+}
+
+function ensureDailyQuickState(progression = state.progression) {
+  progression.quick ||= { records: {}, claimedMilestones: [] };
+  const expected = freshDailyQuickState();
+  if (!progression.quick.today || progression.quick.today.date !== expected.date || progression.quick.today.scenarioId !== expected.scenarioId) {
+    progression.quick.today = expected;
+  }
+  progression.quick.streak ||= { count: 0, best: 0, lastCompletedDate: null };
+  const lastCompleted = progression.quick.streak.lastCompletedDate;
+  if (lastCompleted && ![expected.date, previousLocalDateKey(expected.date)].includes(lastCompleted)) progression.quick.streak.count = 0;
+  return progression.quick.today;
+}
+
+function previousLocalDateKey(dateKey = localDateKey()) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return localDateKey(new Date(year, month - 1, day - 1, 12));
+}
+
+function updateDailyQuickProgress(success, stars) {
+  if (!state.isDailyQuick) return null;
+  const today = ensureDailyQuickState();
+  const streak = state.progression.quick.streak;
+  today.attempts += 1;
+  today.bestScore = Math.max(today.bestScore, state.score);
+  today.bestStars = Math.max(today.bestStars, stars);
+  let rewardCoins = 0;
+  let firstClear = false;
+  if (success && !today.rewarded) {
+    firstClear = true;
+    today.rewarded = true;
+    streak.count = streak.lastCompletedDate === previousLocalDateKey(today.date) ? streak.count + 1 : 1;
+    streak.best = Math.max(streak.best, streak.count);
+    streak.lastCompletedDate = today.date;
+    rewardCoins = 60 + Math.min(40, Math.max(0, streak.count - 1) * 10);
+  }
+  return { ...today, streak: streak.count, bestStreak: streak.best, firstClear, rewardCoins };
+}
+
 function quickScenarioAfter(id) {
   const index = QUICK_SHIFT_SCENARIOS.findIndex((scenario) => scenario.id === id);
   if (index < 0) return nextQuickScenario();
@@ -890,6 +978,7 @@ function quickSpecialGoalCompleted(scenario, success) {
     happy: state.happyGuests,
     combo: state.maxCombo,
     regular: state.typeCounts.regular,
+    stain: state.dirtCleanCounts.stain,
   };
   return (Number(values[goal.kind]) || 0) >= (Number(goal.target) || 1);
 }
@@ -925,6 +1014,7 @@ function updateQuickProgress(success, rank) {
     achievedAt: newBest ? new Date().toISOString() : previous.achievedAt,
   };
   const totalStars = quickTotalStars(progression);
+  const daily = updateDailyQuickProgress(success, stars);
   const rewards = [];
   QUICK_STAR_MILESTONES.forEach((milestone) => {
     if (totalStars < milestone.stars || quick.claimedMilestones.includes(milestone.stars)) return;
@@ -947,7 +1037,8 @@ function updateQuickProgress(success, rank) {
     wrongDelta: previous.plays ? state.wrongActions - previous.lastWrongActions : null,
     firstActionDelta: previous.plays && previous.lastFirstActionMs !== null && state.firstActionMs !== null ? state.firstActionMs - previous.lastFirstActionMs : null,
     rewards,
-    rewardCoins: rewards.reduce((total, reward) => total + reward.coins, 0),
+    daily,
+    rewardCoins: rewards.reduce((total, reward) => total + reward.coins, 0) + (daily?.rewardCoins || 0),
   };
 }
 
@@ -962,18 +1053,18 @@ function renderQuickScenarioIdentity() {
   els.quickScenarioRibbon.setAttribute("aria-label", `${scenario.title}, 특별 규칙 ${scenario.ruleLabel}`);
 }
 
-function startQuickScenario(scenario) {
+function startQuickScenario(scenario, options = {}) {
   state.mode = "quick";
   state.difficulty = scenario.difficulty;
   state.best = state.progression.records.quick;
   state.shiftObjectives = scenario.objectiveIds.map((id) => scaledShiftObjective(shiftObjectiveById(id), "quick")).filter(Boolean);
   state.objectiveResults = [];
   const condition = { id: scenario.condition, ...STORE_CONDITIONS[scenario.condition] };
-  startGame({ condition, scenario, source: "quick" });
+  startGame({ condition, scenario, source: options.source || "quick", dailyQuick: Boolean(options.dailyQuick) });
 }
 
 function startQuickShift() {
-  startQuickScenario(nextQuickScenario());
+  startQuickScenario(todayQuickScenario(), { source: "daily", dailyQuick: true });
 }
 
 function startNextQuickShift() {
@@ -1184,6 +1275,7 @@ function guestCheckpoint(guest, now = performance.now()) {
     cycleMultiplier: guest.cycleMultiplier,
     rewardMultiplier: guest.rewardMultiplier,
     satisfaction: guest.satisfaction || 0,
+    stainGraceRemainingMs: Math.max(0, (guest.stainGraceUntil || now) - now),
   };
 }
 
@@ -1199,6 +1291,7 @@ function saveShiftCheckpoint() {
       condition: state.condition?.id || null,
       scenarioId: state.quickScenario?.id || null,
       startSource: state.startSource,
+      isDailyQuick: state.isDailyQuick,
       objectiveIds: state.shiftObjectives.map((objective) => objective.id),
       elapsedSeconds: state.elapsedSeconds,
       remainingSeconds: activeShiftDuration() === null ? null : state.seconds,
@@ -1217,6 +1310,7 @@ function saveShiftCheckpoint() {
       eventsHandled: state.eventsHandled,
       eventResponseTimes: state.eventResponseTimes,
       dirtCleanCounts: state.dirtCleanCounts,
+      stainsMissed: state.stainsMissed,
       refundCauses: state.refundCauses,
       peakQueue: state.peakQueue,
       firstActionMs: state.firstActionMs,
@@ -1315,7 +1409,7 @@ function restoreShiftCheckpoint() {
   state.shiftObjectives = (checkpoint.objectiveIds || []).map((id) => scaledShiftObjective(shiftObjectiveById(id), state.mode)).filter(Boolean);
   const condition = checkpoint.condition && STORE_CONDITIONS[checkpoint.condition] ? { id: checkpoint.condition, ...STORE_CONDITIONS[checkpoint.condition] } : currentStoreCondition();
   resetGame({ condition });
-  const scalarKeys = ["score", "refunds", "cleaned", "served", "combo", "maxCombo", "totalWaitMs", "waitSamples", "satisfactionTotal", "satisfactionCount", "happyGuests", "peakQueue", "guestSequence"];
+  const scalarKeys = ["score", "refunds", "cleaned", "served", "combo", "maxCombo", "totalWaitMs", "waitSamples", "satisfactionTotal", "satisfactionCount", "happyGuests", "peakQueue", "guestSequence", "stainsMissed"];
   scalarKeys.forEach((key) => { state[key] = Math.max(0, Number(checkpoint[key]) || 0); });
   state.elapsedSeconds = Math.max(0, Number(checkpoint.elapsedSeconds) || 0);
   state.seconds = activeShiftDuration() === null ? state.elapsedSeconds : Math.max(1, Number(checkpoint.remainingSeconds) || activeShiftDuration());
@@ -1325,7 +1419,8 @@ function restoreShiftCheckpoint() {
   state.dirtCleanCounts = { ...state.dirtCleanCounts, ...(checkpoint.dirtCleanCounts || {}) };
   state.refundCauses = { ...state.refundCauses, ...(checkpoint.refundCauses || {}) };
   state.quickScenario = quickScenarioById(checkpoint.scenarioId);
-  state.startSource = ["quick", "plan", "retry", "resume"].includes(checkpoint.startSource) ? checkpoint.startSource : "resume";
+  state.startSource = ["daily", "quick", "plan", "retry", "resume"].includes(checkpoint.startSource) ? checkpoint.startSource : "resume";
+  state.isDailyQuick = Boolean(checkpoint.isDailyQuick);
   state.firstActionMs = checkpoint.firstActionMs == null || !Number.isFinite(Number(checkpoint.firstActionMs)) ? null : Math.max(0, Number(checkpoint.firstActionMs));
   state.wrongActions = Math.max(0, Number(checkpoint.wrongActions) || 0);
   state.lastChanceUsed = Boolean(checkpoint.lastChanceUsed);
@@ -1523,7 +1618,14 @@ function showEventForecast(type, duration) {
     }, delay);
   }
   announce(`${seconds}초 뒤 ${info.title} ${info.copy}`);
-  showFirstShiftGuide("사건 예고를 보고 필요한 도구와 위치를 미리 확인하세요", 3);
+  const onboardingHints = {
+    breakdown: "고장 예고 · 정비 렌치를 미리 확인하세요",
+    blackout: "정전 예고 · 상단 차단기 위치를 확인하세요",
+    detergent: "세제 부족 예고 · 보충통과 세제 탱크를 확인하세요",
+    group: "단체 손님 예고 · 깨끗한 빈 기계를 먼저 확보하세요",
+    inspection: "위생 검사 예고 · 남은 오염부터 정리하세요",
+  };
+  showFirstShiftGuide(onboardingHints[type] || "사건 예고를 보고 필요한 도구와 위치를 미리 확인하세요", 3);
 }
 
 function hideEventForecast() {
@@ -1540,7 +1642,7 @@ function announce(message) {
 
 function showFirstShiftGuide(title, step = 0) {
   const onboarding = state.progression.onboarding;
-  if (!state.running || state.tutorialActive || onboarding.firstShiftComplete || onboarding.hintsDismissed || step < state.firstShiftHintStep) return;
+  if (!state.running || state.tutorialActive || onboarding.guidedShifts >= 3 || onboarding.hintsDismissed || step < state.firstShiftHintStep) return;
   state.firstShiftHintStep = step;
   els.firstShiftGuideTitle.textContent = title;
   els.firstShiftGuide.hidden = false;
@@ -1661,6 +1763,7 @@ function enqueueGuest() {
   els.emptyQueue.hidden = true;
   els.queueLane.appendChild(guest.el);
   updateQueueVisuals();
+  if (guest.stained) showFirstShiftGuide("얼룩 손님 발견 · 얼룩 제거제를 선택하고 손님을 누르세요", 1);
   if (state.queue.length >= 3) showFirstShiftGuide("대기 손님이 3명입니다. 깨끗한 빈 기계를 먼저 확보하세요", 2);
   playTone(330, 0.035, "sine");
 
@@ -1725,7 +1828,8 @@ function makeGuest(snapshot = null) {
   const el = els.guestTemplate.content.firstElementChild.cloneNode(true);
   const type = CONFIG.customerTypes[snapshot?.type] ? snapshot.type : chooseCustomerType();
   const typeInfo = CONFIG.customerTypes[type];
-  const stained = snapshot ? Boolean(snapshot.stained) : Math.random() < CONFIG.guest.stainedChance;
+  const stainChance = Number(state.quickScenario?.stainChance) || CONFIG.guest.stainedChance;
+  const stained = snapshot ? Boolean(snapshot.stained) : Math.random() < stainChance;
   const shirt = GUEST_COLORS.includes(snapshot?.shirt) ? snapshot.shirt : pick(GUEST_COLORS);
   const skin = SKIN_COLORS.includes(snapshot?.skin) ? snapshot.skin : pick(SKIN_COLORS);
   const hair = HAIR_COLORS.includes(snapshot?.hair) ? snapshot.hair : pick(HAIR_COLORS);
@@ -1751,11 +1855,11 @@ function makeGuest(snapshot = null) {
   el.querySelector(".guest-type-badge").textContent = typeInfo.icon;
   el.querySelector(".guest-type-badge").setAttribute("title", typeInfo.label);
   el.querySelector(".guest-bubble").textContent = stained
-    ? "이 얼룩… 뭘까?"
+    ? "전처리 부탁해요!"
     : CUSTOMER_BUBBLES[type]
       ? pick(CUSTOMER_BUBBLES[type])
       : pick(WAIT_BUBBLES);
-  el.setAttribute("aria-label", stained ? `옷에 수상한 얼룩이 있는 ${typeInfo.label}` : `대기 중인 ${typeInfo.label}`);
+  el.setAttribute("aria-label", stained ? `옷 얼룩 전처리가 필요한 ${typeInfo.label}` : `대기 중인 ${typeInfo.label}`);
   el.addEventListener("click", () => handleGuestClick(id));
 
   return {
@@ -1768,6 +1872,9 @@ function makeGuest(snapshot = null) {
     skin,
     hair,
     arrivedAt,
+    stainGraceUntil: snapshot
+      ? performance.now() + (Number.isFinite(Number(snapshot.stainGraceRemainingMs)) ? Math.max(0, Number(snapshot.stainGraceRemainingMs)) : CONFIG.guest.stainGrace)
+      : arrivedAt + CONFIG.guest.stainGrace,
     patienceMs: snapshot
       ? Math.max(1000, Number(snapshot.patienceMs) || CONFIG.guest.patience * typeInfo.patience * DIFFICULTIES[state.difficulty].patience)
       : Math.max(1000, CONFIG.guest.patience * typeInfo.patience * DIFFICULTIES[state.difficulty].patience * quickPatienceMultiplier),
@@ -1808,13 +1915,17 @@ function processQueue() {
   if (state.powerOut || state.detergentEmpty) return;
 
   const freeMachines = state.machines.filter((machine) => !machine.guest && !machine.dirt && !machine.broken);
-  const readyGuests = state.queue.filter((guest) => now - guest.arrivedAt >= CONFIG.guest.minimumWait);
-  if (!freeMachines.length || !readyGuests.length) return;
+  const guestIndex = state.queue.findIndex((guest) => now - guest.arrivedAt >= CONFIG.guest.minimumWait && (!guest.stained || guest.cleaned || now >= guest.stainGraceUntil));
+  if (!freeMachines.length || guestIndex < 0) return;
 
-  const guest = state.queue.shift();
+  const [guest] = state.queue.splice(guestIndex, 1);
   const machine = pick(freeMachines);
   guest.waitMs = now - guest.arrivedAt;
-  guest.satisfaction = calculateGuestSatisfaction(guest.waitMs, guest.cleaned, guest.patienceMs);
+  if (guest.stained && !guest.cleaned) {
+    state.stainsMissed += 1;
+    showToast("얼룩 전처리를 놓쳐 만족도가 낮아졌어요.", "bad routine", "✦", 1100);
+  }
+  guest.satisfaction = calculateGuestSatisfaction(guest.waitMs, guest.cleaned, guest.patienceMs, guest.stained);
   state.totalWaitMs += guest.waitMs;
   state.waitSamples += 1;
   guest.el.remove();
@@ -2037,16 +2148,18 @@ function handleGuestClick(id) {
     const combo = registerCleanCombo(performance.now() - guest.arrivedAt);
     const baseToolBonus = 1 + upgradeBonus("toolScoreBonuses", state.progression.upgrades.tool);
     const toolBonus = baseToolBonus + masterBonus("tool", "precision");
-    const baseEarnedPoints = Math.round(450 * baseToolBonus * combo.multiplier);
-    const earnedPoints = Math.round(450 * toolBonus * combo.multiplier);
+    const stainScenarioMultiplier = Number(state.quickScenario?.cleanStainScore) || 1;
+    const baseEarnedPoints = Math.round(450 * baseToolBonus * combo.multiplier * stainScenarioMultiplier);
+    const earnedPoints = Math.round(450 * toolBonus * combo.multiplier * stainScenarioMultiplier);
     state.masterScoreBonus.tool += Math.max(0, earnedPoints - baseEarnedPoints);
     changeScore(earnedPoints);
     scorePop(rect, `+${earnedPoints}`);
     if (combo.fast) comboPop(rect, combo.multiplier);
     cleanBurst(rect, "rainbow");
-    showToast("이스터 에그! 얼룩이 무지개로 변했어요 ✦", "secret", "🌈", 2300);
+    showToast("얼룩 전처리 완료! 무지개 보너스 획득 ✦", "secret", "🌈", 1800);
     playSecretJingle();
     syncToolTargets();
+    tutorialDidAction("guest", "stain");
     return;
   }
 
@@ -2123,11 +2236,12 @@ function machineName(machine) {
   return `${machine.type === "washer" ? "세탁기" : "건조기"} ${machine.index + 1}번`;
 }
 
-function calculateGuestSatisfaction(waitMs, cleaned, patienceMs = CONFIG.guest.patience) {
+function calculateGuestSatisfaction(waitMs, cleaned, patienceMs = CONFIG.guest.patience, stained = false) {
   const waitRatio = Math.min(1, waitMs / patienceMs);
   const waitPenalty = Math.round(waitRatio * CONFIG.satisfaction.maximumWaitPenalty);
   const stainedBonus = cleaned ? CONFIG.satisfaction.stainedBonus : 0;
-  return Math.min(100, Math.max(CONFIG.satisfaction.minimumServed, 100 - waitPenalty + stainedBonus));
+  const untreatedPenalty = stained && !cleaned ? CONFIG.satisfaction.stainedPenalty : 0;
+  return Math.min(100, Math.max(CONFIG.satisfaction.minimumServed, 100 - waitPenalty + stainedBonus - untreatedPenalty));
 }
 
 function recordSatisfaction(value) {
@@ -2240,6 +2354,8 @@ function syncToolTargets() {
   state.queue.forEach((guest) => {
     guest.el.classList.toggle("tool-linked", Boolean(interactive && state.selectedTool === "spray" && guest.stained && !guest.cleaned));
   });
+  const stainedGuestWaiting = state.queue.some((guest) => guest.stained && !guest.cleaned);
+  els.toolButtons.find((button) => button.dataset.tool === "spray")?.classList.toggle("tool-needed", Boolean(interactive && stainedGuestWaiting));
   els.detergentStation.classList.toggle("tool-linked", Boolean(interactive && state.detergentEmpty && state.selectedTool === "detergent"));
   els.breakerPanel.classList.toggle("event-target", Boolean(interactive && state.powerOut));
 }
@@ -2382,8 +2498,10 @@ function endGame(success, reason) {
     difficulty: state.difficulty,
     condition: state.condition?.id || null,
     scenarioId: state.quickScenario?.id || null,
+    isDailyQuick: state.isDailyQuick,
     objectiveIds: state.shiftObjectives.map((objective) => objective.id),
   };
+  state.resultComparison = buildResultComparison();
   const progressionResult = finalizeProgression(finalSuccess, rank, reason);
   const unlockedAchievements = progressionResult.achievements;
   state.resultLeveledUp = progressionResult.currentLevel.level > progressionResult.previousLevel;
@@ -2392,7 +2510,7 @@ function endGame(success, reason) {
   card.classList.toggle("failed", !finalSuccess);
   document.querySelector("#result-badge").textContent = finalSuccess ? "영업 완료" : "영업 종료";
   document.querySelector("#result-face").textContent = finalSuccess ? "✦" : "!";
-  document.querySelector("#result-title").textContent = finalSuccess ? "오늘 영업, 성공!" : "대기 줄이 꽉 찼어요!";
+  document.querySelector("#result-title").textContent = finalSuccess ? (state.isDailyQuick ? "오늘의 퀵, 성공!" : "오늘 영업, 성공!") : "대기 줄이 꽉 찼어요!";
   document.querySelector("#result-message").textContent = finalSuccess
     ? reason === "cashout"
       ? `${formatShiftTime(state.elapsedSeconds)} 무한 영업을 안전하게 정산했어요.`
@@ -2422,6 +2540,7 @@ function endGame(success, reason) {
   document.querySelector("#result-difficulty").textContent = `${currentGameMode().shortLabel} · ${DIFFICULTIES[state.difficulty].label}`;
   renderResultObjectives();
   renderQuickResultSummary();
+  renderResultComparison();
   updateResultAnalysis();
   renderResultMasterImpact();
   const unlockBanner = document.querySelector("#achievement-unlock-banner");
@@ -2479,11 +2598,57 @@ function renderQuickResultSummary() {
   els.quickWrongDelta.textContent = wrongDelta;
   els.quickWrongDelta.className = result.wrongDelta < 0 ? "improved" : result.wrongDelta > 0 ? "declined" : "";
   els.quickTotalStars.textContent = `${result.totalStars} / ${QUICK_SHIFT_SCENARIOS.length * 3}`;
-  els.quickRewardMessage.hidden = result.rewards.length === 0;
-  if (result.rewards.length) {
-    const rewardNames = result.rewards.map((reward) => `${reward.decorationTitle} + ◈ ${reward.coins}`).join(" · ");
-    els.quickRewardMessage.querySelector("strong").textContent = `별 누적 보상 · ${rewardNames}`;
+  const nextGoal = result.starGoals.find((goal) => !goal.completed);
+  els.quickNextStar.hidden = !nextGoal;
+  if (nextGoal) {
+    const detail = nextGoal.id === "control"
+      ? `오조작 ${state.wrongActions}회 → 2회 이하`
+      : nextGoal.id === "complete"
+        ? "45초를 끝까지 운영하기"
+        : nextGoal.label;
+    els.quickNextStar.querySelector("strong").textContent = `다음 별까지 · ${detail}`;
   }
+  const rewardMessages = [];
+  if (result.daily?.firstClear) rewardMessages.push(`오늘 첫 완주 · 연속 ${result.daily.streak}일 · ◈ ${result.daily.rewardCoins}`);
+  if (result.rewards.length) rewardMessages.push(`누적 별 · ${result.rewards.map((reward) => `${reward.decorationTitle} + ◈ ${reward.coins}`).join(" · ")}`);
+  els.quickRewardMessage.hidden = rewardMessages.length === 0;
+  if (rewardMessages.length) els.quickRewardMessage.querySelector("strong").textContent = rewardMessages.join(" / ");
+}
+
+function previousComparableShift() {
+  return state.progression.recentShifts.find((item) => item.mode === state.mode
+    && item.difficulty === state.difficulty
+    && (item.scenarioId || null) === (state.quickScenario?.id || null)) || null;
+}
+
+function buildResultComparison() {
+  const previous = previousComparableShift();
+  if (!previous) return null;
+  return {
+    score: state.score - previous.score,
+    refunds: state.refunds - previous.refunds,
+    wrongActions: state.wrongActions - previous.wrongActions,
+  };
+}
+
+function comparisonCopy(value, unit, lowerIsBetter = false) {
+  if (value === null) return "첫 기록";
+  if (value === 0) return "이전과 동일";
+  return `${value > 0 ? "+" : ""}${value.toLocaleString("ko-KR")}${unit}`;
+}
+
+function renderResultComparison() {
+  const comparison = state.resultComparison;
+  const entries = [
+    ["#result-score-compare", comparison?.score ?? null, "점", false],
+    ["#result-refund-compare", comparison?.refunds ?? null, "건", true],
+    ["#result-wrong-compare", comparison?.wrongActions ?? null, "회", true],
+  ];
+  entries.forEach(([selector, value, unit, lowerIsBetter]) => {
+    const element = document.querySelector(selector);
+    element.textContent = comparisonCopy(value, unit, lowerIsBetter);
+    element.className = value === null || value === 0 ? "" : (lowerIsBetter ? value < 0 : value > 0) ? "improved" : "declined";
+  });
 }
 
 function configureResultActions(progressionResult, isNewRecord) {
@@ -2498,12 +2663,20 @@ function configureResultActions(progressionResult, isNewRecord) {
     els.nextQuickButton.querySelector("span").textContent = `다음 퀵 · ${nextScenario.title}`;
   }
   els.restartButton.querySelector("span").textContent = isQuickShift ? "같은 퀵 재도전" : "같은 조건으로 재도전";
+  const continueForward = isQuickShift && state.quickResult.stars === 3;
+  els.nextQuickButton.classList.toggle("primary-button", continueForward);
+  els.restartButton.classList.toggle("primary-button", !continueForward);
+  els.nextQuickButton.style.order = continueForward ? "-1" : "0";
+  els.restartButton.style.order = continueForward ? "0" : "-1";
 
   state.resultUnlockTarget = null;
   if (progressionResult.currentLevel.level > progressionResult.previousLevel) {
     const decorLevel = [2, 3, 4].includes(progressionResult.currentLevel.level);
     state.resultUnlockTarget = decorLevel ? "decor-modal" : "stats-modal";
     els.resultUnlockButton.querySelector("span").textContent = `★ Lv.${progressionResult.currentLevel.level} 해금 콘텐츠 보기`;
+  } else if (state.progression.onboarding.guidedShifts === 1 && state.progression.wallet >= CONFIG.upgrades.toolCosts[0]) {
+    state.resultUnlockTarget = "shop-modal";
+    els.resultUnlockButton.querySelector("span").textContent = "⚙ 첫 수익으로 도구 강화 추천";
   } else if (progressionResult.achievements.length) {
     state.resultUnlockTarget = "achievements-modal";
     els.resultUnlockButton.querySelector("span").textContent = `♛ 새 업적 ${progressionResult.achievements.length}개 보기`;
@@ -2525,7 +2698,7 @@ function retrySameShift() {
   state.best = state.progression.records[state.mode];
   state.shiftObjectives = plan.objectiveIds.map((id) => scaledShiftObjective(shiftObjectiveById(id), state.mode)).filter(Boolean);
   const condition = plan.condition && STORE_CONDITIONS[plan.condition] ? { id: plan.condition, ...STORE_CONDITIONS[plan.condition] } : currentStoreCondition();
-  startGame({ condition, scenario: quickScenarioById(plan.scenarioId), source: "retry" });
+  startGame({ condition, scenario: quickScenarioById(plan.scenarioId), source: "retry", dailyQuick: Boolean(plan.isDailyQuick) });
 }
 
 function openFreshShiftPlan(higherDifficulty = false) {
@@ -2636,6 +2809,7 @@ function renderResultMasterImpact() {
 function resultAdvice(responseAverage, refundDirt, refundCount) {
   if (state.lastChanceSaved) return "마지막 3초를 잘 살렸어요. 다음에는 대기 4명부터 빈 기계를 확보해 더 안정적으로 완주해 보세요.";
   if (state.wrongActions >= 3) return `오조작이 ${state.wrongActions}회 있었어요. 대상 아이콘과 선택 도구의 빛 연결을 한 번 더 확인하세요.`;
+  if (state.stainsMissed >= 1) return `얼룩 손님 ${state.stainsMissed}명의 전처리를 놓쳤어요. SPRAY 표시가 보이면 얼룩 제거제를 먼저 사용하세요.`;
   if (state.peakQueue >= MAX_QUEUE) return "대기 줄이 4명일 때부터 깨끗한 빈 기계를 먼저 확보해 보세요.";
   if (state.peakQueue >= 5) return "대기 손님이 5명까지 늘었어요. 단체 손님 알림이 뜨면 오염부터 정리하세요.";
   if (refundCount >= 2) return `${DIRT_INFO[refundDirt].name} 표시를 놓쳤어요. ${TOOL_INFO[DIRT_INFO[refundDirt].tool].name} 위치를 기억해 두세요.`;
@@ -2805,10 +2979,10 @@ function defaultProgression() {
     weekly: freshWeeklyState(),
     cosmetics: { weeklyBadges: [] },
     tutorial: { completed: false, rewarded: false },
-    onboarding: { firstShiftComplete: false, hintsDismissed: false },
+    onboarding: { firstShiftComplete: false, hintsDismissed: false, guidedShifts: 0 },
     manager: { xp: 0, reputation: 0 },
     records: defaultModeRecords(),
-    quick: { records: {}, claimedMilestones: [] },
+    quick: { records: {}, claimedMilestones: [], today: freshDailyQuickState(), streak: { count: 0, best: 0, lastCompletedDate: null } },
     recentShifts: [],
     decor: {
       owned: ["sign_classic", "floor_classic", "wall_cream", "plant_green"],
@@ -2851,6 +3025,10 @@ function migrateProgressionData(saved) {
   }
   if (version < 9) {
     migrated.quick = { records: {}, claimedMilestones: [] };
+  }
+  if (version < 10) {
+    migrated.onboarding = { ...(migrated.onboarding || saved.onboarding || {}), guidedShifts: Math.min(3, Math.max(0, Number(saved.stats?.shifts) || 0)) };
+    migrated.quick = { ...(migrated.quick || saved.quick || {}), today: freshDailyQuickState(), streak: { count: 0, best: 0, lastCompletedDate: null } };
   }
   migrated.schemaVersion = Math.max(version, DATA_SCHEMA_VERSION);
   return migrated;
@@ -2904,6 +3082,14 @@ function loadProgression() {
         claimedMilestones: Array.isArray(saved.quick?.claimedMilestones)
           ? [...new Set(saved.quick.claimedMilestones.map(Number).filter((stars) => QUICK_STAR_MILESTONES.some((milestone) => milestone.stars === stars)))]
           : [],
+        today: saved.quick?.today && saved.quick.today.date === localDateKey()
+          ? { ...fallback.quick.today, ...saved.quick.today }
+          : fallback.quick.today,
+        streak: {
+          count: Math.max(0, Number(saved.quick?.streak?.count) || 0),
+          best: Math.max(0, Number(saved.quick?.streak?.best) || 0),
+          lastCompletedDate: typeof saved.quick?.streak?.lastCompletedDate === "string" ? saved.quick.streak.lastCompletedDate : null,
+        },
       },
       recentShifts: Array.isArray(saved.recentShifts) ? saved.recentShifts.slice(0, 10).map((item) => ({
         timestamp: typeof item?.timestamp === "string" ? item.timestamp : new Date().toISOString(),
@@ -2921,9 +3107,11 @@ function loadProgression() {
         duration: Math.max(0, Number(item?.duration) || GAME_MODES[item?.mode]?.seconds || GAME_SECONDS),
         condition: Object.hasOwn(STORE_CONDITIONS, item?.condition) ? item.condition : null,
         scenarioId: quickScenarioById(item?.scenarioId)?.id || null,
-        startSource: ["quick", "plan", "retry", "resume"].includes(item?.startSource) ? item.startSource : "plan",
+        startSource: ["daily", "quick", "plan", "retry", "resume"].includes(item?.startSource) ? item.startSource : "plan",
+        isDailyQuick: Boolean(item?.isDailyQuick),
         firstActionMs: item?.firstActionMs == null || !Number.isFinite(Number(item.firstActionMs)) ? null : Math.max(0, Number(item.firstActionMs)),
         wrongActions: Math.max(0, Number(item?.wrongActions) || 0),
+        stainsMissed: Math.max(0, Number(item?.stainsMissed) || 0),
         lastChanceUsed: Boolean(item?.lastChanceUsed),
         lastChanceSaved: Boolean(item?.lastChanceSaved),
         xp: Math.max(0, Number(item?.xp) || 0),
@@ -2945,6 +3133,12 @@ function loadProgression() {
       if (record.plays || record.bestScore || record.bestStars) normalizedQuickRecords[scenario.id] = record;
     });
     progression.quick.records = normalizedQuickRecords;
+    ensureDailyQuickState(progression);
+    progression.onboarding.guidedShifts = Math.min(3, Math.max(0, Number(progression.onboarding.guidedShifts) || 0));
+    progression.quick.today.attempts = Math.max(0, Number(progression.quick.today.attempts) || 0);
+    progression.quick.today.bestScore = Math.max(0, Number(progression.quick.today.bestScore) || 0);
+    progression.quick.today.bestStars = Math.min(3, Math.max(0, Number(progression.quick.today.bestStars) || 0));
+    progression.quick.today.rewarded = Boolean(progression.quick.today.rewarded);
     Object.keys(fallback.discovery).forEach((category) => {
       const validIds = CODEX_CONTENT[category].map((item) => item.id);
       const savedIds = Array.isArray(saved.discovery?.[category]) ? saved.discovery[category] : fallback.discovery[category];
@@ -3226,8 +3420,10 @@ function recordShiftHistory(success, rank, reason) {
     condition: state.condition?.id || null,
     scenarioId: state.quickScenario?.id || null,
     startSource: state.startSource,
+    isDailyQuick: state.isDailyQuick,
     firstActionMs: state.firstActionMs,
     wrongActions: state.wrongActions,
+    stainsMissed: state.stainsMissed,
     lastChanceUsed: state.lastChanceUsed,
     lastChanceSaved: state.lastChanceSaved,
     xp: state.shiftXp,
@@ -3273,6 +3469,7 @@ function finalizeProgression(success, rank, reason) {
   progression.manager.xp += state.shiftXp;
   progression.manager.reputation = Math.max(0, progression.manager.reputation + state.shiftReputation);
   progression.onboarding.firstShiftComplete = true;
+  progression.onboarding.guidedShifts = Math.min(3, Math.max(0, Number(progression.onboarding.guidedShifts) || 0) + 1);
   recordShiftHistory(success, rank, reason);
   recordWeeklyPace();
   if (success) advanceWeeklyGoal("shift", 1);
@@ -3403,18 +3600,22 @@ function updateOnboardingUi() {
   const needsPractice = !state.progression.tutorial.completed;
   const introCard = els.introModal.querySelector(".intro-card");
   introCard.classList.toggle("new-manager", firstVisit);
-  const scenario = nextQuickScenario();
-  const scenarioRecord = quickScenarioRecord(scenario.id);
+  const scenario = todayQuickScenario();
+  const dailyQuick = ensureDailyQuickState();
+  const streak = state.progression.quick.streak;
   const startActions = els.startButton.closest(".shift-start-actions");
   startActions.classList.toggle("single", needsPractice);
   els.startButton.dataset.accent = needsPractice ? "tutorial" : scenario.accent;
   els.homeQuickIcon.textContent = needsPractice ? "▶" : scenario.icon;
-  els.startButtonTitle.textContent = needsPractice ? "실습부터 시작하기" : "45초 바로 영업";
+  els.homeQuickKicker.textContent = needsPractice ? "PRACTICE · 7 STEPS" : "TODAY QUICK · 45 SEC";
+  els.startButtonTitle.textContent = needsPractice ? "실습부터 시작하기" : "오늘의 퀵 시프트";
   els.homeQuickDetail.textContent = needsPractice
     ? "기본 조작을 익히고 첫 영업을 준비하세요"
-    : `${scenario.title} · ★ ${scenarioRecord.bestStars}/3 · 최고 ${scenarioRecord.bestScore ? `${scenarioRecord.bestScore.toLocaleString("ko-KR")}점` : "도전 전"}`;
-  els.startButton.setAttribute("aria-label", needsPractice ? "실습 튜토리얼 시작" : `45초 바로 영업, ${scenario.title}`);
-  els.startButton.title = needsPractice ? "실습 튜토리얼 시작" : `${scenario.title} · ${scenario.ruleLabel} · 누적 별 ${quickTotalStars()}개`;
+    : `${scenario.title} · 오늘 ★ ${dailyQuick.bestStars}/3 · ${dailyQuick.rewarded ? "보상 완료" : "첫 완주 보상 대기"}`;
+  els.homeQuickStreak.hidden = needsPractice;
+  els.homeQuickStreak.textContent = `연속 ${streak.count}일 · 최고 ${streak.best}일`;
+  els.startButton.setAttribute("aria-label", needsPractice ? "실습 튜토리얼 시작" : `오늘의 45초 퀵 시프트, ${scenario.title}`);
+  els.startButton.title = needsPractice ? "실습 튜토리얼 시작" : `${scenario.title} · ${scenario.ruleLabel} · 오늘 최고 ${dailyQuick.bestScore.toLocaleString("ko-KR")}점 · 누적 별 ${quickTotalStars()}개`;
   els.openPrepButton.hidden = needsPractice;
   els.skipOnboardingButton.hidden = !needsPractice;
   els.tutorialButton.innerHTML = needsPractice ? "<span>▶</span>실습 튜토리얼" : "<span>↻</span>튜토리얼 다시 보기";
@@ -3443,9 +3644,10 @@ function renderShiftHistory() {
       const difficulty = DIFFICULTIES[item.difficulty]?.label || "표준 영업";
       const mode = GAME_MODES[item.mode]?.shortLabel || "75초";
       const quickTag = item.scenarioId ? ` · ${quickScenarioById(item.scenarioId)?.title || "퀵 시프트"}` : "";
+      const dailyTag = item.isDailyQuick ? " · 오늘의 퀵" : "";
       const saveTag = item.lastChanceSaved ? " · LAST SAVE" : "";
       const objectiveCopy = Number(item.objectiveCount) ? ` · 목표 ${Number(item.objectivesCompleted) || 0}/${Number(item.objectiveCount)}` : "";
-      return `<article class="${item.success ? "success" : "failed"}"><span>${item.success ? item.rank : "F"}</span><div><strong>${item.success ? "영업 완주" : "대기 초과"}${saveTag}</strong><small>${dateLabel} · ${mode} · ${difficulty}${quickTag}${objectiveCopy}</small></div><em><b>${(Number(item.score) || 0).toLocaleString("ko-KR")}</b>점<small>환불 ${Number(item.refunds) || 0} · 오조작 ${Number(item.wrongActions) || 0}</small></em></article>`;
+      return `<article class="${item.success ? "success" : "failed"}"><span>${item.success ? item.rank : "F"}</span><div><strong>${item.success ? "영업 완주" : "대기 초과"}${saveTag}</strong><small>${dateLabel} · ${mode} · ${difficulty}${quickTag}${dailyTag}${objectiveCopy}</small></div><em><b>${(Number(item.score) || 0).toLocaleString("ko-KR")}</b>점<small>환불 ${Number(item.refunds) || 0} · 오조작 ${Number(item.wrongActions) || 0}</small></em></article>`;
     }).join("")
     : "<p class=\"history-empty\">아직 저장된 영업 기록이 없습니다.</p>";
 
@@ -4326,7 +4528,7 @@ els.skipOnboardingButton.addEventListener("click", () => openPrepModal(false));
 els.tutorialButton.addEventListener("click", startTutorial);
 els.helpTutorialButton.addEventListener("click", startTutorial);
 els.tutorialExitButton.addEventListener("click", exitTutorial);
-els.tutorialFinishButton.addEventListener("click", exitTutorial);
+els.tutorialFinishButton.addEventListener("click", finishTutorialFlow);
 els.restartButton.addEventListener("click", retrySameShift);
 els.nextQuickButton.addEventListener("click", startNextQuickShift);
 els.resultHomeButton.addEventListener("click", returnHomeFromResult);
