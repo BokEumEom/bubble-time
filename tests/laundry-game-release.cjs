@@ -64,6 +64,11 @@ const pngSize = (file) => {
   "master-hud-badges",
   "prep-master-loadout",
   "result-master-impact",
+  "open-prep-button",
+  "last-chance-alert",
+  "result-first-action",
+  "result-wrong-actions",
+  "result-last-save",
 ].forEach((id) => assert.match(html, new RegExp(`id=["']${id}["']`), `${id} UI가 필요합니다.`));
 
 assert.equal(manifest.display, "standalone", "PWA는 독립 실행형으로 열려야 합니다.");
@@ -75,7 +80,14 @@ assert.ok(manifest.screenshots.some((item) => item.form_factor === "narrow"), "�
   .forEach((asset) => assert.match(worker, new RegExp(asset.replace(".", "\\.")), `${asset}이 오프라인 캐시에 포함되어야 합니다.`));
 
 assert.match(script, /DATA_SCHEMA_VERSION\s*=\s*8/, "마스터 개조 저장을 위한 데이터 스키마 버전 8이 필요합니다.");
-assert.match(script, /APP_VERSION\s*=\s*"2\.16\.0"/, "마스터 피드백·경제 밸런스 업데이트 버전 2.16.0이 필요합니다.");
+assert.match(script, /APP_VERSION\s*=\s*"2\.17\.0"/, "퀵 시프트·LAST SAVE 업데이트 버전 2.17.0이 필요합니다.");
+assert.match(script, /QUICK_SHIFT_SCENARIOS/, "순환형 45초 퀵 시프트 시나리오가 필요합니다.");
+assert.match(script, /startQuickShift/, "홈 원터치 퀵 시프트 시작 함수가 필요합니다.");
+assert.match(script, /beginLastChance/, "대기 한계의 3초 LAST SAVE가 필요합니다.");
+assert.match(script, /completeLastChance/, "LAST SAVE 구조 성공 처리가 필요합니다.");
+assert.match(script, /CLEAN_COMPLETION_VIBRATIONS/, "오염별 청소 진동 피드백이 필요합니다.");
+assert.match(script, /firstActionMs/, "첫 유효 행동 지표 저장이 필요합니다.");
+assert.match(script, /wrongActions/, "오조작 지표 저장이 필요합니다.");
 assert.match(config, /maxLevel:\s*8/, "가게 업그레이드는 8단계까지 제공해야 합니다.");
 assert.match(config, /machineCosts:\s*Object\.freeze\(\[[^\]]*1800\]\)/, "고속 모터 8단계 비용표가 필요합니다.");
 assert.match(config, /toolCosts:\s*Object\.freeze\(\[[^\]]*1600\]\)/, "청소 도구 8단계 비용표가 필요합니다.");

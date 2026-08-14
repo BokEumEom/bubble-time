@@ -319,6 +319,9 @@ async function run() {
       utilityGap: parseFloat(getComputedStyle(document.querySelector('.intro-utility-actions')).gap),
       managerWidth: document.querySelector('#mobile-manager-button').getBoundingClientRect().width,
       startWidth: document.querySelector('#start-button').getBoundingClientRect().width,
+      quickLabel: document.querySelector('#start-button').innerText,
+      planVisible: !document.querySelector('#open-prep-button').hidden,
+      planHeight: document.querySelector('#open-prep-button').getBoundingClientRect().height,
       utilityWidth: document.querySelector('.intro-utility-actions').getBoundingClientRect().width,
       animation: getComputedStyle(document.querySelector('#intro-modal')).animationName
     };
@@ -334,6 +337,9 @@ async function run() {
   assert.equal(mobileHome.utilityGap, 8, "모바일 홈의 보조 버튼 간격은 8px로 일정해야 합니다.");
   assert.ok(mobileHome.managerWidth >= 350, "모바일 MANAGER DESK 버튼은 좌우 콘텐츠 폭을 넓게 사용해야 합니다.");
   assert.ok(mobileHome.startWidth >= 350, "모바일 영업 준비 버튼은 좌우 콘텐츠 폭을 넓게 사용해야 합니다.");
+  assert.match(mobileHome.quickLabel, /45초 바로 영업/, "재방문자 홈의 주 행동은 45초 퀵 시프트여야 합니다.");
+  assert.equal(mobileHome.planVisible, true, "시간·난이도 계획 선택은 퀵 시작과 분리해 유지해야 합니다.");
+  assert.equal(mobileHome.planHeight, 54, "계획 선택도 퀵 시작과 같은 터치 높이를 사용해야 합니다.");
   assert.ok(mobileHome.utilityWidth >= 350, "모바일 보조 버튼 묶음도 좌우 콘텐츠 폭을 넓게 사용해야 합니다.");
   assert.equal(mobileHome.animation, "none", "모바일 홈은 복귀할 때 다시 페이드되어 깜박이지 않아야 합니다.");
 
@@ -372,7 +378,7 @@ async function run() {
   await waitFor("document.querySelector('#intro-modal').classList.contains('open') && !document.querySelector('#stats-modal').classList.contains('open')");
 
   const prepEntering = await evaluate(`(() => {
-    document.querySelector('#start-button').click();
+    document.querySelector('#open-prep-button').click();
     return document.querySelector('#prep-modal').classList.contains('mobile-page-entering');
   })()`);
   assert.equal(prepEntering, true, "영업 준비도 오른쪽에서 들어오는 페이지여야 합니다.");
@@ -778,12 +784,26 @@ async function run() {
   `);
   await waitFor("document.readyState === 'complete' && typeof state !== 'undefined'");
   console.log("UI 회귀: 저장 데이터 이전 확인");
-  const migrated = await evaluate("({ version: state.progression.schemaVersion, objectives: state.progression.stats.objectives, standardRecord: state.progression.records.standard.score, lastMode: state.progression.preferences.lastMode, master: state.progression.master })");
+  const migrated = await evaluate("({ version: state.progression.schemaVersion, objectives: state.progression.stats.objectives, quickShifts: state.progression.stats.quickShifts, standardRecord: state.progression.records.standard.score, lastMode: state.progression.preferences.lastMode, master: state.progression.master })");
   assert.equal(migrated.version, 8, "v5 저장 데이터는 v8으로 이전되어야 합니다.");
   assert.equal(migrated.objectives, 0, "이전 데이터의 목표 통계 기본값은 0이어야 합니다.");
+  assert.equal(migrated.quickShifts, 0, "이전 데이터에는 퀵 시프트 순환 횟수 기본값이 추가되어야 합니다.");
   assert.equal(migrated.standardRecord, 4200, "기존 최고 기록은 75초 기본 모드 기록으로 이전되어야 합니다.");
   assert.equal(migrated.lastMode, "standard", "이전 데이터는 75초 기본 영업을 유지해야 합니다.");
   assert.deepEqual(migrated.master, { machine: { path: null, level: 0 }, tool: { path: null, level: 0 } }, "이전 저장 데이터에는 안전한 마스터 개조 기본값이 추가되어야 합니다.");
+
+  console.log("UI 회귀: 원터치 퀵 시프트와 LAST SAVE 확인");
+  await evaluate("document.querySelector('#start-button').click(); clearGameTimers()");
+  const quickStart = await evaluate("({ mode: state.mode, seconds: state.seconds, scenario: state.quickScenario?.id, prepOpen: document.querySelector('#prep-modal').classList.contains('open') })");
+  assert.equal(quickStart.mode, "quick", "홈 주 버튼은 45초 빠른 영업을 시작해야 합니다.");
+  assert.equal(quickStart.seconds, 45, "원터치 퀵 시프트는 45초여야 합니다.");
+  assert.ok(quickStart.scenario, "원터치 퀵 시프트에는 설계된 시나리오가 배정되어야 합니다.");
+  assert.equal(quickStart.prepOpen, false, "원터치 퀵 시프트는 준비 화면을 거치지 않아야 합니다.");
+  await evaluate("while (state.queue.length < MAX_QUEUE) enqueueGuest()");
+  assert.equal(await evaluate("state.lastChanceActive && !document.querySelector('#last-chance-alert').hidden"), true, "대기 6명 첫 도달 시 3초 LAST SAVE가 보여야 합니다.");
+  await evaluate("const savedGuest = state.queue.shift(); savedGuest.el.remove(); updateQueueVisuals()");
+  assert.equal(await evaluate("state.lastChanceSaved && state.score === 180"), true, "빈 기계를 확보하면 LAST SAVE 보너스와 함께 구조되어야 합니다.");
+  await evaluate("resetGame(); document.querySelector('#intro-modal').classList.add('open'); document.querySelector('#intro-modal').setAttribute('aria-hidden', 'false')");
 
   if (process.env.CAPTURE_PWA_ASSETS === "1") {
     await evaluate("clearShiftCheckpoint(); updateCheckpointUi()");

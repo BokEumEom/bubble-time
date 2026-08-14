@@ -7,7 +7,7 @@ const STORAGE_KEY = "bubbleTime75.bestRecord.v1";
 const PROGRESSION_KEY = "bubbleTime75.progression.v1";
 const CHECKPOINT_KEY = "bubbleTime.shiftCheckpoint.v1";
 const SEEN_VERSION_KEY = "bubbleTime75.seenVersion";
-const APP_VERSION = "2.16.0";
+const APP_VERSION = "2.17.0";
 const DATA_SCHEMA_VERSION = 8;
 const MOBILE_PAGE_MEDIA = "(max-width: 520px)";
 const MOBILE_SLIDE_PAGE_IDS = new Set(["prep-modal", "stats-modal", "settings-modal", "help-modal", "updates-modal"]);
@@ -70,6 +70,15 @@ const STORE_CONDITIONS = {
   weekend: { icon: "%", title: "주말 할인 행사", copy: "손님이 빠르게 몰리지만 모든 응대 점수가 20% 증가합니다.", guestInterval: 0.88, dirtInterval: 1, reward: 1.2, limescaleBias: 0 },
   inspection: { icon: "◆", title: "위생 점검일", copy: "감사관과 위생 검사가 등장합니다. 오염 없는 매장을 유지하세요.", guestInterval: 1, dirtInterval: 1.04, reward: 1.08, limescaleBias: 0 },
 };
+
+const QUICK_SHIFT_SCENARIOS = Object.freeze([
+  Object.freeze({ id: "rain_rinse", icon: "💧", title: "비 오는 번개 세탁", copy: "물때를 빠르게 걷어내고 환불 없이 버티세요.", difficulty: "standard", condition: "rain", objectiveIds: ["clean_6", "refundless"], eventDeck: ["detergent", "breakdown"], dirtBias: "limescale" }),
+  Object.freeze({ id: "weekend_rush", icon: "♟", title: "주말 45초 러시", copy: "몰려드는 손님을 만족시키고 대기 줄을 지키세요.", difficulty: "rush", condition: "weekend", objectiveIds: ["happy_6", "queue_control"], eventDeck: ["group", "detergent"], customerBias: "regular" }),
+  Object.freeze({ id: "power_drill", icon: "ϟ", title: "전력 불안정", copy: "정전 예고를 읽고 사건을 빠르게 복구하세요.", difficulty: "standard", condition: "inspection", objectiveIds: ["fast_event", "refundless"], eventDeck: ["blackout", "breakdown"], dirtBias: "dust" }),
+  Object.freeze({ id: "bulk_day", icon: "▦", title: "이불 세탁의 날", copy: "대량 세탁 손님의 긴 작업 시간을 견뎌내세요.", difficulty: "calm", condition: "weekend", objectiveIds: ["happy_6", "queue_control"], eventDeck: ["group", "detergent"], customerBias: "bulk" }),
+  Object.freeze({ id: "clean_chain", icon: "⚡", title: "콤보 청소 도전", copy: "오염을 발견하는 즉시 처리해 콤보를 이어가세요.", difficulty: "standard", condition: "rain", objectiveIds: ["clean_6", "combo_6"], eventDeck: ["inspection", "detergent"], dirtBias: "limescale" }),
+  Object.freeze({ id: "regular_hour", icon: "★", title: "단골 집중 시간", copy: "단골의 긴 인내심을 활용해 안정적으로 운영하세요.", difficulty: "rush", condition: "inspection", objectiveIds: ["happy_6", "fast_event"], eventDeck: ["breakdown", "inspection"], customerBias: "regular", dirtBias: "laundry" }),
+]);
 
 const WEEKLY_EVENT_RULES = [
   { id: "mechanical", label: "설비 점검 주간", bonus: "breakdown" },
@@ -218,6 +227,13 @@ const EVENT_COMPLETION_VIBRATIONS = Object.freeze({
   inspection: [18, 12, 28],
 });
 
+const CLEAN_COMPLETION_VIBRATIONS = Object.freeze({
+  limescale: [9, 12, 9],
+  dust: 22,
+  laundry: [14, 18, 28],
+  stain: [12, 10, 18, 10, 28],
+});
+
 const CODEX_CONTENT = {
   customers: [
     { id: "normal", icon: "●", title: "일반 손님", tag: "BALANCED", description: "기본 인내심과 작업 시간을 가진 가장 익숙한 손님입니다." },
@@ -274,6 +290,14 @@ const state = {
   earningsBreakdown: {},
   masterScoreBonus: { machine: 0, tool: 0 },
   lastShiftPlan: null,
+  quickScenario: null,
+  startSource: "plan",
+  firstActionMs: null,
+  wrongActions: 0,
+  lastChanceActive: false,
+  lastChanceUsed: false,
+  lastChanceSaved: false,
+  lastChanceStartedAt: 0,
   resultUnlockTarget: null,
   resultLeveledUp: false,
   activeEvent: null,
@@ -386,6 +410,8 @@ const els = {
   eventAlertIcon: document.querySelector("#event-alert-icon"),
   eventAlertTitle: document.querySelector("#event-alert-title"),
   eventAlertCopy: document.querySelector("#event-alert-copy"),
+  lastChanceAlert: document.querySelector("#last-chance-alert"),
+  lastChanceSeconds: document.querySelector("#last-chance-seconds"),
   eventForecast: document.querySelector("#event-forecast"),
   eventForecastIcon: document.querySelector("#event-forecast-icon"),
   eventForecastTitle: document.querySelector("#event-forecast-title"),
@@ -448,6 +474,7 @@ const els = {
   mobileManagerButton: document.querySelector("#mobile-manager-button"),
   resultStatsButton: document.querySelector("#result-stats-button"),
   skipOnboardingButton: document.querySelector("#skip-onboarding-button"),
+  openPrepButton: document.querySelector("#open-prep-button"),
   screenReaderLive: document.querySelector("#screen-reader-live"),
   highContrastSetting: document.querySelector("#high-contrast-setting"),
   textSizeSetting: document.querySelector("#text-size-setting"),
@@ -535,6 +562,14 @@ function resetGame(options = {}) {
   state.objectiveRewardXp = 0;
   state.earningsBreakdown = {};
   state.masterScoreBonus = { machine: 0, tool: 0 };
+  state.quickScenario = null;
+  state.startSource = "plan";
+  state.firstActionMs = null;
+  state.wrongActions = 0;
+  state.lastChanceActive = false;
+  state.lastChanceUsed = false;
+  state.lastChanceSaved = false;
+  state.lastChanceStartedAt = 0;
   state.resultUnlockTarget = null;
   state.resultLeveledUp = false;
   state.activeEvent = null;
@@ -570,6 +605,9 @@ function resetGame(options = {}) {
   els.detergentGauge.style.width = "100%";
   els.detergentStation.setAttribute("aria-label", "세제 탱크, 현재 100퍼센트");
   els.eventAlert.hidden = true;
+  els.lastChanceAlert.hidden = true;
+  els.lastChanceSeconds.textContent = "3";
+  els.playArea.classList.remove("last-save-active", "last-save-rescued");
   hideEventForecast();
   els.firstShiftGuide.hidden = true;
   els.shiftObjectivesHud.hidden = true;
@@ -594,6 +632,9 @@ function startGame(options = {}) {
   if (!state.shiftObjectives.length) prepareShiftObjectives(true);
   clearShiftCheckpoint();
   resetGame({ condition: options.condition });
+  state.quickScenario = options.scenario || null;
+  state.startSource = options.source || "plan";
+  if (state.quickScenario?.eventDeck?.length) state.eventDeck = [...state.quickScenario.eventDeck];
   state.running = true;
   state.startedAt = performance.now();
   els.pauseButton.disabled = false;
@@ -601,7 +642,7 @@ function startGame(options = {}) {
   els.resultModal.classList.remove("open");
   els.resultModal.setAttribute("aria-hidden", "true");
   playTone(520, 0.08, "sine", 0.05);
-  showToast("영업 시작! 오염 표시를 잘 살펴보세요.", "good", "✦", 1700);
+  showToast(state.quickScenario ? `${state.quickScenario.title} 시작! ${state.quickScenario.copy}` : "영업 시작! 오염 표시를 잘 살펴보세요.", "good", state.quickScenario?.icon || "✦", state.quickScenario ? 2300 : 1700);
   renderShiftObjectiveHud();
   scheduleGameLoops(true);
   saveShiftCheckpoint();
@@ -759,6 +800,27 @@ function prepareShiftObjectives(force = false) {
   state.objectiveResults = [];
 }
 
+function quickScenarioById(id) {
+  return QUICK_SHIFT_SCENARIOS.find((scenario) => scenario.id === id) || null;
+}
+
+function nextQuickScenario() {
+  const completedQuickShifts = Math.max(0, Number(state.progression.stats.quickShifts) || 0);
+  const index = (seedFromKey(localDateKey()) + completedQuickShifts) % QUICK_SHIFT_SCENARIOS.length;
+  return QUICK_SHIFT_SCENARIOS[index];
+}
+
+function startQuickShift() {
+  const scenario = nextQuickScenario();
+  state.mode = "quick";
+  state.difficulty = scenario.difficulty;
+  state.best = state.progression.records.quick;
+  state.shiftObjectives = scenario.objectiveIds.map((id) => scaledShiftObjective(shiftObjectiveById(id), "quick")).filter(Boolean);
+  state.objectiveResults = [];
+  const condition = { id: scenario.condition, ...STORE_CONDITIONS[scenario.condition] };
+  startGame({ condition, scenario, source: "quick" });
+}
+
 function shiftObjectiveProgress(objective, success = null) {
   const values = {
     cleaned: state.cleaned,
@@ -907,7 +969,7 @@ function confirmPreparedShift() {
   saveProgression();
   els.prepModal.classList.remove("open");
   els.prepModal.setAttribute("aria-hidden", "true");
-  startGame();
+  startGame({ source: "plan" });
 }
 
 function scheduleGameLoops(initial = false) {
@@ -976,6 +1038,8 @@ function saveShiftCheckpoint() {
       mode: state.mode,
       difficulty: state.difficulty,
       condition: state.condition?.id || null,
+      scenarioId: state.quickScenario?.id || null,
+      startSource: state.startSource,
       objectiveIds: state.shiftObjectives.map((objective) => objective.id),
       elapsedSeconds: state.elapsedSeconds,
       remainingSeconds: activeShiftDuration() === null ? null : state.seconds,
@@ -996,6 +1060,10 @@ function saveShiftCheckpoint() {
       dirtCleanCounts: state.dirtCleanCounts,
       refundCauses: state.refundCauses,
       peakQueue: state.peakQueue,
+      firstActionMs: state.firstActionMs,
+      wrongActions: state.wrongActions,
+      lastChanceUsed: state.lastChanceUsed,
+      lastChanceSaved: state.lastChanceSaved,
       selectedTool: state.selectedTool,
       guestSequence: state.guestSequence,
       powerOut: state.powerOut,
@@ -1097,6 +1165,13 @@ function restoreShiftCheckpoint() {
   state.eventResponseTimes = Array.isArray(checkpoint.eventResponseTimes) ? checkpoint.eventResponseTimes.slice(0, 30) : [];
   state.dirtCleanCounts = { ...state.dirtCleanCounts, ...(checkpoint.dirtCleanCounts || {}) };
   state.refundCauses = { ...state.refundCauses, ...(checkpoint.refundCauses || {}) };
+  state.quickScenario = quickScenarioById(checkpoint.scenarioId);
+  state.startSource = ["quick", "plan", "retry", "resume"].includes(checkpoint.startSource) ? checkpoint.startSource : "resume";
+  state.firstActionMs = checkpoint.firstActionMs == null || !Number.isFinite(Number(checkpoint.firstActionMs)) ? null : Math.max(0, Number(checkpoint.firstActionMs));
+  state.wrongActions = Math.max(0, Number(checkpoint.wrongActions) || 0);
+  state.lastChanceUsed = Boolean(checkpoint.lastChanceUsed);
+  state.lastChanceSaved = Boolean(checkpoint.lastChanceSaved);
+  if (state.quickScenario?.eventDeck?.length) state.eventDeck = [...state.quickScenario.eventDeck];
   state.powerOut = Boolean(checkpoint.powerOut);
   state.detergentEmpty = Boolean(checkpoint.detergentEmpty);
   state.selectedTool = TOOL_INFO[checkpoint.selectedTool] ? checkpoint.selectedTool : "squeegee";
@@ -1377,6 +1452,7 @@ function finishStoreEvent(type, points, rect, message) {
     state.eventResponseTimes.push({ type, ms: performance.now() - state.activeEvent.startedAt });
   }
   state.eventsHandled[type] += 1;
+  markFirstAction();
   advanceWeeklyGoal("event", 1);
   state.activeEvent = null;
   syncToolTargets();
@@ -1419,6 +1495,7 @@ function spawnGuest() {
 
 function enqueueGuest() {
   if (!state.running || state.paused) return null;
+  if (state.lastChanceActive && state.queue.length >= MAX_QUEUE) return null;
   const guest = makeGuest();
   state.queue.push(guest);
   els.emptyQueue.hidden = true;
@@ -1428,10 +1505,58 @@ function enqueueGuest() {
   playTone(330, 0.035, "sine");
 
   if (state.queue.length >= MAX_QUEUE) {
-    endGame(false, "queue");
+    if (!state.lastChanceUsed) beginLastChance();
+    else if (!state.lastChanceActive) endGame(false, "queue");
     return guest;
   }
   return guest;
+}
+
+function beginLastChance() {
+  if (!state.running || state.lastChanceActive || state.lastChanceUsed) return;
+  state.lastChanceActive = true;
+  state.lastChanceUsed = true;
+  state.lastChanceStartedAt = performance.now();
+  els.lastChanceAlert.hidden = false;
+  els.lastChanceSeconds.textContent = "3";
+  els.playArea.classList.add("last-save-active");
+  els.pauseButton.disabled = true;
+  announce("LAST SAVE. 3초 안에 빈 기계를 확보하세요.");
+  playTone(220, 0.12, "square", 0.045);
+  playTone(330, 0.1, "square", 0.035, 0.14);
+  vibrate([45, 30, 45]);
+  updateLastChanceCountdown();
+}
+
+function updateLastChanceCountdown() {
+  if (!state.running || state.paused || !state.lastChanceActive) return;
+  const remainingMs = Math.max(0, 3000 - (performance.now() - state.lastChanceStartedAt));
+  els.lastChanceSeconds.textContent = String(Math.max(0, Math.ceil(remainingMs / 1000)));
+  els.lastChanceAlert.style.setProperty("--last-save-progress", `${(remainingMs / 3000) * 100}%`);
+  if (remainingMs <= 0) {
+    state.lastChanceActive = false;
+    els.lastChanceAlert.hidden = true;
+    els.playArea.classList.remove("last-save-active");
+    endGame(false, "queue");
+    return;
+  }
+  scheduleTimeout(updateLastChanceCountdown, 100);
+}
+
+function completeLastChance() {
+  if (!state.lastChanceActive) return;
+  state.lastChanceActive = false;
+  state.lastChanceSaved = true;
+  els.lastChanceAlert.hidden = true;
+  els.playArea.classList.remove("last-save-active");
+  els.playArea.classList.add("last-save-rescued");
+  els.pauseButton.disabled = false;
+  changeScore(180);
+  scorePop(els.playArea.getBoundingClientRect(), "+180");
+  showToast("LAST SAVE! 영업을 구조했어요 · +180", "secret", "⚡", 1800);
+  playSecretJingle();
+  vibrate([18, 18, 32, 18, 55]);
+  window.setTimeout(() => els.playArea.classList.remove("last-save-rescued"), 900);
 }
 
 function makeGuest(snapshot = null) {
@@ -1489,6 +1614,7 @@ function chooseCustomerType() {
   const collectorUnlocked = managerLevelInfo().level >= 3;
   const collectorChance = collectorUnlocked ? (state.condition?.id === "inspection" ? 0.055 : weeklyRule.id === "hygiene" ? 0.03 : 0.012) : 0;
   if (Math.random() < collectorChance) return "collector";
+  if (CONFIG.customerTypes[state.quickScenario?.customerBias] && Math.random() < 0.42) return state.quickScenario.customerBias;
   const roll = Math.random();
   let cumulative = 0;
   for (const [type, info] of Object.entries(CONFIG.customerTypes)) {
@@ -1624,8 +1750,9 @@ function spawnDirt() {
 
   if (cleanMachines.length && dirtyCount < maximumDirtyMachines()) {
     const machine = pick(cleanMachines);
+    const scenarioBias = DIRT_INFO[state.quickScenario?.dirtBias] && Math.random() < 0.58 ? state.quickScenario.dirtBias : null;
     const rainBias = state.condition?.id === "rain" && Math.random() < state.condition.limescaleBias;
-    const types = rainBias ? ["limescale"] : machine.guest && Math.random() < 0.5 ? ["limescale", "dust"] : Object.keys(DIRT_INFO);
+    const types = scenarioBias ? [scenarioBias] : rainBias ? ["limescale"] : machine.guest && Math.random() < 0.5 ? ["limescale", "dust"] : Object.keys(DIRT_INFO);
     makeDirty(machine, pick(types));
   }
 
@@ -1683,7 +1810,8 @@ function handleMachineClick(id) {
     return;
   }
 
-  const dirt = DIRT_INFO[machine.dirt];
+  const dirtType = machine.dirt;
+  const dirt = DIRT_INFO[dirtType];
   if (dirt.tool !== state.selectedTool) {
     penalizeWrong(machine.el, `${dirt.name}에는 ${TOOL_INFO[dirt.tool].name}가 필요해요!`, 100);
     return;
@@ -1697,25 +1825,26 @@ function handleMachineClick(id) {
   const baseEarnedPoints = Math.round(140 * baseToolBonus * combo.multiplier);
   const earnedPoints = Math.round(140 * toolBonus * combo.multiplier);
   state.masterScoreBonus.tool += Math.max(0, earnedPoints - baseEarnedPoints);
-  state.dirtCleanCounts[machine.dirt] += 1;
+  state.dirtCleanCounts[dirtType] += 1;
   machine.dirt = null;
   machine.dirtCreatedAt = 0;
   delete machine.el.dataset.dirt;
   machine.el.classList.remove("dirty");
-  machine.el.classList.add("clean-hit");
+  machine.el.classList.add("clean-hit", `clean-hit-${dirtType}`);
   machine.el.querySelector(".machine-label small").textContent = machine.guest ? "작동 중" : "비어 있음";
   machine.el.setAttribute("aria-label", machineAriaLabel(machine));
-  window.setTimeout(() => machine.el.classList.remove("clean-hit"), 480);
+  window.setTimeout(() => machine.el.classList.remove("clean-hit", `clean-hit-${dirtType}`), 560);
   state.cleaned += 1;
+  markFirstAction();
   advanceDailyChallenge("clean", 1);
   advanceWeeklyGoal("clean", 1);
   changeScore(earnedPoints);
   scorePop(rect, `+${earnedPoints}`);
   if (combo.fast) comboPop(rect, combo.multiplier);
-  cleanBurst(rect, dirt.tool);
+  cleanBurst(rect, dirtType);
   showToast(combo.fast && state.combo >= 2 ? `${dirt.name} 제거 · ${state.combo} COMBO!` : `${dirt.name} 제거 완료!`, "good", "✓", 950);
   playCleanSound(dirt.tool, state.combo);
-  vibrate(12);
+  vibrate(CLEAN_COMPLETION_VIBRATIONS[dirtType] || 12);
   syncToolTargets();
   tutorialDidAction("clean", dirt.tool === "squeegee" ? "limescale" : dirt.tool === "duster" ? "dust" : "laundry");
   checkInspectionCompletion();
@@ -1734,6 +1863,7 @@ function handleGuestClick(id) {
     guest.el.querySelector(".guest-bubble").textContent = "우와, 무지개 셔츠!";
     guest.el.setAttribute("aria-label", "얼룩을 지워 반짝이는 손님");
     state.dirtCleanCounts.stain += 1;
+    markFirstAction();
     const rect = guest.el.getBoundingClientRect();
     const combo = registerCleanCombo(performance.now() - guest.arrivedAt);
     const baseToolBonus = 1 + upgradeBonus("toolScoreBonuses", state.progression.upgrades.tool);
@@ -1760,6 +1890,7 @@ function handleGuestClick(id) {
 }
 
 function penalizeWrong(element, message, amount) {
+  state.wrongActions += 1;
   element.classList.remove("wrong-hit");
   void element.offsetWidth;
   element.classList.add("wrong-hit");
@@ -1772,6 +1903,11 @@ function penalizeWrong(element, message, amount) {
   playTone(165, 0.08, "square");
   vibrate([20, 30, 20]);
   shakePlayArea();
+}
+
+function markFirstAction() {
+  if (state.firstActionMs !== null || !state.startedAt) return;
+  state.firstActionMs = Math.max(0, performance.now() - state.startedAt);
 }
 
 function animateWalker(guest, machine, direction) {
@@ -1880,6 +2016,7 @@ function updateQueueVisuals() {
     pip.classList.toggle("active", index < count);
     pip.classList.toggle("danger", index < count && count >= 5);
   });
+  if (state.lastChanceActive && count < MAX_QUEUE) completeLastChance();
 }
 
 function updateHud() {
@@ -1977,14 +2114,16 @@ function cleanBurst(rect, theme) {
   burst.style.top = `${rect.top - areaRect.top + rect.height / 2}px`;
 
   const symbol = document.createElement("b");
-  const symbols = { rainbow: "🌈", basket: "✓", breakdown: "⚙", blackout: "ϟ", detergent: "▰" };
+  const symbols = { limescale: "≈", dust: "☁", laundry: "🧦", rainbow: "🌈", basket: "✓", breakdown: "⚙", blackout: "ϟ", detergent: "▰" };
   symbol.textContent = symbols[theme] || "✦";
   burst.appendChild(symbol);
 
-  for (let index = 0; index < 12; index += 1) {
+  const particleCounts = { limescale: 10, dust: 16, laundry: 8 };
+  const particleCount = particleCounts[theme] || 12;
+  for (let index = 0; index < particleCount; index += 1) {
     const particle = document.createElement("i");
-    const angle = (Math.PI * 2 * index) / 12 + randomBetween(-0.18, 0.18);
-    const distance = randomBetween(34, 72);
+    const angle = (Math.PI * 2 * index) / particleCount + randomBetween(-0.18, 0.18);
+    const distance = randomBetween(theme === "dust" ? 28 : 34, theme === "laundry" ? 60 : 72);
     particle.style.setProperty("--particle-x", `${Math.cos(angle) * distance}px`);
     particle.style.setProperty("--particle-y", `${Math.sin(angle) * distance}px`);
     particle.style.setProperty("--particle-delay", `${randomBetween(0, 90)}ms`);
@@ -2025,12 +2164,14 @@ function resumeGame() {
     if (machine.broken) machine.brokenAt += pausedDuration;
   });
   if (state.activeEvent) state.activeEvent.startedAt += pausedDuration;
+  if (state.lastChanceActive) state.lastChanceStartedAt += pausedDuration;
   state.paused = false;
   state.pausedAt = 0;
   els.pauseModal.classList.remove("open");
   els.pauseModal.setAttribute("aria-hidden", "true");
   els.pauseButton.disabled = false;
   scheduleGameLoops(false);
+  if (state.lastChanceActive) updateLastChanceCountdown();
   startBgm();
   showToast("다시 영업을 시작합니다!", "good", "▶", 950);
 }
@@ -2047,6 +2188,9 @@ function endGame(success, reason) {
   els.pauseModal.setAttribute("aria-hidden", "true");
   hideEventAlert();
   hideEventForecast();
+  state.lastChanceActive = false;
+  els.lastChanceAlert.hidden = true;
+  els.playArea.classList.remove("last-save-active");
   els.firstShiftGuide.hidden = true;
   els.powerOverlay.classList.remove("active");
   els.breakerPanel.classList.remove("active");
@@ -2065,6 +2209,7 @@ function endGame(success, reason) {
     mode: state.mode,
     difficulty: state.difficulty,
     condition: state.condition?.id || null,
+    scenarioId: state.quickScenario?.id || null,
     objectiveIds: state.shiftObjectives.map((objective) => objective.id),
   };
   const progressionResult = finalizeProgression(finalSuccess, rank, reason);
@@ -2162,7 +2307,7 @@ function retrySameShift() {
   state.best = state.progression.records[state.mode];
   state.shiftObjectives = plan.objectiveIds.map((id) => scaledShiftObjective(shiftObjectiveById(id), state.mode)).filter(Boolean);
   const condition = plan.condition && STORE_CONDITIONS[plan.condition] ? { id: plan.condition, ...STORE_CONDITIONS[plan.condition] } : currentStoreCondition();
-  startGame({ condition });
+  startGame({ condition, scenario: quickScenarioById(plan.scenarioId), source: "retry" });
 }
 
 function openFreshShiftPlan(higherDifficulty = false) {
@@ -2250,6 +2395,9 @@ function updateResultAnalysis() {
   document.querySelector("#result-missed-dirt").textContent = missedCount ? `${DIRT_INFO[missedDirt].name} ${missedCount}건` : "없음";
   document.querySelector("#result-refund-cause").textContent = refundCount ? `${DIRT_INFO[refundDirt].name} ${refundCount}건` : "환불 없음";
   document.querySelector("#result-peak-queue").textContent = String(state.peakQueue);
+  document.querySelector("#result-first-action").textContent = state.firstActionMs === null ? "–" : `${(state.firstActionMs / 1000).toFixed(1)}초`;
+  document.querySelector("#result-wrong-actions").textContent = `${state.wrongActions}회`;
+  document.querySelector("#result-last-save").textContent = state.lastChanceSaved ? "구조 성공" : state.lastChanceUsed ? "구조 실패" : "미사용";
   document.querySelector("#result-advice").textContent = resultAdvice(responseAverage, refundDirt, refundCount);
 }
 
@@ -2268,6 +2416,8 @@ function renderResultMasterImpact() {
 }
 
 function resultAdvice(responseAverage, refundDirt, refundCount) {
+  if (state.lastChanceSaved) return "마지막 3초를 잘 살렸어요. 다음에는 대기 4명부터 빈 기계를 확보해 더 안정적으로 완주해 보세요.";
+  if (state.wrongActions >= 3) return `오조작이 ${state.wrongActions}회 있었어요. 대상 아이콘과 선택 도구의 빛 연결을 한 번 더 확인하세요.`;
   if (state.peakQueue >= MAX_QUEUE) return "대기 줄이 4명일 때부터 깨끗한 빈 기계를 먼저 확보해 보세요.";
   if (state.peakQueue >= 5) return "대기 손님이 5명까지 늘었어요. 단체 손님 알림이 뜨면 오염부터 정리하세요.";
   if (refundCount >= 2) return `${DIRT_INFO[refundDirt].name} 표시를 놓쳤어요. ${TOOL_INFO[DIRT_INFO[refundDirt].tool].name} 위치를 기억해 두세요.`;
@@ -2417,7 +2567,7 @@ function defaultProgression() {
     wallet: 0,
     upgrades: { machine: 0, tool: 0 },
     master: { machine: { path: null, level: 0 }, tool: { path: null, level: 0 } },
-    stats: { shifts: 0, cleaned: 0, served: 0, happy: 0, regular: 0, bulk: 0, impatient: 0, earnings: 0, maxCombo: 0, objectives: 0 },
+    stats: { shifts: 0, quickShifts: 0, cleaned: 0, served: 0, happy: 0, regular: 0, bulk: 0, impatient: 0, earnings: 0, maxCombo: 0, objectives: 0 },
     achievements: [],
     discovery: { customers: ["normal"], dirt: [], events: [], upgrades: ["machine", "tool"] },
     preferences: {
@@ -2542,6 +2692,12 @@ function loadProgression() {
         mode: GAME_MODES[item?.mode] ? item.mode : "standard",
         duration: Math.max(0, Number(item?.duration) || GAME_MODES[item?.mode]?.seconds || GAME_SECONDS),
         condition: Object.hasOwn(STORE_CONDITIONS, item?.condition) ? item.condition : null,
+        scenarioId: quickScenarioById(item?.scenarioId)?.id || null,
+        startSource: ["quick", "plan", "retry", "resume"].includes(item?.startSource) ? item.startSource : "plan",
+        firstActionMs: item?.firstActionMs == null || !Number.isFinite(Number(item.firstActionMs)) ? null : Math.max(0, Number(item.firstActionMs)),
+        wrongActions: Math.max(0, Number(item?.wrongActions) || 0),
+        lastChanceUsed: Boolean(item?.lastChanceUsed),
+        lastChanceSaved: Boolean(item?.lastChanceSaved),
         xp: Math.max(0, Number(item?.xp) || 0),
         reputation: Number(item?.reputation) || 0,
         objectivesCompleted: Math.max(0, Number(item?.objectivesCompleted) || 0),
@@ -2830,6 +2986,12 @@ function recordShiftHistory(success, rank, reason) {
     mode: state.mode,
     duration: state.elapsedSeconds,
     condition: state.condition?.id || null,
+    scenarioId: state.quickScenario?.id || null,
+    startSource: state.startSource,
+    firstActionMs: state.firstActionMs,
+    wrongActions: state.wrongActions,
+    lastChanceUsed: state.lastChanceUsed,
+    lastChanceSaved: state.lastChanceSaved,
     xp: state.shiftXp,
     reputation: state.shiftReputation,
     objectivesCompleted: state.objectiveResults.filter((result) => result.completed).length,
@@ -2855,6 +3017,7 @@ function finalizeProgression(success, rank, reason) {
   state.shiftCoins = Math.max(0, Object.entries(state.earningsBreakdown).reduce((total, [key, value]) => total + (key === "penalty" ? -value : value), 0));
   progression.wallet += state.shiftCoins;
   progression.stats.shifts += success ? 1 : 0;
+  if (state.quickScenario) progression.stats.quickShifts = Math.max(0, Number(progression.stats.quickShifts) || 0) + 1;
   progression.stats.cleaned += state.cleaned;
   progression.stats.served += state.served;
   progression.stats.happy += state.happyGuests;
@@ -3000,7 +3163,11 @@ function updateOnboardingUi() {
   const needsPractice = !state.progression.tutorial.completed;
   const introCard = els.introModal.querySelector(".intro-card");
   introCard.classList.toggle("new-manager", firstVisit);
-  els.startButton.querySelector("span").textContent = needsPractice ? "실습부터 시작하기" : "영업 준비하기";
+  const scenario = nextQuickScenario();
+  els.startButton.querySelector("span").textContent = needsPractice ? "실습부터 시작하기" : "45초 바로 영업";
+  els.startButton.querySelector("b").textContent = needsPractice ? "→" : scenario.icon;
+  els.startButton.setAttribute("aria-label", needsPractice ? "실습 튜토리얼 시작" : `45초 바로 영업, ${scenario.title}`);
+  els.openPrepButton.hidden = needsPractice;
   els.skipOnboardingButton.hidden = !needsPractice;
   els.tutorialButton.innerHTML = needsPractice ? "<span>▶</span>실습 튜토리얼" : "<span>↻</span>튜토리얼 다시 보기";
 }
@@ -3027,8 +3194,10 @@ function renderShiftHistory() {
       const dateLabel = Number.isNaN(date.getTime()) ? "최근" : new Intl.DateTimeFormat("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(date);
       const difficulty = DIFFICULTIES[item.difficulty]?.label || "표준 영업";
       const mode = GAME_MODES[item.mode]?.shortLabel || "75초";
+      const quickTag = item.scenarioId ? ` · ${quickScenarioById(item.scenarioId)?.title || "퀵 시프트"}` : "";
+      const saveTag = item.lastChanceSaved ? " · LAST SAVE" : "";
       const objectiveCopy = Number(item.objectiveCount) ? ` · 목표 ${Number(item.objectivesCompleted) || 0}/${Number(item.objectiveCount)}` : "";
-      return `<article class="${item.success ? "success" : "failed"}"><span>${item.success ? item.rank : "F"}</span><div><strong>${item.success ? "영업 완주" : "대기 초과"}</strong><small>${dateLabel} · ${mode} · ${difficulty}${objectiveCopy}</small></div><em><b>${(Number(item.score) || 0).toLocaleString("ko-KR")}</b>점<small>환불 ${Number(item.refunds) || 0} · +${Number(item.xp) || 0} XP</small></em></article>`;
+      return `<article class="${item.success ? "success" : "failed"}"><span>${item.success ? item.rank : "F"}</span><div><strong>${item.success ? "영업 완주" : "대기 초과"}${saveTag}</strong><small>${dateLabel} · ${mode} · ${difficulty}${quickTag}${objectiveCopy}</small></div><em><b>${(Number(item.score) || 0).toLocaleString("ko-KR")}</b>점<small>환불 ${Number(item.refunds) || 0} · 오조작 ${Number(item.wrongActions) || 0}</small></em></article>`;
     }).join("")
     : "<p class=\"history-empty\">아직 저장된 영업 기록이 없습니다.</p>";
 
@@ -3900,8 +4069,9 @@ els.toolButtons.forEach((button) => {
 
 els.startButton.addEventListener("click", () => {
   if (!state.progression.tutorial.completed) startTutorial();
-  else openPrepModal(false);
+  else startQuickShift();
 });
+els.openPrepButton.addEventListener("click", () => openPrepModal(false));
 els.skipOnboardingButton.addEventListener("click", () => openPrepModal(false));
 els.tutorialButton.addEventListener("click", startTutorial);
 els.helpTutorialButton.addEventListener("click", startTutorial);
