@@ -7,8 +7,8 @@ const STORAGE_KEY = "bubbleTime75.bestRecord.v1";
 const PROGRESSION_KEY = "bubbleTime75.progression.v1";
 const CHECKPOINT_KEY = "bubbleTime.shiftCheckpoint.v1";
 const SEEN_VERSION_KEY = "bubbleTime75.seenVersion";
-const APP_VERSION = "2.17.0";
-const DATA_SCHEMA_VERSION = 8;
+const APP_VERSION = "2.18.0";
+const DATA_SCHEMA_VERSION = 9;
 const MOBILE_PAGE_MEDIA = "(max-width: 520px)";
 const MOBILE_SLIDE_PAGE_IDS = new Set(["prep-modal", "stats-modal", "settings-modal", "help-modal", "updates-modal"]);
 
@@ -72,12 +72,18 @@ const STORE_CONDITIONS = {
 };
 
 const QUICK_SHIFT_SCENARIOS = Object.freeze([
-  Object.freeze({ id: "rain_rinse", icon: "💧", title: "비 오는 번개 세탁", copy: "물때를 빠르게 걷어내고 환불 없이 버티세요.", difficulty: "standard", condition: "rain", objectiveIds: ["clean_6", "refundless"], eventDeck: ["detergent", "breakdown"], dirtBias: "limescale" }),
-  Object.freeze({ id: "weekend_rush", icon: "♟", title: "주말 45초 러시", copy: "몰려드는 손님을 만족시키고 대기 줄을 지키세요.", difficulty: "rush", condition: "weekend", objectiveIds: ["happy_6", "queue_control"], eventDeck: ["group", "detergent"], customerBias: "regular" }),
-  Object.freeze({ id: "power_drill", icon: "ϟ", title: "전력 불안정", copy: "정전 예고를 읽고 사건을 빠르게 복구하세요.", difficulty: "standard", condition: "inspection", objectiveIds: ["fast_event", "refundless"], eventDeck: ["blackout", "breakdown"], dirtBias: "dust" }),
-  Object.freeze({ id: "bulk_day", icon: "▦", title: "이불 세탁의 날", copy: "대량 세탁 손님의 긴 작업 시간을 견뎌내세요.", difficulty: "calm", condition: "weekend", objectiveIds: ["happy_6", "queue_control"], eventDeck: ["group", "detergent"], customerBias: "bulk" }),
-  Object.freeze({ id: "clean_chain", icon: "⚡", title: "콤보 청소 도전", copy: "오염을 발견하는 즉시 처리해 콤보를 이어가세요.", difficulty: "standard", condition: "rain", objectiveIds: ["clean_6", "combo_6"], eventDeck: ["inspection", "detergent"], dirtBias: "limescale" }),
-  Object.freeze({ id: "regular_hour", icon: "★", title: "단골 집중 시간", copy: "단골의 긴 인내심을 활용해 안정적으로 운영하세요.", difficulty: "rush", condition: "inspection", objectiveIds: ["happy_6", "fast_event"], eventDeck: ["breakdown", "inspection"], customerBias: "regular", dirtBias: "laundry" }),
+  Object.freeze({ id: "rain_rinse", icon: "💧", accent: "aqua", title: "비 오는 번개 세탁", copy: "물때를 빠르게 걷어내고 환불 없이 버티세요.", ruleLabel: "물때 청소 +25%", difficulty: "standard", condition: "rain", objectiveIds: ["clean_6", "refundless"], eventDeck: ["detergent", "breakdown"], dirtBias: "limescale", cleanDirt: "limescale", cleanScore: 1.25, specialGoal: { kind: "refundless", label: "환불 없이 완주" } }),
+  Object.freeze({ id: "weekend_rush", icon: "♟", accent: "coral", title: "주말 45초 러시", copy: "몰려드는 손님을 만족시키고 대기 줄을 지키세요.", ruleLabel: "단골 응대 +25%", difficulty: "rush", condition: "weekend", objectiveIds: ["happy_6", "queue_control"], eventDeck: ["group", "detergent"], customerBias: "regular", customerReward: { type: "regular", multiplier: 1.25 }, specialGoal: { kind: "queueControl", label: "대기 3명 이하 유지" } }),
+  Object.freeze({ id: "power_drill", icon: "ϟ", accent: "violet", title: "전력 불안정", copy: "정전 예고를 읽고 사건을 빠르게 복구하세요.", ruleLabel: "사건 해결 +35%", difficulty: "standard", condition: "inspection", objectiveIds: ["fast_event", "refundless"], eventDeck: ["blackout", "breakdown"], dirtBias: "dust", eventScore: 1.35, specialGoal: { kind: "fastEvent", label: "사건을 3초 내 해결" } }),
+  Object.freeze({ id: "bulk_day", icon: "▦", accent: "gold", title: "이불 세탁의 날", copy: "대량 세탁 손님의 긴 작업 시간을 견뎌내세요.", ruleLabel: "대량 세탁 +30%", difficulty: "calm", condition: "weekend", objectiveIds: ["happy_6", "queue_control"], eventDeck: ["group", "detergent"], customerBias: "bulk", customerReward: { type: "bulk", multiplier: 1.3 }, specialGoal: { kind: "happy", target: 4, label: "만족 손님 4명" } }),
+  Object.freeze({ id: "clean_chain", icon: "⚡", accent: "mint", title: "콤보 청소 도전", copy: "오염을 발견하는 즉시 처리해 콤보를 이어가세요.", ruleLabel: "콤보 판정 +1.2초", difficulty: "standard", condition: "rain", objectiveIds: ["clean_6", "combo_6"], eventDeck: ["inspection", "detergent"], dirtBias: "limescale", comboWindowBonus: 1200, specialGoal: { kind: "combo", target: 4, label: "4콤보 달성" } }),
+  Object.freeze({ id: "regular_hour", icon: "★", accent: "rose", title: "단골 집중 시간", copy: "단골의 긴 인내심을 활용해 안정적으로 운영하세요.", ruleLabel: "단골 인내심 +35%", difficulty: "rush", condition: "inspection", objectiveIds: ["happy_6", "fast_event"], eventDeck: ["breakdown", "inspection"], customerBias: "regular", dirtBias: "laundry", patienceBonus: { type: "regular", multiplier: 1.35 }, specialGoal: { kind: "regular", target: 3, label: "단골 3명 응대" } }),
+]);
+
+const QUICK_STAR_MILESTONES = Object.freeze([
+  Object.freeze({ stars: 6, coins: 100, decoration: "sign_quick" }),
+  Object.freeze({ stars: 12, coins: 180, decoration: "floor_startrail" }),
+  Object.freeze({ stars: 18, coins: 300, decoration: "wall_shiftboard" }),
 ]);
 
 const WEEKLY_EVENT_RULES = [
@@ -98,18 +104,21 @@ const DECORATIONS = [
   { id: "sign_service", type: "sign", icon: "♥", display: "CARE", title: "서비스 마스터 간판", description: "고객 응대 특화를 완성한 점장의 간판", price: 0, unlockMaster: { type: "machine", path: "service", level: 3 } },
   { id: "sign_precision", type: "sign", icon: "◆", display: "CLEAN", title: "정밀 세척 마스터 간판", description: "정밀 세척 특화를 완성한 청소 장인의 간판", price: 0, unlockMaster: { type: "tool", path: "precision", level: 3 } },
   { id: "sign_rhythm", type: "sign", icon: "♪", display: "BEAT", title: "리듬 마스터 간판", description: "리듬 유지 특화를 완성한 콤보 장인의 간판", price: 0, unlockMaster: { type: "tool", path: "rhythm", level: 3 } },
+  { id: "sign_quick", type: "sign", icon: "⚡", display: "QUICK", title: "퀵 스타 간판", description: "퀵 시프트 누적 별 6개의 번개 간판", price: 0, unlockQuickStars: 6 },
   { id: "floor_classic", type: "floor", icon: "▦", title: "클래식 타일", description: "차분한 회백색 매장 바닥", price: 0 },
   { id: "floor_aqua", type: "floor", icon: "≈", title: "아쿠아 타일", description: "물결처럼 시원한 민트 타일", price: 180, unlockLevel: 2 },
   { id: "floor_checker", type: "floor", icon: "▥", title: "선셋 체크", description: "산뜻한 코랄 체크 바닥", price: 260, unlockLevel: 4 },
   { id: "floor_terrazzo", type: "floor", icon: "∴", title: "버블 테라조", description: "알록달록한 거품 조각이 박힌 바닥", price: 340, unlockLevel: 3 },
   { id: "floor_midnight", type: "floor", icon: "▧", title: "미드나이트 타일", description: "차분한 남색 체크 타일", price: 480, unlockLevel: 5 },
   { id: "floor_sunshine", type: "floor", icon: "☀", title: "선샤인 타일", description: "매장을 밝히는 크림 옐로 타일", price: 620, unlockLevel: 6 },
+  { id: "floor_startrail", type: "floor", icon: "✦", title: "스타 트레일 타일", description: "퀵 시프트 누적 별 12개의 반짝이는 바닥", price: 0, unlockQuickStars: 12 },
   { id: "wall_cream", type: "wall", icon: "□", title: "크림 벽지", description: "포근하고 밝은 기본 벽지", price: 0 },
   { id: "wall_ocean", type: "wall", icon: "≋", title: "오션 벽지", description: "깊고 깨끗한 바다색 벽지", price: 220, unlockLevel: 3 },
   { id: "wall_mint", type: "wall", icon: "◇", title: "민트 소다 벽지", description: "가볍고 청량한 민트색 벽지", price: 280, unlockLevel: 2 },
   { id: "wall_sunset", type: "wall", icon: "◒", title: "선셋 그라데이션", description: "저녁 노을을 담은 코랄 벽지", price: 400, unlockLevel: 4 },
   { id: "wall_night", type: "wall", icon: "✦", title: "별밤 벽지", description: "은은한 별빛이 번지는 남색 벽지", price: 560, unlockLevel: 5 },
   { id: "wall_pattern", type: "wall", icon: "▤", title: "버블 패턴 벽지", description: "세탁 거품 무늬를 넣은 프리미엄 벽지", price: 700, unlockLevel: 6 },
+  { id: "wall_shiftboard", type: "wall", icon: "★", title: "시프트 보드 벽지", description: "퀵 시프트 별 18개를 모두 모은 점장의 벽지", price: 0, unlockQuickStars: 18 },
   { id: "plant_green", type: "plant", icon: "♣", display: "♣", title: "초록 화분", description: "익숙한 행운의 초록 식물", price: 0 },
   { id: "plant_bloom", type: "plant", icon: "✿", display: "✿", title: "버블 꽃화분", description: "매장에 색을 더하는 작은 꽃", price: 160, unlockLevel: 2 },
   { id: "plant_cactus", type: "plant", icon: "♠", display: "♠", title: "미니 선인장", description: "관리하기 쉬운 통통한 선인장", price: 220, unlockLevel: 2 },
@@ -291,6 +300,7 @@ const state = {
   masterScoreBonus: { machine: 0, tool: 0 },
   lastShiftPlan: null,
   quickScenario: null,
+  quickResult: null,
   startSource: "plan",
   firstActionMs: null,
   wrongActions: 0,
@@ -373,13 +383,21 @@ const els = {
   toastRegion: document.querySelector("#toast-region"),
   scorePopRegion: document.querySelector("#score-pop-region"),
   playArea: document.querySelector("#play-area"),
+  quickScenarioRibbon: document.querySelector("#quick-scenario-ribbon"),
+  quickScenarioRibbonIcon: document.querySelector("#quick-scenario-ribbon-icon"),
+  quickScenarioRibbonTitle: document.querySelector("#quick-scenario-ribbon-title"),
+  quickScenarioRibbonRule: document.querySelector("#quick-scenario-ribbon-rule"),
   introModal: document.querySelector("#intro-modal"),
   pauseModal: document.querySelector("#pause-modal"),
   resultModal: document.querySelector("#result-modal"),
   resultCard: document.querySelector("#result-modal .result-card"),
   startButton: document.querySelector("#start-button"),
+  homeQuickIcon: document.querySelector("#home-quick-icon"),
+  startButtonTitle: document.querySelector("#start-button-title"),
+  homeQuickDetail: document.querySelector("#home-quick-detail"),
   confirmStartButton: document.querySelector("#confirm-start-button"),
   restartButton: document.querySelector("#restart-button"),
+  nextQuickButton: document.querySelector("#next-quick-button"),
   resultHomeButton: document.querySelector("#result-home-button"),
   resumeButton: document.querySelector("#resume-button"),
   pauseRestartButton: document.querySelector("#pause-restart-button"),
@@ -487,6 +505,16 @@ const els = {
   resultMasterEffects: document.querySelector("#result-master-effects"),
   shiftObjectiveList: document.querySelector("#shift-objective-list"),
   resultObjectiveList: document.querySelector("#result-objective-list"),
+  quickResultSummary: document.querySelector("#quick-result-summary"),
+  quickResultIcon: document.querySelector("#quick-result-icon"),
+  quickResultTitle: document.querySelector("#quick-result-title"),
+  quickResultBest: document.querySelector("#quick-result-best"),
+  quickResultStars: document.querySelector("#quick-result-stars"),
+  quickStarGoals: document.querySelector("#quick-star-goals"),
+  quickScoreDelta: document.querySelector("#quick-score-delta"),
+  quickWrongDelta: document.querySelector("#quick-wrong-delta"),
+  quickTotalStars: document.querySelector("#quick-total-stars"),
+  quickRewardMessage: document.querySelector("#quick-reward-message"),
   resultCelebration: document.querySelector("#result-celebration"),
   shareResultButton: document.querySelector("#share-result-button"),
   endlessCashoutButton: document.querySelector("#endless-cashout-button"),
@@ -563,6 +591,7 @@ function resetGame(options = {}) {
   state.earningsBreakdown = {};
   state.masterScoreBonus = { machine: 0, tool: 0 };
   state.quickScenario = null;
+  state.quickResult = null;
   state.startSource = "plan";
   state.firstActionMs = null;
   state.wrongActions = 0;
@@ -608,6 +637,11 @@ function resetGame(options = {}) {
   els.lastChanceAlert.hidden = true;
   els.lastChanceSeconds.textContent = "3";
   els.playArea.classList.remove("last-save-active", "last-save-rescued");
+  els.playArea.removeAttribute("data-quick-accent");
+  els.quickScenarioRibbon.hidden = true;
+  els.quickScenarioRibbon.classList.remove("compact");
+  els.quickResultSummary.hidden = true;
+  els.resultCard.classList.remove("quick-result");
   hideEventForecast();
   els.firstShiftGuide.hidden = true;
   els.shiftObjectivesHud.hidden = true;
@@ -635,6 +669,7 @@ function startGame(options = {}) {
   state.quickScenario = options.scenario || null;
   state.startSource = options.source || "plan";
   if (state.quickScenario?.eventDeck?.length) state.eventDeck = [...state.quickScenario.eventDeck];
+  renderQuickScenarioIdentity();
   state.running = true;
   state.startedAt = performance.now();
   els.pauseButton.disabled = false;
@@ -645,6 +680,7 @@ function startGame(options = {}) {
   showToast(state.quickScenario ? `${state.quickScenario.title} 시작! ${state.quickScenario.copy}` : "영업 시작! 오염 표시를 잘 살펴보세요.", "good", state.quickScenario?.icon || "✦", state.quickScenario ? 2300 : 1700);
   renderShiftObjectiveHud();
   scheduleGameLoops(true);
+  if (state.quickScenario) scheduleTimeout(() => els.quickScenarioRibbon.classList.add("compact"), 3600);
   saveShiftCheckpoint();
   startBgm();
   showFirstShiftGuide("오염 아이콘을 확인한 뒤 같은 도구를 선택하세요", 0);
@@ -810,8 +846,113 @@ function nextQuickScenario() {
   return QUICK_SHIFT_SCENARIOS[index];
 }
 
-function startQuickShift() {
-  const scenario = nextQuickScenario();
+function quickScenarioAfter(id) {
+  const index = QUICK_SHIFT_SCENARIOS.findIndex((scenario) => scenario.id === id);
+  if (index < 0) return nextQuickScenario();
+  return QUICK_SHIFT_SCENARIOS[(index + 1) % QUICK_SHIFT_SCENARIOS.length];
+}
+
+function quickTotalStars(progression = state.progression) {
+  return Object.values(progression.quick?.records || {}).reduce((total, record) => total + Math.min(3, Math.max(0, Number(record?.bestStars) || 0)), 0);
+}
+
+function quickScenarioRecord(id, progression = state.progression) {
+  const record = progression.quick?.records?.[id];
+  return {
+    plays: Math.max(0, Number(record?.plays) || 0),
+    bestScore: Math.max(0, Number(record?.bestScore) || 0),
+    bestRank: ["S", "A", "B", "C", "F", "–"].includes(record?.bestRank) ? record.bestRank : "–",
+    bestStars: Math.min(3, Math.max(0, Number(record?.bestStars) || 0)),
+    lastScore: Math.max(0, Number(record?.lastScore) || 0),
+    lastWrongActions: Math.max(0, Number(record?.lastWrongActions) || 0),
+    lastFirstActionMs: record?.lastFirstActionMs == null || !Number.isFinite(Number(record.lastFirstActionMs)) ? null : Math.max(0, Number(record.lastFirstActionMs)),
+    achievedAt: typeof record?.achievedAt === "string" ? record.achievedAt : null,
+  };
+}
+
+function quickSpecialGoalCompleted(scenario, success) {
+  const goal = scenario?.specialGoal;
+  if (!goal) return false;
+  const values = {
+    refundless: success && state.refunds === 0 ? 1 : 0,
+    queueControl: success && state.peakQueue <= 3 ? 1 : 0,
+    fastEvent: state.eventResponseTimes.filter((item) => item.ms <= 3000).length,
+    happy: state.happyGuests,
+    combo: state.maxCombo,
+    regular: state.typeCounts.regular,
+  };
+  return (Number(values[goal.kind]) || 0) >= (Number(goal.target) || 1);
+}
+
+function evaluateQuickStars(success) {
+  if (!state.quickScenario) return [];
+  return [
+    { id: "complete", icon: "✓", label: "45초 완주", completed: success },
+    { id: "control", icon: "◇", label: "오조작 2회 이하", completed: state.wrongActions <= 2 },
+    { id: "special", icon: state.quickScenario.icon, label: state.quickScenario.specialGoal.label, completed: quickSpecialGoalCompleted(state.quickScenario, success) },
+  ];
+}
+
+function updateQuickProgress(success, rank) {
+  if (!state.quickScenario) return null;
+  const progression = state.progression;
+  const quick = progression.quick || (progression.quick = { records: {}, claimedMilestones: [] });
+  quick.records ||= {};
+  quick.claimedMilestones = Array.isArray(quick.claimedMilestones) ? quick.claimedMilestones : [];
+  const previous = quickScenarioRecord(state.quickScenario.id, progression);
+  const starGoals = evaluateQuickStars(success);
+  const stars = starGoals.filter((goal) => goal.completed).length;
+  const newBest = success && state.score > previous.bestScore;
+  const totalBefore = quickTotalStars(progression);
+  quick.records[state.quickScenario.id] = {
+    plays: previous.plays + 1,
+    bestScore: newBest ? state.score : previous.bestScore,
+    bestRank: newBest ? rank.letter : previous.bestRank,
+    bestStars: Math.max(previous.bestStars, stars),
+    lastScore: state.score,
+    lastWrongActions: state.wrongActions,
+    lastFirstActionMs: state.firstActionMs,
+    achievedAt: newBest ? new Date().toISOString() : previous.achievedAt,
+  };
+  const totalStars = quickTotalStars(progression);
+  const rewards = [];
+  QUICK_STAR_MILESTONES.forEach((milestone) => {
+    if (totalStars < milestone.stars || quick.claimedMilestones.includes(milestone.stars)) return;
+    quick.claimedMilestones.push(milestone.stars);
+    if (!progression.decor.owned.includes(milestone.decoration)) progression.decor.owned.push(milestone.decoration);
+    rewards.push({ ...milestone, decorationTitle: decorationById(milestone.decoration)?.title || "퀵 스타 장식" });
+  });
+  return {
+    scenario: state.quickScenario,
+    starGoals,
+    stars,
+    bestStars: Math.max(previous.bestStars, stars),
+    starGain: Math.max(0, totalStars - totalBefore),
+    totalStars,
+    previous,
+    bestScore: quick.records[state.quickScenario.id].bestScore,
+    bestRank: quick.records[state.quickScenario.id].bestRank,
+    newBest,
+    scoreDelta: previous.plays ? state.score - previous.lastScore : null,
+    wrongDelta: previous.plays ? state.wrongActions - previous.lastWrongActions : null,
+    firstActionDelta: previous.plays && previous.lastFirstActionMs !== null && state.firstActionMs !== null ? state.firstActionMs - previous.lastFirstActionMs : null,
+    rewards,
+    rewardCoins: rewards.reduce((total, reward) => total + reward.coins, 0),
+  };
+}
+
+function renderQuickScenarioIdentity() {
+  const scenario = state.quickScenario;
+  els.quickScenarioRibbon.hidden = !scenario;
+  if (!scenario) return;
+  els.playArea.dataset.quickAccent = scenario.accent;
+  els.quickScenarioRibbonIcon.textContent = scenario.icon;
+  els.quickScenarioRibbonTitle.textContent = scenario.title;
+  els.quickScenarioRibbonRule.textContent = scenario.ruleLabel;
+  els.quickScenarioRibbon.setAttribute("aria-label", `${scenario.title}, 특별 규칙 ${scenario.ruleLabel}`);
+}
+
+function startQuickScenario(scenario) {
   state.mode = "quick";
   state.difficulty = scenario.difficulty;
   state.best = state.progression.records.quick;
@@ -819,6 +960,14 @@ function startQuickShift() {
   state.objectiveResults = [];
   const condition = { id: scenario.condition, ...STORE_CONDITIONS[scenario.condition] };
   startGame({ condition, scenario, source: "quick" });
+}
+
+function startQuickShift() {
+  startQuickScenario(nextQuickScenario());
+}
+
+function startNextQuickShift() {
+  startQuickScenario(quickScenarioAfter(state.quickResult?.scenario.id || state.lastShiftPlan?.scenarioId));
 }
 
 function shiftObjectiveProgress(objective, success = null) {
@@ -1456,8 +1605,9 @@ function finishStoreEvent(type, points, rect, message) {
   advanceWeeklyGoal("event", 1);
   state.activeEvent = null;
   syncToolTargets();
-  changeScore(points);
-  scorePop(rect, `+${points}`);
+  const resolvedPoints = Math.round(points * (Number(state.quickScenario?.eventScore) || 1));
+  changeScore(resolvedPoints);
+  scorePop(rect, `+${resolvedPoints}`);
   cleanBurst(rect, type);
   hideEventAlert();
   showToast(message, "good", "✓", 1150);
@@ -1570,6 +1720,12 @@ function makeGuest(snapshot = null) {
   const skin = SKIN_COLORS.includes(snapshot?.skin) ? snapshot.skin : pick(SKIN_COLORS);
   const hair = HAIR_COLORS.includes(snapshot?.hair) ? snapshot.hair : pick(HAIR_COLORS);
   const arrivedAt = performance.now() - Math.max(0, Number(snapshot?.waitedMs) || 0);
+  const quickPatienceMultiplier = !snapshot && state.quickScenario?.patienceBonus?.type === type
+    ? Number(state.quickScenario.patienceBonus.multiplier) || 1
+    : 1;
+  const quickRewardMultiplier = !snapshot && state.quickScenario?.customerReward?.type === type
+    ? Number(state.quickScenario.customerReward.multiplier) || 1
+    : 1;
 
   discoverEntry("customers", type);
   if (stained) discoverEntry("dirt", "stain");
@@ -1602,9 +1758,11 @@ function makeGuest(snapshot = null) {
     skin,
     hair,
     arrivedAt,
-    patienceMs: Math.max(1000, Number(snapshot?.patienceMs) || CONFIG.guest.patience * typeInfo.patience * DIFFICULTIES[state.difficulty].patience),
+    patienceMs: snapshot
+      ? Math.max(1000, Number(snapshot.patienceMs) || CONFIG.guest.patience * typeInfo.patience * DIFFICULTIES[state.difficulty].patience)
+      : Math.max(1000, CONFIG.guest.patience * typeInfo.patience * DIFFICULTIES[state.difficulty].patience * quickPatienceMultiplier),
     cycleMultiplier: Number(snapshot?.cycleMultiplier) || typeInfo.cycle,
-    rewardMultiplier: Number(snapshot?.rewardMultiplier) || typeInfo.reward,
+    rewardMultiplier: snapshot ? Number(snapshot.rewardMultiplier) || typeInfo.reward : typeInfo.reward * quickRewardMultiplier,
     satisfaction: Math.max(0, Math.min(100, Number(snapshot?.satisfaction) || 0)),
   };
 }
@@ -1822,8 +1980,9 @@ function handleMachineClick(id) {
   const combo = registerCleanCombo(cleanElapsed);
   const baseToolBonus = 1 + upgradeBonus("toolScoreBonuses", state.progression.upgrades.tool);
   const toolBonus = baseToolBonus + masterBonus("tool", "precision");
-  const baseEarnedPoints = Math.round(140 * baseToolBonus * combo.multiplier);
-  const earnedPoints = Math.round(140 * toolBonus * combo.multiplier);
+  const scenarioCleanMultiplier = state.quickScenario?.cleanDirt === dirtType ? Number(state.quickScenario.cleanScore) || 1 : 1;
+  const baseEarnedPoints = Math.round(140 * baseToolBonus * combo.multiplier * scenarioCleanMultiplier);
+  const earnedPoints = Math.round(140 * toolBonus * combo.multiplier * scenarioCleanMultiplier);
   state.masterScoreBonus.tool += Math.max(0, earnedPoints - baseEarnedPoints);
   state.dirtCleanCounts[dirtType] += 1;
   machine.dirt = null;
@@ -1983,7 +2142,10 @@ function comboMultiplier(combo = state.combo) {
 }
 
 function registerCleanCombo(elapsedMs) {
-  const comboWindow = CONFIG.combo.fastWindow + upgradeBonus("comboWindowBonuses", state.progression.upgrades.tool) + masterBonus("tool", "rhythm");
+  const comboWindow = CONFIG.combo.fastWindow
+    + upgradeBonus("comboWindowBonuses", state.progression.upgrades.tool)
+    + masterBonus("tool", "rhythm")
+    + (Number(state.quickScenario?.comboWindowBonus) || 0);
   const fast = elapsedMs <= comboWindow;
   if (fast) {
     state.combo += 1;
@@ -2249,6 +2411,7 @@ function endGame(success, reason) {
   document.querySelector("#result-bulk").textContent = String(state.typeCounts.bulk);
   document.querySelector("#result-difficulty").textContent = `${currentGameMode().shortLabel} · ${DIFFICULTIES[state.difficulty].label}`;
   renderResultObjectives();
+  renderQuickResultSummary();
   updateResultAnalysis();
   renderResultMasterImpact();
   const unlockBanner = document.querySelector("#achievement-unlock-banner");
@@ -2275,11 +2438,56 @@ function renderResultObjectives() {
   document.querySelector("#result-objective-reward").textContent = `${completedCount} / ${state.objectiveResults.length} 완료 · 보상 ◈ ${state.objectiveRewardCoins} · ${state.objectiveRewardXp} XP`;
 }
 
+function renderQuickResultSummary() {
+  const result = state.quickResult;
+  els.quickResultSummary.hidden = !result;
+  els.resultCard.classList.toggle("quick-result", Boolean(result));
+  if (!result) return;
+
+  const signedScoreDelta = result.scoreDelta === null
+    ? "첫 기록"
+    : result.scoreDelta === 0
+      ? "직전과 동일"
+      : `${result.scoreDelta > 0 ? "+" : ""}${result.scoreDelta.toLocaleString("ko-KR")}점`;
+  const wrongDelta = result.wrongDelta === null
+    ? "첫 기록"
+    : result.wrongDelta === 0
+      ? "직전과 동일"
+      : result.wrongDelta < 0
+        ? `${Math.abs(result.wrongDelta)}회 감소`
+        : `${result.wrongDelta}회 증가`;
+
+  els.quickResultSummary.dataset.accent = result.scenario.accent;
+  els.quickResultIcon.textContent = result.scenario.icon;
+  els.quickResultTitle.textContent = result.scenario.title;
+  els.quickResultBest.textContent = `${result.newBest ? "NEW BEST · " : ""}최고 ${result.bestScore.toLocaleString("ko-KR")}점 · ${result.bestRank}등급`;
+  els.quickResultStars.textContent = `${"★".repeat(result.stars)}${"☆".repeat(3 - result.stars)}`;
+  els.quickResultStars.setAttribute("aria-label", `별 ${result.stars}개 획득`);
+  els.quickStarGoals.innerHTML = result.starGoals.map((goal) => `<article class="${goal.completed ? "completed" : ""}"><span>${goal.completed ? "★" : "☆"}</span><strong>${goal.label}</strong><em>${goal.completed ? "달성" : "미달성"}</em></article>`).join("");
+  els.quickScoreDelta.textContent = signedScoreDelta;
+  els.quickScoreDelta.className = result.scoreDelta > 0 ? "improved" : result.scoreDelta < 0 ? "declined" : "";
+  els.quickWrongDelta.textContent = wrongDelta;
+  els.quickWrongDelta.className = result.wrongDelta < 0 ? "improved" : result.wrongDelta > 0 ? "declined" : "";
+  els.quickTotalStars.textContent = `${result.totalStars} / ${QUICK_SHIFT_SCENARIOS.length * 3}`;
+  els.quickRewardMessage.hidden = result.rewards.length === 0;
+  if (result.rewards.length) {
+    const rewardNames = result.rewards.map((reward) => `${reward.decorationTitle} + ◈ ${reward.coins}`).join(" · ");
+    els.quickRewardMessage.querySelector("strong").textContent = `별 누적 보상 · ${rewardNames}`;
+  }
+}
+
 function configureResultActions(progressionResult, isNewRecord) {
   const difficultyOrder = ["calm", "standard", "rush"];
   const nextDifficulty = difficultyOrder[difficultyOrder.indexOf(state.difficulty) + 1] || null;
-  els.nextDifficultyButton.hidden = !nextDifficulty;
+  const isQuickShift = Boolean(state.quickResult);
+  els.nextQuickButton.hidden = !isQuickShift;
+  els.nextDifficultyButton.hidden = isQuickShift || !nextDifficulty;
   if (nextDifficulty) els.nextDifficultyButton.querySelector("span").textContent = `${DIFFICULTIES[nextDifficulty].label} 도전`;
+  if (isQuickShift) {
+    const nextScenario = quickScenarioAfter(state.quickResult.scenario.id);
+    els.nextQuickButton.querySelector("span").textContent = `다음 퀵 · ${nextScenario.title}`;
+  }
+  els.restartButton.querySelector("span").textContent = isQuickShift ? "같은 퀵 재도전" : "같은 조건으로 재도전";
 
   state.resultUnlockTarget = null;
   if (progressionResult.currentLevel.level > progressionResult.previousLevel) {
@@ -2590,6 +2798,7 @@ function defaultProgression() {
     onboarding: { firstShiftComplete: false, hintsDismissed: false },
     manager: { xp: 0, reputation: 0 },
     records: defaultModeRecords(),
+    quick: { records: {}, claimedMilestones: [] },
     recentShifts: [],
     decor: {
       owned: ["sign_classic", "floor_classic", "wall_cream", "plant_green"],
@@ -2629,6 +2838,9 @@ function migrateProgressionData(saved) {
   }
   if (version < 8) {
     migrated.master = { machine: { path: null, level: 0 }, tool: { path: null, level: 0 } };
+  }
+  if (version < 9) {
+    migrated.quick = { records: {}, claimedMilestones: [] };
   }
   migrated.schemaVersion = Math.max(version, DATA_SCHEMA_VERSION);
   return migrated;
@@ -2677,6 +2889,12 @@ function loadProgression() {
         reputation: Math.max(0, Number(saved.manager?.reputation) || 0),
       },
       records: { ...fallback.records },
+      quick: {
+        records: saved.quick?.records && typeof saved.quick.records === "object" ? { ...saved.quick.records } : {},
+        claimedMilestones: Array.isArray(saved.quick?.claimedMilestones)
+          ? [...new Set(saved.quick.claimedMilestones.map(Number).filter((stars) => QUICK_STAR_MILESTONES.some((milestone) => milestone.stars === stars)))]
+          : [],
+      },
       recentShifts: Array.isArray(saved.recentShifts) ? saved.recentShifts.slice(0, 10).map((item) => ({
         timestamp: typeof item?.timestamp === "string" ? item.timestamp : new Date().toISOString(),
         success: Boolean(item?.success),
@@ -2711,6 +2929,12 @@ function loadProgression() {
         ? { score: Math.max(0, Number(record.score) || 0), rank: ["S", "A", "B", "C", "F", "–"].includes(record.rank) ? record.rank : "–", achievedAt: typeof record.achievedAt === "string" ? record.achievedAt : null }
         : fallback.records[mode];
     });
+    const normalizedQuickRecords = {};
+    QUICK_SHIFT_SCENARIOS.forEach((scenario) => {
+      const record = quickScenarioRecord(scenario.id, progression);
+      if (record.plays || record.bestScore || record.bestStars) normalizedQuickRecords[scenario.id] = record;
+    });
+    progression.quick.records = normalizedQuickRecords;
     Object.keys(fallback.discovery).forEach((category) => {
       const validIds = CODEX_CONTENT[category].map((item) => item.id);
       const savedIds = Array.isArray(saved.discovery?.[category]) ? saved.discovery[category] : fallback.discovery[category];
@@ -2738,6 +2962,10 @@ function loadProgression() {
     const validDecorIds = DECORATIONS.map((item) => item.id);
     progression.decor.owned = Array.isArray(progression.decor.owned) ? [...new Set([...fallback.decor.owned, ...progression.decor.owned.filter((id) => validDecorIds.includes(id))])] : [...fallback.decor.owned];
     if (progression.cosmetics.weeklyBadges.length && !progression.decor.owned.includes("sign_gold")) progression.decor.owned.push("sign_gold");
+    progression.quick.claimedMilestones.forEach((stars) => {
+      const decorationId = QUICK_STAR_MILESTONES.find((milestone) => milestone.stars === stars)?.decoration;
+      if (decorationId && !progression.decor.owned.includes(decorationId)) progression.decor.owned.push(decorationId);
+    });
     Object.keys(fallback.decor.equipped).forEach((type) => {
       const equipped = progression.decor.equipped[type];
       if (!progression.decor.owned.includes(equipped) || !DECORATIONS.some((item) => item.id === equipped && item.type === type)) progression.decor.equipped[type] = fallback.decor.equipped[type];
@@ -3004,6 +3232,7 @@ function finalizeProgression(success, rank, reason) {
   const progression = state.progression;
   const previousLevel = managerLevelInfo().level;
   const completedObjectives = state.objectiveResults.filter((result) => result.completed).length;
+  state.quickResult = updateQuickProgress(success, rank);
   state.earningsBreakdown = {
     service: state.served * CONFIG.economy.servedCoins,
     happiness: state.happyGuests * CONFIG.economy.happyCoins,
@@ -3012,6 +3241,7 @@ function finalizeProgression(success, rank, reason) {
     refundless: success && state.refunds === 0 ? CONFIG.economy.refundlessBonus : 0,
     objectives: state.objectiveRewardCoins,
     allObjectives: success && state.objectiveResults.length > 0 && completedObjectives === state.objectiveResults.length ? CONFIG.economy.allObjectivesBonus : 0,
+    quickStars: state.quickResult?.rewardCoins || 0,
     penalty: state.refunds * CONFIG.economy.refundPenalty,
   };
   state.shiftCoins = Math.max(0, Object.entries(state.earningsBreakdown).reduce((total, [key, value]) => total + (key === "penalty" ? -value : value), 0));
@@ -3164,9 +3394,17 @@ function updateOnboardingUi() {
   const introCard = els.introModal.querySelector(".intro-card");
   introCard.classList.toggle("new-manager", firstVisit);
   const scenario = nextQuickScenario();
-  els.startButton.querySelector("span").textContent = needsPractice ? "실습부터 시작하기" : "45초 바로 영업";
-  els.startButton.querySelector("b").textContent = needsPractice ? "→" : scenario.icon;
+  const scenarioRecord = quickScenarioRecord(scenario.id);
+  const startActions = els.startButton.closest(".shift-start-actions");
+  startActions.classList.toggle("single", needsPractice);
+  els.startButton.dataset.accent = needsPractice ? "tutorial" : scenario.accent;
+  els.homeQuickIcon.textContent = needsPractice ? "▶" : scenario.icon;
+  els.startButtonTitle.textContent = needsPractice ? "실습부터 시작하기" : "45초 바로 영업";
+  els.homeQuickDetail.textContent = needsPractice
+    ? "기본 조작을 익히고 첫 영업을 준비하세요"
+    : `${scenario.title} · ★ ${scenarioRecord.bestStars}/3 · 최고 ${scenarioRecord.bestScore ? `${scenarioRecord.bestScore.toLocaleString("ko-KR")}점` : "도전 전"}`;
   els.startButton.setAttribute("aria-label", needsPractice ? "실습 튜토리얼 시작" : `45초 바로 영업, ${scenario.title}`);
+  els.startButton.title = needsPractice ? "실습 튜토리얼 시작" : `${scenario.title} · ${scenario.ruleLabel} · 누적 별 ${quickTotalStars()}개`;
   els.openPrepButton.hidden = needsPractice;
   els.skipOnboardingButton.hidden = !needsPractice;
   els.tutorialButton.innerHTML = needsPractice ? "<span>▶</span>실습 튜토리얼" : "<span>↻</span>튜토리얼 다시 보기";
@@ -3247,14 +3485,16 @@ function masterBonus(type, path) {
 function decorationIsUnlocked(decoration) {
   const weeklyUnlocked = decoration.unlock !== "weekly" || state.progression.cosmetics.weeklyBadges.length > 0;
   const levelUnlocked = !decoration.unlockLevel || managerLevelInfo().level >= decoration.unlockLevel;
+  const quickUnlocked = !decoration.unlockQuickStars || quickTotalStars() >= decoration.unlockQuickStars;
   const masterTrack = decoration.unlockMaster ? state.progression.master?.[decoration.unlockMaster.type] : null;
   const masterUnlocked = !decoration.unlockMaster
     || (masterTrack?.path === decoration.unlockMaster.path && masterTrack.level >= decoration.unlockMaster.level);
-  return weeklyUnlocked && levelUnlocked && masterUnlocked;
+  return weeklyUnlocked && levelUnlocked && quickUnlocked && masterUnlocked;
 }
 
 function decorationLockCopy(decoration) {
   if (decoration.unlock === "weekly") return { label: "주간 목표 완성 필요", copy: "주간 목표 3개를 모두 달성하면 해금됩니다." };
+  if (decoration.unlockQuickStars) return { label: `퀵 별 ${decoration.unlockQuickStars}개 필요`, copy: `퀵 시프트에서 별을 ${decoration.unlockQuickStars}개 모으면 무료로 받을 수 있습니다.` };
   if (decoration.unlockMaster) {
     const definition = MASTER_RENOVATIONS[decoration.unlockMaster.type].paths[decoration.unlockMaster.path];
     return { label: `${definition.title} Lv.${decoration.unlockMaster.level} 필요`, copy: `${definition.title} 특화를 완성하면 무료로 받을 수 있습니다.` };
@@ -4078,6 +4318,7 @@ els.helpTutorialButton.addEventListener("click", startTutorial);
 els.tutorialExitButton.addEventListener("click", exitTutorial);
 els.tutorialFinishButton.addEventListener("click", exitTutorial);
 els.restartButton.addEventListener("click", retrySameShift);
+els.nextQuickButton.addEventListener("click", startNextQuickShift);
 els.resultHomeButton.addEventListener("click", returnHomeFromResult);
 els.newPlanButton.addEventListener("click", () => openFreshShiftPlan(false));
 els.nextDifficultyButton.addEventListener("click", () => openFreshShiftPlan(true));

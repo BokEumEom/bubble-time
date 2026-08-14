@@ -309,7 +309,7 @@ async function run() {
     return {
       hubDisplay: getComputedStyle(document.querySelector('#mobile-manager-button')).display,
       legacyActions: getComputedStyle(document.querySelector('.progression-actions')).display,
-      startFont: parseFloat(getComputedStyle(document.querySelector('#start-button')).fontSize),
+      startFont: parseFloat(getComputedStyle(document.querySelector('#start-button-title')).fontSize),
       utilityFont: parseFloat(getComputedStyle(document.querySelector('#tutorial-button')).fontSize),
       fitsViewport: document.querySelector('#intro-modal').scrollHeight <= document.querySelector('#intro-modal').clientHeight + 2,
       cardWidth: rect.width,
@@ -318,17 +318,21 @@ async function run() {
       dashboardGap: parseFloat(getComputedStyle(document.querySelector('.intro-dashboard')).gap),
       utilityGap: parseFloat(getComputedStyle(document.querySelector('.intro-utility-actions')).gap),
       managerWidth: document.querySelector('#mobile-manager-button').getBoundingClientRect().width,
+      actionsWidth: document.querySelector('.shift-start-actions').getBoundingClientRect().width,
       startWidth: document.querySelector('#start-button').getBoundingClientRect().width,
+      startHeight: document.querySelector('#start-button').getBoundingClientRect().height,
       quickLabel: document.querySelector('#start-button').innerText,
       planVisible: !document.querySelector('#open-prep-button').hidden,
+      planWidth: document.querySelector('#open-prep-button').getBoundingClientRect().width,
       planHeight: document.querySelector('#open-prep-button').getBoundingClientRect().height,
+      actionGap: parseFloat(getComputedStyle(document.querySelector('.shift-start-actions')).columnGap),
       utilityWidth: document.querySelector('.intro-utility-actions').getBoundingClientRect().width,
       animation: getComputedStyle(document.querySelector('#intro-modal')).animationName
     };
   })()`);
   assert.equal(mobileHome.hubDisplay, "grid", "모바일 홈에는 통합 관리 센터 진입 카드가 보여야 합니다.");
   assert.equal(mobileHome.legacyActions, "none", "모바일 홈에서는 네 개 관리 버튼을 한꺼번에 노출하지 않아야 합니다.");
-  assert.ok(mobileHome.startFont >= 15, "모바일 시작 버튼 글자는 15px 이상이어야 합니다.");
+  assert.ok(mobileHome.startFont >= 11, "모바일 퀵 시작 제목은 11px 이상이어야 합니다.");
   assert.ok(mobileHome.utilityFont >= 11, "모바일 보조 버튼 글자는 11px 이상이어야 합니다.");
   assert.equal(mobileHome.fitsViewport, true, "모바일 홈 핵심 행동은 첫 화면 안에 들어와야 합니다.");
   assert.ok(mobileHome.cardWidth >= 389 && mobileHome.cardHeight >= 844, "모바일 홈은 여백 없는 전체 화면 페이지여야 합니다.");
@@ -336,10 +340,13 @@ async function run() {
   assert.equal(mobileHome.dashboardGap, 10, "모바일 홈의 주요 버튼 간격은 10px로 일정해야 합니다.");
   assert.equal(mobileHome.utilityGap, 8, "모바일 홈의 보조 버튼 간격은 8px로 일정해야 합니다.");
   assert.ok(mobileHome.managerWidth >= 350, "모바일 MANAGER DESK 버튼은 좌우 콘텐츠 폭을 넓게 사용해야 합니다.");
-  assert.ok(mobileHome.startWidth >= 350, "모바일 영업 준비 버튼은 좌우 콘텐츠 폭을 넓게 사용해야 합니다.");
+  assert.ok(mobileHome.actionsWidth >= 350, "모바일 영업 행동 묶음은 좌우 콘텐츠 폭을 넓게 사용해야 합니다.");
+  assert.ok(mobileHome.startWidth >= 168 && mobileHome.planWidth >= 168, "퀵 시작과 계획 선택은 독립된 동일 폭 2열 버튼이어야 합니다.");
   assert.match(mobileHome.quickLabel, /45초 바로 영업/, "재방문자 홈의 주 행동은 45초 퀵 시프트여야 합니다.");
   assert.equal(mobileHome.planVisible, true, "시간·난이도 계획 선택은 퀵 시작과 분리해 유지해야 합니다.");
-  assert.equal(mobileHome.planHeight, 54, "계획 선택도 퀵 시작과 같은 터치 높이를 사용해야 합니다.");
+  assert.equal(mobileHome.startHeight, mobileHome.planHeight, "계획 선택은 퀵 시작과 같은 터치 높이를 사용해야 합니다.");
+  assert.ok(mobileHome.planHeight >= 66, "두 영업 행동은 충분한 모바일 터치 높이를 사용해야 합니다.");
+  assert.equal(mobileHome.actionGap, 8, "두 영업 행동 사이에는 명확한 8px 간격이 있어야 합니다.");
   assert.ok(mobileHome.utilityWidth >= 350, "모바일 보조 버튼 묶음도 좌우 콘텐츠 폭을 넓게 사용해야 합니다.");
   assert.equal(mobileHome.animation, "none", "모바일 홈은 복귀할 때 다시 페이드되어 깜박이지 않아야 합니다.");
 
@@ -608,14 +615,14 @@ async function run() {
       fitsWidth: modal.scrollWidth <= modal.clientWidth + 1
     };
   })()`);
-  assert.equal(decorExpansion.total, 28, "꾸미기 컬렉션은 총 28종이어야 합니다.");
-  assert.deepEqual(decorExpansion.counts, { sign: 10, floor: 6, wall: 6, plant: 6 }, "마스터 전용 간판 4종을 포함해야 합니다.");
-  assert.equal(decorExpansion.visibleCards, 6, "선택한 꾸미기 분류의 6종을 한 목록에서 확인할 수 있어야 합니다.");
+  assert.equal(decorExpansion.total, 31, "꾸미기 컬렉션은 퀵 별 보상 3종을 포함해 총 31종이어야 합니다.");
+  assert.deepEqual(decorExpansion.counts, { sign: 11, floor: 7, wall: 7, plant: 6 }, "마스터 전용 간판과 퀵 별 보상을 포함해야 합니다.");
+  assert.equal(decorExpansion.visibleCards, 7, "선택한 바닥 꾸미기 7종을 한 목록에서 확인할 수 있어야 합니다.");
   assert.equal(decorExpansion.owned, true, "새 꾸미기 아이템을 구매할 수 있어야 합니다.");
   assert.equal(decorExpansion.equipped, "floor_terrazzo", "구매한 꾸미기 아이템을 바로 장착해야 합니다.");
   assert.equal(decorExpansion.shopClass, true, "장착한 바닥이 실제 매장에 적용되어야 합니다.");
   assert.equal(decorExpansion.previewClass, true, "장착한 바닥이 꾸미기 미리 보기에 적용되어야 합니다.");
-  assert.match(decorExpansion.ownedLabel, /\/ 28 보유/, "꾸미기 보유 현황은 28종 기준으로 표시해야 합니다.");
+  assert.match(decorExpansion.ownedLabel, /\/ 31 보유/, "꾸미기 보유 현황은 31종 기준으로 표시해야 합니다.");
   assert.equal(decorExpansion.fitsWidth, true, "확장된 꾸미기 목록이 모바일 화면 너비를 넘지 않아야 합니다.");
   await evaluate("document.querySelector('#decor-close-button').click()");
   await waitFor("document.querySelector('#intro-modal').classList.contains('open') && !document.querySelector('#decor-modal').classList.contains('open')");
@@ -784,13 +791,14 @@ async function run() {
   `);
   await waitFor("document.readyState === 'complete' && typeof state !== 'undefined'");
   console.log("UI 회귀: 저장 데이터 이전 확인");
-  const migrated = await evaluate("({ version: state.progression.schemaVersion, objectives: state.progression.stats.objectives, quickShifts: state.progression.stats.quickShifts, standardRecord: state.progression.records.standard.score, lastMode: state.progression.preferences.lastMode, master: state.progression.master })");
-  assert.equal(migrated.version, 8, "v5 저장 데이터는 v8으로 이전되어야 합니다.");
+  const migrated = await evaluate("({ version: state.progression.schemaVersion, objectives: state.progression.stats.objectives, quickShifts: state.progression.stats.quickShifts, standardRecord: state.progression.records.standard.score, lastMode: state.progression.preferences.lastMode, master: state.progression.master, quick: state.progression.quick })");
+  assert.equal(migrated.version, 9, "v5 저장 데이터는 v9으로 이전되어야 합니다.");
   assert.equal(migrated.objectives, 0, "이전 데이터의 목표 통계 기본값은 0이어야 합니다.");
   assert.equal(migrated.quickShifts, 0, "이전 데이터에는 퀵 시프트 순환 횟수 기본값이 추가되어야 합니다.");
   assert.equal(migrated.standardRecord, 4200, "기존 최고 기록은 75초 기본 모드 기록으로 이전되어야 합니다.");
   assert.equal(migrated.lastMode, "standard", "이전 데이터는 75초 기본 영업을 유지해야 합니다.");
   assert.deepEqual(migrated.master, { machine: { path: null, level: 0 }, tool: { path: null, level: 0 } }, "이전 저장 데이터에는 안전한 마스터 개조 기본값이 추가되어야 합니다.");
+  assert.deepEqual(migrated.quick, { records: {}, claimedMilestones: [] }, "이전 저장 데이터에는 퀵 시프트 기록 기본값이 추가되어야 합니다.");
 
   console.log("UI 회귀: 원터치 퀵 시프트와 LAST SAVE 확인");
   await evaluate("document.querySelector('#start-button').click(); clearGameTimers()");

@@ -69,6 +69,10 @@ const pngSize = (file) => {
   "result-first-action",
   "result-wrong-actions",
   "result-last-save",
+  "quick-scenario-ribbon",
+  "quick-result-summary",
+  "quick-star-goals",
+  "next-quick-button",
 ].forEach((id) => assert.match(html, new RegExp(`id=["']${id}["']`), `${id} UI가 필요합니다.`));
 
 assert.equal(manifest.display, "standalone", "PWA는 독립 실행형으로 열려야 합니다.");
@@ -79,10 +83,17 @@ assert.ok(manifest.screenshots.some((item) => item.form_factor === "narrow"), "�
 ["index.html", "styles.css", "game-config.js", "script.js", "manifest.webmanifest", "icon.svg", "icon-maskable.svg", "assets/icon-192.png", "assets/icon-512.png", "assets/icon-maskable-512.png", "assets/share-card.png", "assets/screenshot-wide.png", "assets/screenshot-mobile.png"]
   .forEach((asset) => assert.match(worker, new RegExp(asset.replace(".", "\\.")), `${asset}이 오프라인 캐시에 포함되어야 합니다.`));
 
-assert.match(script, /DATA_SCHEMA_VERSION\s*=\s*8/, "마스터 개조 저장을 위한 데이터 스키마 버전 8이 필요합니다.");
-assert.match(script, /APP_VERSION\s*=\s*"2\.17\.0"/, "퀵 시프트·LAST SAVE 업데이트 버전 2.17.0이 필요합니다.");
+assert.match(script, /DATA_SCHEMA_VERSION\s*=\s*9/, "퀵 시프트 별·기록 저장을 위한 데이터 스키마 버전 9가 필요합니다.");
+assert.match(script, /APP_VERSION\s*=\s*"2\.18\.0"/, "퀵 시프트 루프 업데이트 버전 2.18.0이 필요합니다.");
 assert.match(script, /QUICK_SHIFT_SCENARIOS/, "순환형 45초 퀵 시프트 시나리오가 필요합니다.");
 assert.match(script, /startQuickShift/, "홈 원터치 퀵 시프트 시작 함수가 필요합니다.");
+assert.match(script, /QUICK_STAR_MILESTONES/, "퀵 시프트 누적 별 보상이 필요합니다.");
+assert.match(script, /evaluateQuickStars/, "퀵 시프트 3별 평가 함수가 필요합니다.");
+assert.match(script, /updateQuickProgress/, "시나리오별 최고 기록과 직전 기록 저장이 필요합니다.");
+assert.match(script, /renderQuickResultSummary/, "결과 화면에 퀵 시프트 별·기록 변화 요약이 필요합니다.");
+assert.match(script, /startNextQuickShift/, "결과에서 순서상 다음 퀵 시프트를 즉시 시작해야 합니다.");
+assert.match(script, /comboWindowBonus/, "퀵 시프트별 실제 플레이 규칙이 필요합니다.");
+assert.match(script, /unlockQuickStars/, "누적 별로 해금되는 꾸미기 보상이 필요합니다.");
 assert.match(script, /beginLastChance/, "대기 한계의 3초 LAST SAVE가 필요합니다.");
 assert.match(script, /completeLastChance/, "LAST SAVE 구조 성공 처리가 필요합니다.");
 assert.match(script, /CLEAN_COMPLETION_VIBRATIONS/, "오염별 청소 진동 피드백이 필요합니다.");
@@ -167,6 +178,8 @@ assert.match(styles, /screen-view\.open:not\(\.mobile-page-entering\)/, "모바�
 assert.match(styles, /168\.1579vw - 16\.8158px/, "모바일 기계 보드의 고정 비율 계산이 필요합니다.");
 assert.match(styles, /v2\.15 master progression/, "마스터 개조와 동일 높이 액션을 위한 모바일 스타일이 필요합니다.");
 assert.match(styles, /\.result-home-row/, "결과의 홈 이동은 재도전 행동과 시각적으로 분리되어야 합니다.");
+assert.match(styles, /\.shift-start-actions\s*\{[^}]*grid-template-columns:\s*repeat\(2/, "홈의 퀵 시작과 계획 선택은 독립된 2열 버튼이어야 합니다.");
+assert.match(styles, /\.quick-result-summary/, "퀵 시프트 별 평가 카드 스타일이 필요합니다.");
 assert.ok(fs.existsSync(path.join(root, "tests", "laundry-game-ui.cjs")), "자동 UI 회귀 검사 파일이 필요합니다.");
 ["icon-192.png", "icon-512.png", "icon-maskable-512.png", "share-card.png", "screenshot-wide.png", "screenshot-mobile.png"]
   .forEach((asset) => assert.ok(fs.existsSync(path.join(root, "assets", asset)), `${asset} 파일이 필요합니다.`));
