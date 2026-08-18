@@ -84,7 +84,7 @@ assert.ok(manifest.screenshots.some((item) => item.form_factor === "narrow"), "�
   .forEach((asset) => assert.match(worker, new RegExp(asset.replace(".", "\\.")), `${asset}이 오프라인 캐시에 포함되어야 합니다.`));
 
 assert.match(script, /DATA_SCHEMA_VERSION\s*=\s*10/, "오늘의 퀵·연속 기록 저장을 위한 데이터 스키마 버전 10이 필요합니다.");
-assert.match(script, /APP_VERSION\s*=\s*"2\.19\.0"/, "오늘의 퀵과 얼룩 전처리 업데이트 버전 2.19.0이 필요합니다.");
+assert.match(script, /APP_VERSION\s*=\s*"2\.19\.1"/, "모바일 플레이 영역 분리 업데이트 버전 2.19.1이 필요합니다.");
 assert.match(script, /QUICK_SHIFT_SCENARIOS/, "순환형 45초 퀵 시프트 시나리오가 필요합니다.");
 assert.match(script, /startQuickShift/, "홈 원터치 퀵 시프트 시작 함수가 필요합니다.");
 assert.match(script, /QUICK_STAR_MILESTONES/, "퀵 시프트 누적 별 보상이 필요합니다.");

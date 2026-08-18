@@ -5354,3 +5354,71 @@ body:has(.screen-view.open) {
     transform: translate(-50%, -50%);
   }
 }
+
+/* v2.19.1 separate mobile HUD, board, controls, and the shared notice rail */
+@media (max-width: 520px) {
+  /* Keep the board and action dock adjacent without stacking their hit areas. */
+  .play-area { box-shadow: none; }
+  .tool-dock {
+    z-index: 20;
+    transform: none;
+    border-top-left-radius: 11px;
+    border-top-right-radius: 11px;
+  }
+
+  /* Every transient message uses the free part of the store header. */
+  .quick-scenario-ribbon,
+  .event-alert,
+  .event-forecast,
+  .toast-region,
+  .first-shift-guide,
+  .last-chance-alert {
+    top: 2px;
+    right: 150px;
+    left: 64px;
+    width: auto;
+    max-width: none;
+    transform: none;
+  }
+
+  .quick-scenario-ribbon {
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 5px;
+    padding: 4px 6px 4px 4px;
+  }
+
+  .last-chance-alert {
+    min-height: 42px;
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+    gap: 4px;
+    padding: 4px 5px;
+    border-radius: 8px;
+  }
+  .last-chance-alert > span { width: 24px; height: 24px; font-size: 13px; }
+  .last-chance-alert strong {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .last-chance-alert > em b { font-size: 13px; }
+
+  /* A higher-priority notice replaces lower-priority copy instead of covering it. */
+  .play-area:has(.quick-scenario-ribbon:not([hidden]):not(.compact)) .toast-region,
+  .play-area:has(.first-shift-guide:not([hidden])) .quick-scenario-ribbon,
+  .play-area:has(.first-shift-guide:not([hidden])) .toast-region,
+  .play-area:has(.event-forecast:not([hidden])) .quick-scenario-ribbon,
+  .play-area:has(.event-forecast:not([hidden])) .first-shift-guide,
+  .play-area:has(.event-forecast:not([hidden])) .toast-region,
+  .play-area:has(.event-alert:not([hidden])) .quick-scenario-ribbon,
+  .play-area:has(.event-alert:not([hidden])) .event-forecast,
+  .play-area:has(.event-alert:not([hidden])) .first-shift-guide,
+  .play-area:has(.event-alert:not([hidden])) .toast-region,
+  .play-area:has(.last-chance-alert:not([hidden])) .quick-scenario-ribbon,
+  .play-area:has(.last-chance-alert:not([hidden])) .event-alert,
+  .play-area:has(.last-chance-alert:not([hidden])) .event-forecast,
+  .play-area:has(.last-chance-alert:not([hidden])) .first-shift-guide,
+  .play-area:has(.last-chance-alert:not([hidden])) .toast-region {
+    display: none;
+  }
+}

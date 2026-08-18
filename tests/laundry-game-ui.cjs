@@ -726,8 +726,8 @@ async function run() {
   assert.equal(mobileGame.missionHeight, 26, "모바일 상태 HUD는 26px로 압축되어야 합니다.");
   assert.equal(mobileGame.objectivesHeight, 22, "모바일 목표 HUD는 22px로 압축되어야 합니다.");
   assert.equal(mobileGame.playTop, 89, "압축된 헤더 아래에서 보드는 89px 지점에 시작해야 합니다.");
-  assert.ok(mobileGame.dockTop - mobileGame.playBottom >= -8 && mobileGame.dockTop - mobileGame.playBottom <= -6, "도구판은 매장 하단 프레임에만 6~8px 겹쳐야 합니다.");
-  assert.ok(Math.abs(mobileGame.toolsTop - mobileGame.lastMachineBottom) <= 1, "마지막 기계와 액션 버튼 사이에는 빈 공간이 없어야 합니다.");
+  assert.ok(mobileGame.dockTop - mobileGame.playBottom >= 0 && mobileGame.dockTop - mobileGame.playBottom <= 2, "모바일 플레이보드와 도구판의 클릭 영역은 겹치지 않고 바로 이어져야 합니다.");
+  assert.ok(mobileGame.toolsTop - mobileGame.lastMachineBottom >= 6 && mobileGame.toolsTop - mobileGame.lastMachineBottom <= 10, "마지막 기계와 액션 버튼 사이에는 보드 테두리만큼의 안전 간격이 있어야 합니다.");
   assert.ok(mobileGame.facilityTop >= mobileGame.shopHeaderTop && mobileGame.facilityBottom <= mobileGame.shopHeaderBottom, "세제 탱크와 차단기는 매장 헤더 안에 배치되어야 합니다.");
   assert.equal(mobileGame.hudGap, 1, "모바일 주요 HUD 카드 간격은 1px이어야 합니다.");
   assert.equal(mobileGame.missionGap, 2, "모바일 상태 카드 간격은 2px이어야 합니다.");
@@ -743,9 +743,31 @@ async function run() {
     const firstGuide = document.querySelector('#first-shift-guide');
     firstGuide.hidden = false;
     const guideRect = firstGuide.getBoundingClientRect();
-    firstGuide.hidden = true;
     showToast('손님이 돌아갔어요!', 'good routine', '♥', 1500);
+    const guideToastDisplay = getComputedStyle(document.querySelector('.toast-region')).display;
+    firstGuide.hidden = true;
     const toastRect = document.querySelector('.toast-region .toast').getBoundingClientRect();
+    state.quickScenario = QUICK_SHIFT_SCENARIOS[0];
+    renderQuickScenarioIdentity();
+    const quickRibbon = document.querySelector('#quick-scenario-ribbon');
+    quickRibbon.classList.remove('compact');
+    const quickRect = quickRibbon.getBoundingClientRect();
+    const quickToastDisplay = getComputedStyle(document.querySelector('.toast-region')).display;
+    firstGuide.hidden = false;
+    showEventAlert('breakdown');
+    const quickDisplayDuringEvent = getComputedStyle(quickRibbon).display;
+    const guideDisplayDuringEvent = getComputedStyle(firstGuide).display;
+    hideEventAlert();
+    firstGuide.hidden = true;
+    state.quickScenario = null;
+    renderQuickScenarioIdentity();
+    const lastChance = document.querySelector('#last-chance-alert');
+    showEventAlert('breakdown');
+    lastChance.hidden = false;
+    const lastChanceRect = lastChance.getBoundingClientRect();
+    const eventDisplayDuringLastChance = getComputedStyle(document.querySelector('#event-alert')).display;
+    lastChance.hidden = true;
+    hideEventAlert();
     return {
       firstMachineTop,
       alertBottom: alertRect.bottom,
@@ -757,13 +779,31 @@ async function run() {
       guideBottom: guideRect.bottom,
       guideRight: guideRect.right,
       guideHeight: guideRect.height,
+      quickBottom: quickRect.bottom,
+      quickRight: quickRect.right,
+      quickHeight: quickRect.height,
+      quickToastDisplay,
+      quickDisplayDuringEvent,
+      guideToastDisplay,
+      guideDisplayDuringEvent,
+      lastChanceBottom: lastChanceRect.bottom,
+      lastChanceRight: lastChanceRect.right,
+      lastChanceHeight: lastChanceRect.height,
+      eventDisplayDuringLastChance,
       faultCopy: getComputedStyle(document.querySelector('.machine-fault small')).display
     };
   })()`);
   assert.ok(noticeLayout.alertBottom < noticeLayout.firstMachineTop && noticeLayout.alertHeight >= 28 && noticeLayout.alertHeight <= 32, "기계 고장 알림은 첫 기계를 가리지 않는 상단 칩이어야 합니다.");
   assert.ok(noticeLayout.toastBottom < noticeLayout.firstMachineTop && noticeLayout.toastHeight >= 28 && noticeLayout.toastHeight <= 32, "손님 완료 메시지는 기계를 가리지 않는 상단 칩이어야 합니다.");
   assert.ok(noticeLayout.guideBottom < noticeLayout.firstMachineTop && noticeLayout.guideHeight >= 28 && noticeLayout.guideHeight <= 32, "첫 영업 도움말은 기계를 가리지 않는 상단 칩이어야 합니다.");
-  assert.ok(Math.max(noticeLayout.alertRight, noticeLayout.toastRight, noticeLayout.guideRight) < mobileGame.facilityLeft, "헤더 안내와 세제·차단기 조작 영역은 겹치지 않아야 합니다.");
+  assert.ok(noticeLayout.quickBottom < noticeLayout.firstMachineTop && noticeLayout.quickHeight <= 42, "퀵 시프트 안내는 상점 헤더 안에 머물러야 합니다.");
+  assert.ok(noticeLayout.lastChanceBottom < noticeLayout.firstMachineTop && noticeLayout.lastChanceHeight <= 46, "LAST SAVE 안내는 기계를 덮지 않는 헤더 레일에 표시되어야 합니다.");
+  assert.equal(noticeLayout.quickToastDisplay, "none", "퀵 시프트 시작 안내와 토스트가 동시에 겹치면 안 됩니다.");
+  assert.equal(noticeLayout.quickDisplayDuringEvent, "none", "매장 사건 중에는 퀵 안내가 사건 안내를 덮으면 안 됩니다.");
+  assert.equal(noticeLayout.guideToastDisplay, "none", "첫 영업 가이드와 토스트가 동시에 겹치면 안 됩니다.");
+  assert.equal(noticeLayout.guideDisplayDuringEvent, "none", "매장 사건 안내는 첫 영업 가이드보다 우선 표시되어야 합니다.");
+  assert.equal(noticeLayout.eventDisplayDuringLastChance, "none", "LAST SAVE는 다른 사건 안내보다 우선 표시되어야 합니다.");
+  assert.ok(Math.max(noticeLayout.alertRight, noticeLayout.toastRight, noticeLayout.guideRight, noticeLayout.quickRight, noticeLayout.lastChanceRight) < mobileGame.facilityLeft, "헤더 안내는 세제·차단기 조작 영역과 겹치지 않아야 합니다.");
   assert.equal(noticeLayout.faultCopy, "none", "모바일 고장 기계에는 조작을 가리는 긴 문구를 숨겨야 합니다.");
   await cdp("Emulation.setDeviceMetricsOverride", { width: 360, height: 800, deviceScaleFactor: 1, mobile: true });
   await wait(60);
@@ -781,7 +821,7 @@ async function run() {
     };
   })()`);
   assert.ok(Math.abs(compactMobileGame.playHeight - compactMobileGame.expectedHeight) <= 1, "360px 모바일에서도 기계 보드 비율이 유지되어야 합니다.");
-  assert.ok(Math.abs(compactMobileGame.machineToolGap) <= 1, "360px 모바일에서도 기계와 액션 버튼이 바로 연결되어야 합니다.");
+  assert.ok(compactMobileGame.machineToolGap >= 6 && compactMobileGame.machineToolGap <= 10, "360px 모바일에서도 기계와 액션 버튼 사이 안전 간격이 유지되어야 합니다.");
   assert.equal(compactMobileGame.detergentHeight, 50, "360px 모바일에서도 세제 탱크는 50px 높이를 유지해야 합니다.");
   assert.equal(compactMobileGame.breakerHeight, 50, "360px 모바일에서도 차단기는 50px 높이를 유지해야 합니다.");
   assert.equal(compactMobileGame.bodyFits, true, "360×800에서도 게임 화면이 세로 스크롤 없이 보여야 합니다.");
