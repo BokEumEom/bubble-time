@@ -68,6 +68,8 @@ const pngSize = (file) => {
   "last-chance-alert",
   "result-first-action",
   "result-wrong-actions",
+  "result-perfects",
+  "result-fevers",
   "result-last-save",
   "quick-scenario-ribbon",
   "quick-result-summary",
@@ -83,9 +85,18 @@ assert.ok(manifest.screenshots.some((item) => item.form_factor === "narrow"), "�
 ["index.html", "styles.css", "game-config.js", "script.js", "manifest.webmanifest", "icon.svg", "icon-maskable.svg", "assets/icon-192.png", "assets/icon-512.png", "assets/icon-maskable-512.png", "assets/share-card.png", "assets/screenshot-wide.png", "assets/screenshot-mobile.png"]
   .forEach((asset) => assert.match(worker, new RegExp(asset.replace(".", "\\.")), `${asset}이 오프라인 캐시에 포함되어야 합니다.`));
 
-assert.match(script, /DATA_SCHEMA_VERSION\s*=\s*10/, "오늘의 퀵·연속 기록 저장을 위한 데이터 스키마 버전 10이 필요합니다.");
-assert.match(script, /APP_VERSION\s*=\s*"2\.19\.1"/, "모바일 플레이 영역 분리 업데이트 버전 2.19.1이 필요합니다.");
+assert.match(script, /DATA_SCHEMA_VERSION\s*=\s*11/, "이름 단골과 초반 보상 저장을 위한 데이터 스키마 버전 11이 필요합니다.");
+assert.match(script, /APP_VERSION\s*=\s*"2\.20\.0"/, "킬링타임 루프 강화 업데이트 버전 2.20.0이 필요합니다.");
 assert.match(script, /QUICK_SHIFT_SCENARIOS/, "순환형 45초 퀵 시프트 시나리오가 필요합니다.");
+assert.match(script, /id:\s*"familiar_faces"/, "12번째 퀵 시프트인 동네 단골 모임이 필요합니다.");
+assert.match(script, /SHIFT_PHASES/, "45초를 기승전결로 나누는 시프트 디렉터가 필요합니다.");
+assert.match(script, /updateShiftDirector/, "시프트 단계별 흐름을 갱신해야 합니다.");
+assert.match(script, /phaseEvent/, "퀵 시프트 중반 대표 사건이 필요합니다.");
+assert.match(script, /PERFECT_WINDOW_MS/, "빠른 청소 PERFECT 판정이 필요합니다.");
+assert.match(script, /startFever/, "연속 PERFECT로 시작하는 FEVER가 필요합니다.");
+assert.match(script, /FAMILIAR_GUESTS/, "이름과 외형을 기억할 수 있는 반복 단골이 필요합니다.");
+assert.match(script, /regulars\.visits/, "이름 단골의 누적 방문을 저장해야 합니다.");
+assert.match(script, /FIRST_TEN_SHIFT_REWARDS/, "첫 10회 영업 보상 간격이 필요합니다.");
 assert.match(script, /startQuickShift/, "홈 원터치 퀵 시프트 시작 함수가 필요합니다.");
 assert.match(script, /QUICK_STAR_MILESTONES/, "퀵 시프트 누적 별 보상이 필요합니다.");
 assert.match(script, /evaluateQuickStars/, "퀵 시프트 3별 평가 함수가 필요합니다.");
@@ -190,6 +201,9 @@ assert.match(styles, /v2\.15 master progression/, "마스터 개조와 동일 �
 assert.match(styles, /\.result-home-row/, "결과의 홈 이동은 재도전 행동과 시각적으로 분리되어야 합니다.");
 assert.match(styles, /\.shift-start-actions\s*\{[^}]*grid-template-columns:\s*repeat\(2/, "홈의 퀵 시작과 계획 선택은 독립된 2열 버튼이어야 합니다.");
 assert.match(styles, /\.quick-result-summary/, "퀵 시프트 별 평가 카드 스타일이 필요합니다.");
+assert.match(styles, /\.perfect-pop/, "PERFECT 조작 피드백 스타일이 필요합니다.");
+assert.match(styles, /\.fever-burst/, "FEVER 시작 연출이 필요합니다.");
+assert.match(styles, /\.familiar-guest/, "이름 단골의 시각 구분이 필요합니다.");
 assert.match(styles, /\.tool\.tool-needed/, "얼룩 손님 대기 중 제거제 도구를 강조해야 합니다.");
 assert.match(styles, /\.result-comparison/, "결과 화면에 이전 기록 비교 UI가 필요합니다.");
 assert.ok(fs.existsSync(path.join(root, "tests", "laundry-game-ui.cjs")), "자동 UI 회귀 검사 파일이 필요합니다.");

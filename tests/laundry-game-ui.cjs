@@ -869,8 +869,8 @@ async function run() {
   `);
   await waitFor("document.readyState === 'complete' && typeof state !== 'undefined'");
   console.log("UI 회귀: 저장 데이터 이전 확인");
-  const migrated = await evaluate("({ version: state.progression.schemaVersion, objectives: state.progression.stats.objectives, quickShifts: state.progression.stats.quickShifts, standardRecord: state.progression.records.standard.score, lastMode: state.progression.preferences.lastMode, master: state.progression.master, quickRecords: state.progression.quick.records, quickMilestones: state.progression.quick.claimedMilestones, quickToday: state.progression.quick.today, quickStreak: state.progression.quick.streak, guidedShifts: state.progression.onboarding.guidedShifts })");
-  assert.equal(migrated.version, 10, "v5 저장 데이터는 v10으로 이전되어야 합니다.");
+  const migrated = await evaluate("({ version: state.progression.schemaVersion, objectives: state.progression.stats.objectives, quickShifts: state.progression.stats.quickShifts, standardRecord: state.progression.records.standard.score, lastMode: state.progression.preferences.lastMode, master: state.progression.master, quickRecords: state.progression.quick.records, quickMilestones: state.progression.quick.claimedMilestones, quickToday: state.progression.quick.today, quickStreak: state.progression.quick.streak, guidedShifts: state.progression.onboarding.guidedShifts, starterClaims: state.progression.onboarding.shiftRewardsClaimed, regularVisits: state.progression.regulars.visits })");
+  assert.equal(migrated.version, 11, "v5 저장 데이터는 v11로 이전되어야 합니다.");
   assert.equal(migrated.objectives, 0, "이전 데이터의 목표 통계 기본값은 0이어야 합니다.");
   assert.equal(migrated.quickShifts, 0, "이전 데이터에는 퀵 시프트 순환 횟수 기본값이 추가되어야 합니다.");
   assert.equal(migrated.standardRecord, 4200, "기존 최고 기록은 75초 기본 모드 기록으로 이전되어야 합니다.");
@@ -881,6 +881,8 @@ async function run() {
   assert.equal(migrated.quickToday.attempts, 0, "이전 저장 데이터에는 오늘의 퀵 도전 기본값이 추가되어야 합니다.");
   assert.deepEqual(migrated.quickStreak, { count: 0, best: 0, lastCompletedDate: null }, "이전 저장 데이터에는 연속 완주 기본값이 추가되어야 합니다.");
   assert.equal(migrated.guidedShifts, 1, "기존 한 판 기록은 첫 3판 가이드 진행으로 이전되어야 합니다.");
+  assert.deepEqual(migrated.starterClaims, [1], "기존 영업 횟수의 초반 보상은 중복 지급되지 않도록 이전되어야 합니다.");
+  assert.deepEqual(migrated.regularVisits, {}, "이전 저장 데이터에는 이름 단골 방문 기록 기본값이 추가되어야 합니다.");
   const dailyQuickReward = await evaluate(`(() => {
     state.isDailyQuick = true;
     state.score = 1200;
@@ -900,6 +902,48 @@ async function run() {
   assert.equal(quickStart.scenario, quickStart.todayScenario, "원터치 퀵 시프트는 날짜별 고정 시나리오여야 합니다.");
   assert.equal(quickStart.daily, true, "홈 퀵 시프트는 오늘의 연속 완주 대상으로 시작해야 합니다.");
   assert.equal(quickStart.prepOpen, false, "원터치 퀵 시프트는 준비 화면을 거치지 않아야 합니다.");
+  const killingTimeLoop = await evaluate(`(() => {
+    const phases = [0, 10, 27, 39].map((seconds) => {
+      state.elapsedSeconds = seconds;
+      return activeShiftPhase().id;
+    });
+    state.elapsedSeconds = 0;
+    state.perfects = 0;
+    state.perfectChain = 0;
+    state.feverActive = false;
+    state.feverCount = 0;
+    selectTool('squeegee');
+    state.machines.slice(0, 3).forEach((machine) => {
+      makeDirty(machine, 'limescale');
+      machine.dirtCreatedAt = performance.now() - 500;
+      handleMachineClick(machine.id);
+    });
+    const familiar = makeGuest({ id: 120, characterId: 'minsu', type: 'bulk', stained: false, waitedMs: 0 });
+    const result = {
+      scenarioCount: QUICK_SHIFT_SCENARIOS.length,
+      phases,
+      perfects: state.perfects,
+      fever: state.feverActive,
+      feverCount: state.feverCount,
+      feverClass: document.querySelector('#play-area').classList.contains('fever-active'),
+      familiarName: familiar.name,
+      familiarBubble: familiar.el.querySelector('.guest-bubble').textContent,
+      familiarDiscovered: state.progression.discovery.customers.includes('familiar_minsu')
+    };
+    familiar.el.remove();
+    return result;
+  })()`);
+  assert.equal(killingTimeLoop.scenarioCount, 12, "퀵 시프트는 수작업 구성 12종을 순환해야 합니다.");
+  assert.deepEqual(killingTimeLoop.phases, ["warmup", "flow", "signature", "finale"], "45초 퀵 시프트는 준비·리듬·돌발·피날레로 진행되어야 합니다.");
+  assert.deepEqual({ perfects: killingTimeLoop.perfects, fever: killingTimeLoop.fever, feverCount: killingTimeLoop.feverCount, feverClass: killingTimeLoop.feverClass }, { perfects: 3, fever: true, feverCount: 1, feverClass: true }, "3연속 PERFECT는 FEVER와 보드 피드백을 시작해야 합니다.");
+  assert.equal(killingTimeLoop.familiarName, "민수", "고정 외형과 이름을 가진 단골이 다시 등장해야 합니다.");
+  assert.match(killingTimeLoop.familiarBubble, /민수/, "이름 단골은 말풍선에서 바로 구분되어야 합니다.");
+  assert.equal(killingTimeLoop.familiarDiscovered, true, "만난 이름 단골은 도감에 발견 처리되어야 합니다.");
+  if (process.env.CAPTURE_UI_REVIEW === "1") {
+    await wait(120);
+    const feverReview = await cdp("Page.captureScreenshot", { format: "png", fromSurface: true, captureBeyondViewport: false });
+    fs.writeFileSync(path.join(os.tmpdir(), "bubble-time-mobile-fever-review.png"), Buffer.from(feverReview.data, "base64"));
+  }
   const stainPretreatment = await evaluate(`(() => {
     const guest = makeGuest({ id: 99, type: 'normal', stained: true, cleaned: false, waitedMs: 2000, stainGraceRemainingMs: 3000 });
     state.queue.push(guest);

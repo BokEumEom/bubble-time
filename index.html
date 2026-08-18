@@ -24,9 +24,9 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./assets/icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=2.19.1" />
-    <script src="./game-config.js?v=2.19.1" defer></script>
-    <script src="./script.js?v=2.19.1" defer></script>
+    <link rel="stylesheet" href="./styles.css?v=2.20.0" />
+    <script src="./game-config.js?v=2.20.0" defer></script>
+    <script src="./script.js?v=2.20.0" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#play-area">게임 화면으로 바로가기</a>
@@ -507,7 +507,8 @@
           <article><span>1</span><div><h3>기본 청소</h3><p>물때는 스퀴지, 먼지는 먼지털이, 남은 빨래는 바구니로 처리합니다. 얼룩 손님에게는 제거제를 사용하세요.</p></div></article>
           <article><span>2</span><div><h3>매장 사건</h3><p>고장은 렌치, 세제 부족은 보충통을 선택해 대상을 누릅니다. 정전은 매장 아래쪽 차단기를 바로 누르세요.</p></div></article>
           <article><span>3</span><div><h3>영업 목표</h3><p>대기 손님 6명에 처음 도달하면 3초 LAST SAVE가 열립니다. 빈 기계를 만들면 한 번 구조되며, 무한 영업은 일시정지 화면에서 정산할 수 있습니다.</p></div></article>
-          <article><span>4</span><div><h3>키보드·모바일</h3><p>숫자키 1–6으로 도구를 고르고 P 또는 Esc로 일시정지합니다. 모바일에서는 버튼을 직접 터치하세요.</p></div></article>
+          <article><span>4</span><div><h3>PERFECT·FEVER</h3><p>오염 표시 후 1.45초 안에 처리하면 PERFECT입니다. 3연속 PERFECT에서 6.5초 FEVER가 시작되어 점수 배율이 올라갑니다.</p></div></article>
+          <article><span>5</span><div><h3>키보드·모바일</h3><p>숫자키 1–6으로 도구를 고르고 P 또는 Esc로 일시정지합니다. 모바일에서는 버튼을 직접 터치하세요.</p></div></article>
         </div>
         <button class="primary-button help-tutorial-button" id="help-tutorial-button" type="button"><span>실습 튜토리얼 다시 시작</span><b>▶</b></button>
       </section>
@@ -516,14 +517,15 @@
     <div class="modal-backdrop" id="updates-modal" role="dialog" aria-modal="true" aria-labelledby="updates-title" aria-hidden="true">
       <section class="modal progression-modal updates-card">
         <button class="modal-close utility-page-back" id="updates-close-button" type="button" aria-label="업데이트 안내에서 홈으로 돌아가기"><span class="utility-close-mark" aria-hidden="true">×</span><span class="utility-back-arrow" aria-hidden="true">←</span><b>홈</b></button>
-        <div class="modal-kicker">VERSION <span id="app-version-label">2.19.1</span></div>
-        <h2 id="updates-title">모바일 플레이 화면 정리 업데이트</h2>
-        <p>2026.08 · 헤더 안내, 플레이보드, 하단 도구판의 경계를 분리하고 작은 화면에서 겹치던 영업 알림의 우선순위를 정리했습니다.</p>
+        <div class="modal-kicker">VERSION <span id="app-version-label">2.20.0</span></div>
+        <h2 id="updates-title">45초 킬링타임 루프 강화</h2>
+        <p>2026.08 · 짧은 한 판 안에 기승전결과 손맛이 생기도록 퀵 시프트, 퍼펙트·피버, 이름 단골과 초반 보상을 함께 확장했습니다.</p>
         <div class="update-list">
-          <article><span>BOARD</span><div><h3>보드와 도구판 영역 분리</h3><p>기계 보드와 하단 액션 버튼이 시각적으로 이어지면서도 클릭 영역은 겹치지 않도록 안전 간격을 확보했습니다.</p></div></article>
-          <article><span>NOTICE</span><div><h3>헤더 안내 한 줄 정리</h3><p>퀵 시프트·사건·첫 영업·LAST SAVE 안내를 설비 옆 공통 레일에 배치해 기계와 세제·차단기를 가리지 않습니다.</p></div></article>
-          <article><span>ORDER</span><div><h3>알림 우선순위 적용</h3><p>토스트와 퀵 안내, 긴급 사건이 동시에 발생하면 중요한 안내 하나만 보여 중첩과 조작 방해를 줄입니다.</p></div></article>
-          <article><span>MOBILE</span><div><h3>작은 화면 좌표 검증</h3><p>390×844와 360×800에서 12대 기계, 50px 도구 버튼, 무스크롤 한 화면 구성을 다시 확인했습니다.</p></div></article>
+          <article><span>FLOW</span><div><h3>45초 시프트 디렉터</h3><p>준비·리듬·돌발·피날레 네 구간으로 손님과 오염 속도가 변하고, 시나리오 대표 사건은 중반 돌발 구간에 등장합니다.</p></div></article>
+          <article><span>FEVER</span><div><h3>PERFECT 3연속 보상</h3><p>빠른 도구 판단에 PERFECT 점수 보너스를 주고, 3연속 성공 시 6.5초 동안 FEVER 배율과 전용 사운드·보드 효과가 켜집니다.</p></div></article>
+          <article><span>12 SHIFT</span><div><h3>수작업 퀵 시프트 12종</h3><p>건조기 먼지, 화이트 셔츠, 출근길 익스프레스, 분실물, 긴급 점검, 동네 단골 모임을 더했습니다.</p></div></article>
+          <article><span>REGULAR</span><div><h3>기억나는 이름 단골</h3><p>민수·지연·하늘·수아·준호·미나가 고정 외형과 대사로 다시 찾아오며 누적 방문은 도감에 저장됩니다.</p></div></article>
+          <article><span>START 10</span><div><h3>첫 10회 보상 리듬</h3><p>1·2·4·7·10회 완주 시 별도 수익을 지급해 첫 강화까지의 흐름과 재방문 동기를 빠르게 연결했습니다.</p></div></article>
         </div>
       </section>
     </div>
@@ -563,7 +565,7 @@
         <section class="quick-result-summary" id="quick-result-summary" aria-labelledby="quick-result-title" hidden>
           <header><span id="quick-result-icon">⚡</span><div><small>QUICK SHIFT REPORT</small><strong id="quick-result-title">퀵 시프트 결과</strong><em id="quick-result-best">최고 기록 0점</em></div><b id="quick-result-stars">☆☆☆</b></header>
           <div class="quick-star-goals" id="quick-star-goals"></div>
-          <div class="quick-result-deltas"><span><small>직전 점수 대비</small><strong id="quick-score-delta">첫 기록</strong></span><span><small>오조작 변화</small><strong id="quick-wrong-delta">첫 기록</strong></span><span><small>누적 별</small><strong id="quick-total-stars">0 / 18</strong></span></div>
+          <div class="quick-result-deltas"><span><small>직전 점수 대비</small><strong id="quick-score-delta">첫 기록</strong></span><span><small>오조작 변화</small><strong id="quick-wrong-delta">첫 기록</strong></span><span><small>누적 별</small><strong id="quick-total-stars">0 / 36</strong></span></div>
           <p class="quick-next-star" id="quick-next-star"><span>☆</span><strong>다음 별 목표를 확인해 보세요.</strong></p>
           <p id="quick-reward-message" hidden><span>★</span><strong>별 누적 보상을 획득했어요!</strong></p>
         </section>
@@ -613,6 +615,8 @@
             <div class="result-control-metrics" aria-label="플레이 조작 지표">
               <span><small>첫 유효 행동</small><strong id="result-first-action">–</strong></span>
               <span><small>오조작</small><strong id="result-wrong-actions">0회</strong></span>
+              <span><small>PERFECT</small><strong id="result-perfects">0회</strong></span>
+              <span><small>FEVER</small><strong id="result-fevers">0회</strong></span>
               <span><small>LAST SAVE</small><strong id="result-last-save">미사용</strong></span>
             </div>
             <p class="result-advice"><span>TIP</span><strong id="result-advice">오염을 빠르게 처리해 콤보를 이어가 보세요.</strong></p>

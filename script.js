@@ -7,8 +7,8 @@ const STORAGE_KEY = "bubbleTime75.bestRecord.v1";
 const PROGRESSION_KEY = "bubbleTime75.progression.v1";
 const CHECKPOINT_KEY = "bubbleTime.shiftCheckpoint.v1";
 const SEEN_VERSION_KEY = "bubbleTime75.seenVersion";
-const APP_VERSION = "2.19.1";
-const DATA_SCHEMA_VERSION = 10;
+const APP_VERSION = "2.20.0";
+const DATA_SCHEMA_VERSION = 11;
 const MOBILE_PAGE_MEDIA = "(max-width: 520px)";
 const MOBILE_SLIDE_PAGE_IDS = new Set(["prep-modal", "stats-modal", "settings-modal", "help-modal", "updates-modal"]);
 
@@ -72,18 +72,48 @@ const STORE_CONDITIONS = {
 };
 
 const QUICK_SHIFT_SCENARIOS = Object.freeze([
-  Object.freeze({ id: "rain_rinse", icon: "💧", accent: "aqua", title: "비 오는 번개 세탁", copy: "물때를 빠르게 걷어내고 환불 없이 버티세요.", ruleLabel: "물때 청소 +25%", difficulty: "standard", condition: "rain", objectiveIds: ["clean_6", "refundless"], eventDeck: ["detergent", "breakdown"], dirtBias: "limescale", cleanDirt: "limescale", cleanScore: 1.25, specialGoal: { kind: "refundless", label: "환불 없이 완주" } }),
-  Object.freeze({ id: "weekend_rush", icon: "♟", accent: "coral", title: "주말 45초 러시", copy: "몰려드는 손님을 만족시키고 대기 줄을 지키세요.", ruleLabel: "단골 응대 +25%", difficulty: "rush", condition: "weekend", objectiveIds: ["happy_6", "queue_control"], eventDeck: ["group", "detergent"], customerBias: "regular", customerReward: { type: "regular", multiplier: 1.25 }, specialGoal: { kind: "queueControl", label: "대기 3명 이하 유지" } }),
-  Object.freeze({ id: "power_drill", icon: "ϟ", accent: "violet", title: "전력 불안정", copy: "정전 예고를 읽고 사건을 빠르게 복구하세요.", ruleLabel: "사건 해결 +35%", difficulty: "standard", condition: "inspection", objectiveIds: ["fast_event", "refundless"], eventDeck: ["blackout", "breakdown"], dirtBias: "dust", eventScore: 1.35, specialGoal: { kind: "fastEvent", label: "사건을 3초 내 해결" } }),
-  Object.freeze({ id: "bulk_day", icon: "▦", accent: "gold", title: "이불 세탁의 날", copy: "대량 세탁 손님의 긴 작업 시간을 견뎌내세요.", ruleLabel: "대량 세탁 +30%", difficulty: "calm", condition: "weekend", objectiveIds: ["happy_6", "queue_control"], eventDeck: ["group", "detergent"], customerBias: "bulk", customerReward: { type: "bulk", multiplier: 1.3 }, specialGoal: { kind: "happy", target: 4, label: "만족 손님 4명" } }),
-  Object.freeze({ id: "clean_chain", icon: "⚡", accent: "mint", title: "콤보 청소 도전", copy: "오염을 발견하는 즉시 처리해 콤보를 이어가세요.", ruleLabel: "콤보 판정 +1.2초", difficulty: "standard", condition: "rain", objectiveIds: ["clean_6", "combo_6"], eventDeck: ["inspection", "detergent"], dirtBias: "limescale", comboWindowBonus: 1200, specialGoal: { kind: "combo", target: 4, label: "4콤보 달성" } }),
-  Object.freeze({ id: "regular_hour", icon: "✦", accent: "rose", title: "얼룩 전처리 시간", copy: "얼룩 손님을 놓치지 말고 기계 입장 전에 전처리하세요.", ruleLabel: "얼룩 제거 +30%", difficulty: "rush", condition: "inspection", objectiveIds: ["happy_6", "fast_event"], eventDeck: ["breakdown", "inspection"], customerBias: "regular", dirtBias: "laundry", stainChance: 0.48, cleanStainScore: 1.3, specialGoal: { kind: "stain", target: 2, label: "얼룩 손님 2명 전처리" } }),
+  Object.freeze({ id: "rain_rinse", icon: "💧", accent: "aqua", title: "비 오는 번개 세탁", copy: "물때를 빠르게 걷어내고 환불 없이 버티세요.", ruleLabel: "물때 청소 +25%", difficulty: "standard", condition: "rain", objectiveIds: ["clean_6", "refundless"], eventDeck: ["detergent", "breakdown"], phaseEvent: "detergent", dirtBias: "limescale", cleanDirt: "limescale", cleanScore: 1.25, specialGoal: { kind: "refundless", label: "환불 없이 완주" } }),
+  Object.freeze({ id: "weekend_rush", icon: "♟", accent: "coral", title: "주말 45초 러시", copy: "몰려드는 손님을 만족시키고 대기 줄을 지키세요.", ruleLabel: "단골 응대 +25%", difficulty: "rush", condition: "weekend", objectiveIds: ["happy_6", "queue_control"], eventDeck: ["group", "detergent"], phaseEvent: "group", customerBias: "regular", customerReward: { type: "regular", multiplier: 1.25 }, specialGoal: { kind: "queueControl", label: "대기 3명 이하 유지" } }),
+  Object.freeze({ id: "power_drill", icon: "ϟ", accent: "violet", title: "전력 불안정", copy: "정전 예고를 읽고 사건을 빠르게 복구하세요.", ruleLabel: "사건 해결 +35%", difficulty: "standard", condition: "inspection", objectiveIds: ["fast_event", "refundless"], eventDeck: ["blackout", "breakdown"], phaseEvent: "blackout", dirtBias: "dust", eventScore: 1.35, specialGoal: { kind: "fastEvent", label: "사건을 3초 내 해결" } }),
+  Object.freeze({ id: "bulk_day", icon: "▦", accent: "gold", title: "이불 세탁의 날", copy: "대량 세탁 손님의 긴 작업 시간을 견뎌내세요.", ruleLabel: "대량 세탁 +30%", difficulty: "calm", condition: "weekend", objectiveIds: ["happy_6", "queue_control"], eventDeck: ["group", "detergent"], phaseEvent: "group", customerBias: "bulk", customerReward: { type: "bulk", multiplier: 1.3 }, specialGoal: { kind: "happy", target: 4, label: "만족 손님 4명" } }),
+  Object.freeze({ id: "clean_chain", icon: "⚡", accent: "mint", title: "콤보 청소 도전", copy: "오염을 발견하는 즉시 처리해 콤보를 이어가세요.", ruleLabel: "콤보 판정 +1.2초", difficulty: "standard", condition: "rain", objectiveIds: ["clean_6", "combo_6"], eventDeck: ["inspection", "detergent"], phaseEvent: "inspection", dirtBias: "limescale", comboWindowBonus: 1200, specialGoal: { kind: "combo", target: 4, label: "4콤보 달성" } }),
+  Object.freeze({ id: "regular_hour", icon: "✦", accent: "rose", title: "얼룩 전처리 시간", copy: "얼룩 손님을 놓치지 말고 기계 입장 전에 전처리하세요.", ruleLabel: "얼룩 제거 +30%", difficulty: "rush", condition: "inspection", objectiveIds: ["happy_6", "fast_event"], eventDeck: ["breakdown", "inspection"], phaseEvent: "inspection", customerBias: "regular", dirtBias: "laundry", stainChance: 0.48, cleanStainScore: 1.3, specialGoal: { kind: "stain", target: 2, label: "얼룩 손님 2명 전처리" } }),
+  Object.freeze({ id: "dryer_dust", icon: "☁", accent: "slate", title: "건조기 먼지 러시", copy: "건조기에 쌓이는 먼지를 빠르게 털어내세요.", ruleLabel: "건조기 먼지 +35%", difficulty: "standard", condition: "inspection", objectiveIds: ["clean_6", "combo_6"], eventDeck: ["breakdown", "inspection"], phaseEvent: "breakdown", dirtBias: "dust", dirtMachineType: "dryer", cleanDirt: "dust", cleanScore: 1.35, specialGoal: { kind: "combo", target: 5, label: "5콤보 달성" } }),
+  Object.freeze({ id: "white_shirt", icon: "◇", accent: "sky", title: "화이트 셔츠 데이", copy: "연달아 찾아오는 얼룩 손님을 놓치지 마세요.", ruleLabel: "얼룩 등장 58%", difficulty: "standard", condition: "rain", objectiveIds: ["happy_6", "clean_6"], eventDeck: ["detergent", "group"], phaseEvent: "detergent", customerBias: "regular", stainChance: 0.58, cleanStainScore: 1.35, specialGoal: { kind: "stain", target: 3, label: "얼룩 손님 3명 전처리" } }),
+  Object.freeze({ id: "express_clock", icon: "▶", accent: "orange", title: "출근길 익스프레스", copy: "성격 급한 손님을 빠르게 회전시켜 만족도를 지키세요.", ruleLabel: "급한 손님 보상 +35%", difficulty: "rush", condition: "weekend", objectiveIds: ["happy_6", "queue_control"], eventDeck: ["group", "blackout"], phaseEvent: "group", customerBias: "impatient", customerReward: { type: "impatient", multiplier: 1.35 }, patienceBonus: { type: "impatient", multiplier: 1.12 }, specialGoal: { kind: "happy", target: 5, label: "만족 손님 5명" } }),
+  Object.freeze({ id: "lost_socks", icon: "🧦", accent: "lime", title: "분실물 정리반", copy: "기계마다 남겨진 빨래를 바구니에 빠르게 담으세요.", ruleLabel: "놓고 간 빨래 +40%", difficulty: "calm", condition: "rain", objectiveIds: ["clean_6", "refundless"], eventDeck: ["detergent", "inspection"], phaseEvent: "inspection", dirtBias: "laundry", cleanDirt: "laundry", cleanScore: 1.4, specialGoal: { kind: "refundless", label: "환불 없이 완주" } }),
+  Object.freeze({ id: "repair_parade", icon: "⚙", accent: "red", title: "설비 긴급 점검", copy: "고장 예고를 읽고 렌치로 설비를 즉시 복구하세요.", ruleLabel: "고장 해결 +45%", difficulty: "standard", condition: "inspection", objectiveIds: ["fast_event", "refundless"], eventDeck: ["breakdown", "blackout"], phaseEvent: "breakdown", dirtBias: "dust", eventScore: 1.45, specialGoal: { kind: "fastEvent", label: "사건을 3초 내 해결" } }),
+  Object.freeze({ id: "familiar_faces", icon: "♥", accent: "plum", title: "동네 단골 모임", copy: "이름 있는 단골들의 취향을 기억하고 만족시켜 주세요.", ruleLabel: "이름 단골 등장 72%", difficulty: "standard", condition: "weekend", objectiveIds: ["happy_6", "queue_control"], eventDeck: ["group", "detergent"], phaseEvent: "group", customerBias: "regular", familiarChance: 0.72, customerReward: { type: "regular", multiplier: 1.2 }, specialGoal: { kind: "regular", target: 3, label: "단골 손님 3명 응대" } }),
 ]);
 
 const QUICK_STAR_MILESTONES = Object.freeze([
   Object.freeze({ stars: 6, coins: 100, decoration: "sign_quick" }),
   Object.freeze({ stars: 12, coins: 180, decoration: "floor_startrail" }),
   Object.freeze({ stars: 18, coins: 300, decoration: "wall_shiftboard" }),
+  Object.freeze({ stars: 24, coins: 220 }),
+  Object.freeze({ stars: 30, coins: 320 }),
+  Object.freeze({ stars: 36, coins: 500 }),
+]);
+
+const SHIFT_PHASES = Object.freeze([
+  Object.freeze({ id: "warmup", label: "준비", end: 0.18, guest: 1.12, dirt: 1.16, dirtyBonus: -2 }),
+  Object.freeze({ id: "flow", label: "리듬", end: 0.56, guest: 0.98, dirt: 0.96, dirtyBonus: 0 }),
+  Object.freeze({ id: "signature", label: "돌발", end: 0.84, guest: 0.88, dirt: 0.86, dirtyBonus: 1 }),
+  Object.freeze({ id: "finale", label: "피날레", end: 1, guest: 0.8, dirt: 0.78, dirtyBonus: 1 }),
+]);
+
+const PERFECT_WINDOW_MS = 1450;
+const PERFECT_SCORE_MULTIPLIER = 1.2;
+const FEVER_TRIGGER_COUNT = 3;
+const FEVER_DURATION_MS = 6500;
+const FEVER_SCORE_MULTIPLIER = 1.35;
+
+const FIRST_TEN_SHIFT_REWARDS = Object.freeze([
+  Object.freeze({ shift: 1, coins: 40, label: "첫 영업 보너스" }),
+  Object.freeze({ shift: 2, coins: 60, label: "두 번째 출근 보너스" }),
+  Object.freeze({ shift: 4, coins: 90, label: "초보 점장 적응 보너스" }),
+  Object.freeze({ shift: 7, coins: 120, label: "일주일차 점장 보너스" }),
+  Object.freeze({ shift: 10, coins: 180, label: "10회 영업 완주 보너스" }),
 ]);
 
 const WEEKLY_EVENT_RULES = [
@@ -118,7 +148,7 @@ const DECORATIONS = [
   { id: "wall_sunset", type: "wall", icon: "◒", title: "선셋 그라데이션", description: "저녁 노을을 담은 코랄 벽지", price: 400, unlockLevel: 4 },
   { id: "wall_night", type: "wall", icon: "✦", title: "별밤 벽지", description: "은은한 별빛이 번지는 남색 벽지", price: 560, unlockLevel: 5 },
   { id: "wall_pattern", type: "wall", icon: "▤", title: "버블 패턴 벽지", description: "세탁 거품 무늬를 넣은 프리미엄 벽지", price: 700, unlockLevel: 6 },
-  { id: "wall_shiftboard", type: "wall", icon: "★", title: "시프트 보드 벽지", description: "퀵 시프트 별 18개를 모두 모은 점장의 벽지", price: 0, unlockQuickStars: 18 },
+  { id: "wall_shiftboard", type: "wall", icon: "★", title: "시프트 보드 벽지", description: "퀵 시프트 누적 별 18개를 모은 점장의 벽지", price: 0, unlockQuickStars: 18 },
   { id: "plant_green", type: "plant", icon: "♣", display: "♣", title: "초록 화분", description: "익숙한 행운의 초록 식물", price: 0 },
   { id: "plant_bloom", type: "plant", icon: "✿", display: "✿", title: "버블 꽃화분", description: "매장에 색을 더하는 작은 꽃", price: 160, unlockLevel: 2 },
   { id: "plant_cactus", type: "plant", icon: "♠", display: "♠", title: "미니 선인장", description: "관리하기 쉬운 통통한 선인장", price: 220, unlockLevel: 2 },
@@ -183,6 +213,15 @@ const CUSTOMER_BUBBLES = {
   bulk: ["빨래가 아주 많아요", "이것도 전부 부탁해요", "큰 세탁이에요!"],
   collector: ["오늘의 세탁소는?", "평가하러 왔어요 ◆", "깨끗함을 보여주세요"],
 };
+
+const FAMILIAR_GUESTS = Object.freeze([
+  Object.freeze({ id: "minsu", codexId: "familiar_minsu", name: "민수", type: "bulk", shirt: "#5ebfbe", skin: "#dda778", hair: "#212e33", bubbles: ["이불 두 채 부탁해요", "큰 빨래는 여기죠"] }),
+  Object.freeze({ id: "jiyeon", codexId: "familiar_jiyeon", name: "지연", type: "regular", shirt: "#df83ad", skin: "#f2c29c", hair: "#704633", bubbles: ["늘 하던 코스로요", "오늘도 믿고 맡길게요"] }),
+  Object.freeze({ id: "haneul", codexId: "familiar_haneul", name: "하늘", type: "impatient", shirt: "#8e9ed8", skin: "#f1b989", hair: "#212e33", bubbles: ["출근 전에 될까요?", "오늘도 빠르게 부탁해요"] }),
+  Object.freeze({ id: "sua", codexId: "familiar_sua", name: "수아", type: "regular", shirt: "#ff826b", skin: "#f2c29c", hair: "#b26e3f", bubbles: ["셔츠 얼룩도 봐주세요", "깨끗한 향이 좋아요"] }),
+  Object.freeze({ id: "junho", codexId: "familiar_junho", name: "준호", type: "normal", shirt: "#65aa76", skin: "#a96f4d", hair: "#3d3532", bubbles: ["운동복 한 번 부탁해요", "천천히 잘 부탁해요"] }),
+  Object.freeze({ id: "mina", codexId: "familiar_mina", name: "미나", type: "impatient", shirt: "#efb54a", skin: "#dda778", hair: "#704633", bubbles: ["수업 전에 찾아갈게요", "금방 끝나면 좋겠어요"] }),
+]);
 
 const ACHIEVEMENTS = [
   { id: "first_shift", icon: "OPEN", title: "첫 영업", description: "영업을 한 번 완주하기", reward: 40 },
@@ -251,6 +290,12 @@ const CODEX_CONTENT = {
     { id: "regular", icon: "★", title: "단골 손님", tag: "LOYAL", description: "오래 기다려 주며 작업이 조금 빠르고 보상이 30% 높습니다." },
     { id: "bulk", icon: "▦", title: "대량 세탁 손님", tag: "HEAVY", description: "기계를 55% 오래 사용하지만 보상이 65% 높습니다." },
     { id: "collector", icon: "◆", title: "세탁소 평론가", tag: "RARE", description: "드물게 방문하는 손님입니다. 인내심은 짧지만 만족시키면 큰 보상을 줍니다." },
+    { id: "familiar_minsu", icon: "민", title: "민수", tag: "HEAVY REGULAR", description: "주말마다 이불을 맡기는 대량 세탁 단골입니다. 민트색 상의를 기억해 두세요." },
+    { id: "familiar_jiyeon", icon: "지", title: "지연", tag: "LOYAL REGULAR", description: "늘 같은 코스를 부탁하는 느긋한 단골입니다. 기다림에 강하고 만족 보상이 좋습니다." },
+    { id: "familiar_haneul", icon: "하", title: "하늘", tag: "FAST REGULAR", description: "출근 전에 들르는 성격 급한 단골입니다. 보라색 상의와 짧은 인내심이 특징입니다." },
+    { id: "familiar_sua", icon: "수", title: "수아", tag: "STAIN REGULAR", description: "셔츠 전처리를 자주 부탁하는 단골입니다. 얼룩 제거제를 준비해 두면 좋습니다." },
+    { id: "familiar_junho", icon: "준", title: "준호", tag: "DAILY REGULAR", description: "운동복을 맡기러 오는 차분한 동네 단골입니다. 초록색 상의를 입고 찾아옵니다." },
+    { id: "familiar_mina", icon: "미", title: "미나", tag: "SCHOOL REGULAR", description: "수업 전 짧게 방문하는 빠른 단골입니다. 노란색 상의를 눈여겨보세요." },
   ],
   dirt: [
     { id: "limescale", icon: "💧", title: "물때", tag: "스퀴지", description: "기계 문에 남은 물때입니다. 스퀴지로 닦아내세요." },
@@ -284,6 +329,12 @@ const state = {
   served: 0,
   combo: 0,
   maxCombo: 0,
+  perfects: 0,
+  perfectChain: 0,
+  maxPerfectChain: 0,
+  feverActive: false,
+  feverUntil: 0,
+  feverCount: 0,
   totalWaitMs: 0,
   waitSamples: 0,
   satisfactionTotal: 0,
@@ -302,6 +353,9 @@ const state = {
   lastShiftPlan: null,
   quickScenario: null,
   quickResult: null,
+  shiftPhase: "warmup",
+  directorEventTriggered: false,
+  starterReward: null,
   isDailyQuick: false,
   resultComparison: null,
   startSource: "plan",
@@ -583,6 +637,12 @@ function resetGame(options = {}) {
   state.served = 0;
   state.combo = 0;
   state.maxCombo = 0;
+  state.perfects = 0;
+  state.perfectChain = 0;
+  state.maxPerfectChain = 0;
+  state.feverActive = false;
+  state.feverUntil = 0;
+  state.feverCount = 0;
   state.totalWaitMs = 0;
   state.waitSamples = 0;
   state.satisfactionTotal = 0;
@@ -599,6 +659,9 @@ function resetGame(options = {}) {
   state.masterScoreBonus = { machine: 0, tool: 0 };
   state.quickScenario = null;
   state.quickResult = null;
+  state.shiftPhase = "warmup";
+  state.directorEventTriggered = false;
+  state.starterReward = null;
   state.isDailyQuick = false;
   state.resultComparison = null;
   state.startSource = "plan";
@@ -646,8 +709,9 @@ function resetGame(options = {}) {
   els.eventAlert.hidden = true;
   els.lastChanceAlert.hidden = true;
   els.lastChanceSeconds.textContent = "3";
-  els.playArea.classList.remove("last-save-active", "last-save-rescued");
+  els.playArea.classList.remove("last-save-active", "last-save-rescued", "fever-active", "phase-pulse");
   els.playArea.removeAttribute("data-quick-accent");
+  els.playArea.removeAttribute("data-shift-phase");
   els.quickScenarioRibbon.hidden = true;
   els.quickScenarioRibbon.classList.remove("compact");
   els.quickResultSummary.hidden = true;
@@ -686,6 +750,7 @@ function startGame(options = {}) {
   renderQuickScenarioIdentity();
   state.running = true;
   state.startedAt = performance.now();
+  updateShiftDirector(true);
   els.pauseButton.disabled = false;
   els.introModal.classList.remove("open");
   els.resultModal.classList.remove("open");
@@ -1019,8 +1084,8 @@ function updateQuickProgress(success, rank) {
   QUICK_STAR_MILESTONES.forEach((milestone) => {
     if (totalStars < milestone.stars || quick.claimedMilestones.includes(milestone.stars)) return;
     quick.claimedMilestones.push(milestone.stars);
-    if (!progression.decor.owned.includes(milestone.decoration)) progression.decor.owned.push(milestone.decoration);
-    rewards.push({ ...milestone, decorationTitle: decorationById(milestone.decoration)?.title || "퀵 스타 장식" });
+    if (milestone.decoration && !progression.decor.owned.includes(milestone.decoration)) progression.decor.owned.push(milestone.decoration);
+    rewards.push({ ...milestone, decorationTitle: milestone.decoration ? decorationById(milestone.decoration)?.title || "퀵 스타 장식" : `${milestone.stars}별 보너스` });
   });
   return {
     scenario: state.quickScenario,
@@ -1049,7 +1114,8 @@ function renderQuickScenarioIdentity() {
   els.playArea.dataset.quickAccent = scenario.accent;
   els.quickScenarioRibbonIcon.textContent = scenario.icon;
   els.quickScenarioRibbonTitle.textContent = scenario.title;
-  els.quickScenarioRibbonRule.textContent = scenario.ruleLabel;
+  const phase = SHIFT_PHASES.find((item) => item.id === state.shiftPhase) || SHIFT_PHASES[0];
+  els.quickScenarioRibbonRule.textContent = `${phase.label} · ${scenario.ruleLabel}`;
   els.quickScenarioRibbon.setAttribute("aria-label", `${scenario.title}, 특별 규칙 ${scenario.ruleLabel}`);
 }
 
@@ -1231,8 +1297,8 @@ function scheduleGameLoops(initial = false) {
   scheduleInterval(saveShiftCheckpoint, 2000);
   scheduleTimeout(spawnGuest, (initial ? CONFIG.guest.initialDelay : 900) * difficulty.guestInterval * condition.guestInterval);
   scheduleTimeout(spawnDirt, (initial ? CONFIG.dirt.initialDelay : 1350) * difficulty.dirtInterval * condition.dirtInterval);
-  if (!state.activeEvent) scheduleNextEvent((initial ? CONFIG.events.initialDelay : CONFIG.events.resumeDelay) * difficulty.eventInterval);
-  else if (state.activeEvent.type === "inspection") scheduleInspectionDeadline();
+  if (!state.activeEvent && (!state.quickScenario || state.directorEventTriggered)) scheduleNextEvent((initial ? CONFIG.events.initialDelay : CONFIG.events.resumeDelay) * difficulty.eventInterval);
+  else if (state.activeEvent?.type === "inspection") scheduleInspectionDeadline();
 }
 
 function scheduleInterval(callback, delay) {
@@ -1265,6 +1331,7 @@ function guestCheckpoint(guest, now = performance.now()) {
   return {
     id: guest.id,
     type: guest.type,
+    characterId: guest.characterId || null,
     stained: guest.stained,
     cleaned: guest.cleaned,
     shirt: guest.shirt,
@@ -1301,6 +1368,12 @@ function saveShiftCheckpoint() {
       served: state.served,
       combo: state.combo,
       maxCombo: state.maxCombo,
+      perfects: state.perfects,
+      perfectChain: state.perfectChain,
+      maxPerfectChain: state.maxPerfectChain,
+      feverCount: state.feverCount,
+      feverRemainingMs: state.feverActive ? Math.max(0, state.feverUntil - now) : 0,
+      directorEventTriggered: state.directorEventTriggered,
       totalWaitMs: state.totalWaitMs,
       waitSamples: state.waitSamples,
       satisfactionTotal: state.satisfactionTotal,
@@ -1409,7 +1482,7 @@ function restoreShiftCheckpoint() {
   state.shiftObjectives = (checkpoint.objectiveIds || []).map((id) => scaledShiftObjective(shiftObjectiveById(id), state.mode)).filter(Boolean);
   const condition = checkpoint.condition && STORE_CONDITIONS[checkpoint.condition] ? { id: checkpoint.condition, ...STORE_CONDITIONS[checkpoint.condition] } : currentStoreCondition();
   resetGame({ condition });
-  const scalarKeys = ["score", "refunds", "cleaned", "served", "combo", "maxCombo", "totalWaitMs", "waitSamples", "satisfactionTotal", "satisfactionCount", "happyGuests", "peakQueue", "guestSequence", "stainsMissed"];
+  const scalarKeys = ["score", "refunds", "cleaned", "served", "combo", "maxCombo", "perfects", "perfectChain", "maxPerfectChain", "feverCount", "totalWaitMs", "waitSamples", "satisfactionTotal", "satisfactionCount", "happyGuests", "peakQueue", "guestSequence", "stainsMissed"];
   scalarKeys.forEach((key) => { state[key] = Math.max(0, Number(checkpoint[key]) || 0); });
   state.elapsedSeconds = Math.max(0, Number(checkpoint.elapsedSeconds) || 0);
   state.seconds = activeShiftDuration() === null ? state.elapsedSeconds : Math.max(1, Number(checkpoint.remainingSeconds) || activeShiftDuration());
@@ -1425,12 +1498,16 @@ function restoreShiftCheckpoint() {
   state.wrongActions = Math.max(0, Number(checkpoint.wrongActions) || 0);
   state.lastChanceUsed = Boolean(checkpoint.lastChanceUsed);
   state.lastChanceSaved = Boolean(checkpoint.lastChanceSaved);
+  state.directorEventTriggered = Boolean(checkpoint.directorEventTriggered);
   if (state.quickScenario?.eventDeck?.length) state.eventDeck = [...state.quickScenario.eventDeck];
   state.powerOut = Boolean(checkpoint.powerOut);
   state.detergentEmpty = Boolean(checkpoint.detergentEmpty);
   state.selectedTool = TOOL_INFO[checkpoint.selectedTool] ? checkpoint.selectedTool : "squeegee";
   const now = performance.now();
   state.startedAt = now - state.elapsedSeconds * 1000;
+  state.feverActive = Math.max(0, Number(checkpoint.feverRemainingMs) || 0) > 0;
+  state.feverUntil = state.feverActive ? now + Math.max(0, Number(checkpoint.feverRemainingMs) || 0) : 0;
+  if (state.feverActive) els.playArea.classList.add("fever-active");
   state.running = true;
   state.paused = false;
   state.queue = (checkpoint.queue || []).slice(0, MAX_QUEUE - 1).map((guest) => makeGuest(guest));
@@ -1453,9 +1530,55 @@ function restoreShiftCheckpoint() {
   els.pauseButton.disabled = false;
   selectTool(state.selectedTool);
   applyStoreCondition();
+  updateShiftDirector(true);
   updateHud();
   pauseGame(false);
   showToast("중단된 영업을 복구했습니다.", "good", "↻", 1700);
+}
+
+function shiftProgress() {
+  const duration = activeShiftDuration();
+  if (duration === null) return Math.min(1, state.elapsedSeconds / 180);
+  return Math.min(1, Math.max(0, state.elapsedSeconds / Math.max(1, duration)));
+}
+
+function activeShiftPhase() {
+  const progress = shiftProgress();
+  return SHIFT_PHASES.find((phase) => progress <= phase.end) || SHIFT_PHASES[SHIFT_PHASES.length - 1];
+}
+
+function shiftPhaseMultiplier(kind) {
+  if (!state.quickScenario) return 1;
+  const phase = SHIFT_PHASES.find((item) => item.id === state.shiftPhase) || SHIFT_PHASES[0];
+  const scenarioMultiplier = Number(state.quickScenario?.[`${kind}Interval`]) || 1;
+  return (Number(phase[kind]) || 1) * scenarioMultiplier;
+}
+
+function updateShiftDirector(initial = false) {
+  if (!state.quickScenario) return;
+  const phase = activeShiftPhase();
+  const changed = state.shiftPhase !== phase.id;
+  state.shiftPhase = phase.id;
+  els.playArea.dataset.shiftPhase = phase.id;
+  els.quickScenarioRibbonRule.textContent = `${phase.label} · ${state.quickScenario.ruleLabel}`;
+  if (changed && !initial) {
+    els.quickScenarioRibbon.classList.remove("compact");
+    scheduleTimeout(() => els.quickScenarioRibbon.classList.add("compact"), 1200);
+    els.playArea.classList.remove("phase-pulse");
+    void els.playArea.offsetWidth;
+    els.playArea.classList.add("phase-pulse");
+    window.setTimeout(() => els.playArea.classList.remove("phase-pulse"), 620);
+    if (phase.id === "finale") {
+      playTone(784, 0.12, "triangle", 0.035);
+      playTone(1046, 0.18, "sine", 0.03, 0.09);
+      vibrate([14, 18, 14]);
+    }
+  }
+  if (!initial && ["signature", "finale"].includes(phase.id) && !state.directorEventTriggered) {
+    state.directorEventTriggered = true;
+    state.queuedEventType = state.quickScenario.phaseEvent || nextEventType();
+    scheduleNextEvent(2600);
+  }
 }
 
 function tickClock() {
@@ -1465,6 +1588,8 @@ function tickClock() {
   const duration = activeShiftDuration();
   state.seconds = duration === null ? state.elapsedSeconds : Math.max(0, Math.ceil(duration - elapsed));
   els.timerCard.classList.toggle("danger", duration !== null && state.seconds <= 10);
+  updateShiftDirector();
+  updateFeverState();
   updateHud();
   if (duration !== null && elapsed >= duration) endGame(true, "time");
 }
@@ -1751,7 +1876,7 @@ function spawnGuest() {
   if (!state.running) return;
   const base = CONFIG.guest.spawnStart + (CONFIG.guest.spawnEnd - CONFIG.guest.spawnStart) * progress;
   const conditionInterval = state.condition?.guestInterval || 1;
-  const nextDelay = Math.max(900, (base + randomBetween(-CONFIG.guest.spawnJitter, CONFIG.guest.spawnJitter)) * DIFFICULTIES[state.difficulty].guestInterval * conditionInterval);
+  const nextDelay = Math.max(state.quickScenario ? 780 : 900, (base + randomBetween(-CONFIG.guest.spawnJitter, CONFIG.guest.spawnJitter)) * DIFFICULTIES[state.difficulty].guestInterval * conditionInterval * shiftPhaseMultiplier("guest"));
   scheduleTimeout(spawnGuest, nextDelay);
 }
 
@@ -1826,13 +1951,17 @@ function makeGuest(snapshot = null) {
   const id = snapshot?.id ? Math.max(1, Number(snapshot.id)) : state.guestSequence + 1;
   state.guestSequence = Math.max(state.guestSequence, id);
   const el = els.guestTemplate.content.firstElementChild.cloneNode(true);
-  const type = CONFIG.customerTypes[snapshot?.type] ? snapshot.type : chooseCustomerType();
+  const snapshotCharacter = FAMILIAR_GUESTS.find((guest) => guest.id === snapshot?.characterId) || null;
+  const type = snapshotCharacter?.type || (CONFIG.customerTypes[snapshot?.type] ? snapshot.type : chooseCustomerType());
   const typeInfo = CONFIG.customerTypes[type];
+  const familiarChance = Number(state.quickScenario?.familiarChance) || (state.quickScenario ? 0.34 : 0.2);
+  const familiarCandidates = FAMILIAR_GUESTS.filter((guest) => guest.type === type);
+  const character = snapshotCharacter || (!snapshot && familiarCandidates.length && Math.random() < familiarChance ? pick(familiarCandidates) : null);
   const stainChance = Number(state.quickScenario?.stainChance) || CONFIG.guest.stainedChance;
   const stained = snapshot ? Boolean(snapshot.stained) : Math.random() < stainChance;
-  const shirt = GUEST_COLORS.includes(snapshot?.shirt) ? snapshot.shirt : pick(GUEST_COLORS);
-  const skin = SKIN_COLORS.includes(snapshot?.skin) ? snapshot.skin : pick(SKIN_COLORS);
-  const hair = HAIR_COLORS.includes(snapshot?.hair) ? snapshot.hair : pick(HAIR_COLORS);
+  const shirt = character?.shirt || (GUEST_COLORS.includes(snapshot?.shirt) ? snapshot.shirt : pick(GUEST_COLORS));
+  const skin = character?.skin || (SKIN_COLORS.includes(snapshot?.skin) ? snapshot.skin : pick(SKIN_COLORS));
+  const hair = character?.hair || (HAIR_COLORS.includes(snapshot?.hair) ? snapshot.hair : pick(HAIR_COLORS));
   const arrivedAt = performance.now() - Math.max(0, Number(snapshot?.waitedMs) || 0);
   const quickPatienceMultiplier = !snapshot && state.quickScenario?.patienceBonus?.type === type
     ? Number(state.quickScenario.patienceBonus.multiplier) || 1
@@ -1842,11 +1971,14 @@ function makeGuest(snapshot = null) {
     : 1;
 
   discoverEntry("customers", type);
+  if (character) discoverEntry("customers", character.codexId);
   if (stained) discoverEntry("dirt", "stain");
 
   el.dataset.id = String(id);
   el.dataset.customerType = type;
+  if (character) el.dataset.characterId = character.id;
   el.classList.add(`guest-${type}`);
+  el.classList.toggle("familiar-guest", Boolean(character));
   el.style.setProperty("--shirt", shirt);
   el.style.setProperty("--skin", skin);
   el.style.setProperty("--hair", hair);
@@ -1855,17 +1987,22 @@ function makeGuest(snapshot = null) {
   el.querySelector(".guest-type-badge").textContent = typeInfo.icon;
   el.querySelector(".guest-type-badge").setAttribute("title", typeInfo.label);
   el.querySelector(".guest-bubble").textContent = stained
-    ? "전처리 부탁해요!"
+    ? `${character ? `${character.name} · ` : ""}전처리 부탁해요!`
+    : character
+      ? `${character.name} · ${pick(character.bubbles)}`
     : CUSTOMER_BUBBLES[type]
       ? pick(CUSTOMER_BUBBLES[type])
       : pick(WAIT_BUBBLES);
-  el.setAttribute("aria-label", stained ? `옷 얼룩 전처리가 필요한 ${typeInfo.label}` : `대기 중인 ${typeInfo.label}`);
+  const guestLabel = character ? `${character.name}, ${typeInfo.label}` : typeInfo.label;
+  el.setAttribute("aria-label", stained ? `옷 얼룩 전처리가 필요한 ${guestLabel}` : `대기 중인 ${guestLabel}`);
   el.addEventListener("click", () => handleGuestClick(id));
 
   return {
     id,
     el,
     type,
+    characterId: character?.id || null,
+    name: character?.name || null,
     stained,
     cleaned: Boolean(snapshot?.cleaned),
     shirt,
@@ -1909,7 +2046,7 @@ function processQueue() {
     const bar = guest.el.querySelector(".guest-patience i");
     bar.style.transform = `scaleX(${patience})`;
     guest.el.classList.toggle("impatient", patience < 0.36);
-    if (patience < 0.36 && !guest.stained) guest.el.querySelector(".guest-bubble").textContent = "아직 멀었나요?";
+    if (patience < 0.36 && !guest.stained) guest.el.querySelector(".guest-bubble").textContent = `${guest.name ? `${guest.name} · ` : ""}아직 멀었나요?`;
   });
 
   if (state.powerOut || state.detergentEmpty) return;
@@ -1983,6 +2120,9 @@ function finishCycle(machine) {
     state.served += 1;
     advanceWeeklyGoal("serve", 1);
     state.typeCounts[guest.type] += 1;
+    if (guest.characterId) {
+      state.progression.regulars.visits[guest.characterId] = Math.max(0, Number(state.progression.regulars.visits[guest.characterId]) || 0) + 1;
+    }
     recordSatisfaction(guest.satisfaction);
     const satisfactionBonus = Math.round(guest.satisfaction * 0.6);
     const conditionReward = state.condition?.reward || 1;
@@ -1996,7 +2136,9 @@ function finishCycle(machine) {
       advanceWeeklyGoal("happy", 1);
     }
     if (guest.type === "regular" || guest.type === "bulk") advanceDailyChallenge(guest.type, 1);
-    const guestMessage = guest.type === "collector"
+    const guestMessage = guest.name
+      ? `${guest.name} 단골이 만족하고 다음 방문을 약속했어요!`
+      : guest.type === "collector"
       ? "세탁소 평론가가 높은 점수를 남겼어요!"
       : guest.type === "regular"
       ? "단골 손님이 다음에도 오겠다고 했어요!"
@@ -2007,7 +2149,7 @@ function finishCycle(machine) {
       : guest.satisfaction >= CONFIG.satisfaction.happyThreshold
         ? "아주 만족한 손님이 돌아갔어요!"
         : "조금 기다렸지만 세탁을 마쳤어요.";
-    const guestIcon = guest.type === "collector" ? "◆" : guest.type === "regular" ? "★" : guest.type === "bulk" ? "▦" : guest.cleaned ? "✦" : guest.satisfaction >= CONFIG.satisfaction.happyThreshold ? "♥" : "☺";
+    const guestIcon = guest.name ? "♥" : guest.type === "collector" ? "◆" : guest.type === "regular" ? "★" : guest.type === "bulk" ? "▦" : guest.cleaned ? "✦" : guest.satisfaction >= CONFIG.satisfaction.happyThreshold ? "♥" : "☺";
     showToast(guestMessage, "good routine", guestIcon, 1150);
     playTone(650, 0.08, "sine", 0.035);
   }
@@ -2028,7 +2170,10 @@ function spawnDirt() {
   const dirtyCount = state.machines.length - cleanMachines.length;
 
   if (cleanMachines.length && dirtyCount < maximumDirtyMachines()) {
-    const machine = pick(cleanMachines);
+    const scenarioMachines = state.quickScenario?.dirtMachineType
+      ? cleanMachines.filter((machine) => machine.type === state.quickScenario.dirtMachineType)
+      : cleanMachines;
+    const machine = pick(scenarioMachines.length ? scenarioMachines : cleanMachines);
     const scenarioBias = DIRT_INFO[state.quickScenario?.dirtBias] && Math.random() < 0.58 ? state.quickScenario.dirtBias : null;
     const rainBias = state.condition?.id === "rain" && Math.random() < state.condition.limescaleBias;
     const types = scenarioBias ? [scenarioBias] : rainBias ? ["limescale"] : machine.guest && Math.random() < 0.5 ? ["limescale", "dust"] : Object.keys(DIRT_INFO);
@@ -2039,7 +2184,7 @@ function spawnDirt() {
   const progress = duration === null ? Math.min(1, state.elapsedSeconds / 180) : 1 - state.seconds / duration;
   const base = CONFIG.dirt.spawnStart + (CONFIG.dirt.spawnEnd - CONFIG.dirt.spawnStart) * progress;
   const conditionInterval = state.condition?.dirtInterval || 1;
-  const delay = Math.max(2500, (base + randomBetween(-CONFIG.dirt.spawnJitterEarly, CONFIG.dirt.spawnJitterLate)) * DIFFICULTIES[state.difficulty].dirtInterval * conditionInterval);
+  const delay = Math.max(state.quickScenario ? 2100 : 2500, (base + randomBetween(-CONFIG.dirt.spawnJitterEarly, CONFIG.dirt.spawnJitterLate)) * DIFFICULTIES[state.difficulty].dirtInterval * conditionInterval * shiftPhaseMultiplier("dirt"));
   scheduleTimeout(spawnDirt, delay);
 }
 
@@ -2048,7 +2193,9 @@ function dirtyMachineCount() {
 }
 
 function maximumDirtyMachines() {
-  return Math.max(5, CONFIG.dirt.maxDirty + DIFFICULTIES[state.difficulty].dirtyBonus);
+  const phase = SHIFT_PHASES.find((item) => item.id === state.shiftPhase);
+  const directorBonus = state.quickScenario ? Number(phase?.dirtyBonus) || 0 : 0;
+  return Math.max(4, CONFIG.dirt.maxDirty + DIFFICULTIES[state.difficulty].dirtyBonus + directorBonus);
 }
 
 function makeDirty(machine, dirt) {
@@ -2121,9 +2268,11 @@ function handleMachineClick(id) {
   changeScore(earnedPoints);
   scorePop(rect, `+${earnedPoints}`);
   if (combo.fast) comboPop(rect, combo.multiplier);
+  if (combo.perfect) perfectPop(rect);
   cleanBurst(rect, dirtType);
-  showToast(combo.fast && state.combo >= 2 ? `${dirt.name} 제거 · ${state.combo} COMBO!` : `${dirt.name} 제거 완료!`, "good", "✓", 950);
+  showToast(combo.perfect ? `PERFECT · ${dirt.name} 제거!` : combo.fast && state.combo >= 2 ? `${dirt.name} 제거 · ${state.combo} COMBO!` : `${dirt.name} 제거 완료!`, combo.perfect ? "secret routine" : "good", combo.perfect ? "✦" : "✓", 950);
   playCleanSound(dirt.tool, state.combo);
+  if (combo.perfect) playPerfectSound();
   vibrate(CLEAN_COMPLETION_VIBRATIONS[dirtType] || 12);
   syncToolTargets();
   tutorialDidAction("clean", dirt.tool === "squeegee" ? "limescale" : dirt.tool === "duster" ? "dust" : "laundry");
@@ -2155,9 +2304,11 @@ function handleGuestClick(id) {
     changeScore(earnedPoints);
     scorePop(rect, `+${earnedPoints}`);
     if (combo.fast) comboPop(rect, combo.multiplier);
+    if (combo.perfect) perfectPop(rect);
     cleanBurst(rect, "rainbow");
     showToast("얼룩 전처리 완료! 무지개 보너스 획득 ✦", "secret", "🌈", 1800);
     playSecretJingle();
+    if (combo.perfect) playPerfectSound();
     syncToolTargets();
     tutorialDidAction("guest", "stain");
     return;
@@ -2271,6 +2422,7 @@ function registerCleanCombo(elapsedMs) {
     + masterBonus("tool", "rhythm")
     + (Number(state.quickScenario?.comboWindowBonus) || 0);
   const fast = elapsedMs <= comboWindow;
+  const perfect = elapsedMs <= PERFECT_WINDOW_MS;
   if (fast) {
     state.combo += 1;
     state.maxCombo = Math.max(state.maxCombo, state.combo);
@@ -2279,18 +2431,59 @@ function registerCleanCombo(elapsedMs) {
   } else {
     breakCombo();
   }
+  registerPerfectTiming(perfect);
   updateHud();
-  return { fast, multiplier: comboMultiplier() };
+  const timingMultiplier = (perfect ? PERFECT_SCORE_MULTIPLIER : 1) * (state.feverActive ? FEVER_SCORE_MULTIPLIER : 1);
+  return { fast, perfect, multiplier: comboMultiplier() * timingMultiplier };
 }
 
 function breakCombo() {
-  if (!state.combo) return;
+  state.perfectChain = 0;
+  if (!state.combo) {
+    updateHud();
+    return;
+  }
   state.combo = 0;
   els.comboMeter.classList.remove("combo-break");
   void els.comboMeter.offsetWidth;
   els.comboMeter.classList.add("combo-break");
   window.setTimeout(() => els.comboMeter.classList.remove("combo-break"), 420);
   updateHud();
+}
+
+function registerPerfectTiming(perfect) {
+  if (!perfect) {
+    state.perfectChain = 0;
+    return;
+  }
+  state.perfects += 1;
+  state.perfectChain += 1;
+  state.maxPerfectChain = Math.max(state.maxPerfectChain, state.perfectChain);
+  if (!state.feverActive && state.perfectChain >= FEVER_TRIGGER_COUNT) startFever();
+  else if (state.feverActive) state.feverUntil = performance.now() + FEVER_DURATION_MS;
+}
+
+function startFever() {
+  state.feverActive = true;
+  state.feverUntil = performance.now() + FEVER_DURATION_MS;
+  state.feverCount += 1;
+  els.playArea.classList.add("fever-active");
+  const burst = document.createElement("span");
+  burst.className = "fever-burst";
+  burst.innerHTML = "<b>FEVER!</b><small>점수 ×1.35</small>";
+  els.scorePopRegion.appendChild(burst);
+  window.setTimeout(() => burst.remove(), 1200);
+  playFeverJingle();
+  vibrate([18, 18, 30, 18, 45]);
+  announce("퍼펙트 3연속, 피버 시작. 점수 배율이 상승합니다.");
+}
+
+function updateFeverState() {
+  if (!state.feverActive || performance.now() < state.feverUntil) return;
+  state.feverActive = false;
+  state.feverUntil = 0;
+  state.perfectChain = 0;
+  els.playArea.classList.remove("fever-active");
 }
 
 function updateQueueVisuals() {
@@ -2311,12 +2504,16 @@ function updateHud() {
   els.time.textContent = endless ? formatShiftTime(state.elapsedSeconds) : String(state.seconds);
   els.score.textContent = state.score.toLocaleString("ko-KR");
   els.refunds.textContent = String(state.refunds);
-  const multiplier = comboMultiplier();
+  const multiplier = comboMultiplier() * (state.feverActive ? FEVER_SCORE_MULTIPLIER : 1);
   const satisfaction = averageSatisfaction();
   els.combo.textContent = String(state.combo);
   els.comboMultiplier.textContent = `×${multiplier.toFixed(1)}`;
   els.comboMeter.dataset.tier = multiplier >= 3 ? "4" : multiplier >= 2 ? "3" : multiplier >= 1.5 ? "2" : "1";
   els.comboMeter.classList.toggle("active", state.combo > 0);
+  els.comboMeter.classList.toggle("perfect", state.perfectChain > 0);
+  els.comboMeter.classList.toggle("fever", state.feverActive);
+  els.comboMeter.dataset.perfectChain = String(state.perfectChain);
+  els.comboMeter.querySelector("span").textContent = state.feverActive ? "FEVER" : state.perfectChain ? `PERFECT ${state.perfectChain}` : "COMBO";
   els.satisfaction.textContent = `${satisfaction}%`;
   els.satisfactionMeter.classList.toggle("warning", satisfaction < 80);
   els.satisfactionMeter.classList.toggle("danger", satisfaction < 60);
@@ -2394,6 +2591,17 @@ function comboPop(rect, multiplier) {
   window.setTimeout(() => pop.remove(), 900);
 }
 
+function perfectPop(rect) {
+  const areaRect = els.playArea.getBoundingClientRect();
+  const pop = document.createElement("span");
+  pop.className = "perfect-pop";
+  pop.innerHTML = `<b>PERFECT</b><small>${state.feverActive ? "FEVER ×1.35" : `CHAIN ${state.perfectChain}/${FEVER_TRIGGER_COUNT}`}</small>`;
+  pop.style.left = `${rect.left - areaRect.left + rect.width / 2 - 38}px`;
+  pop.style.top = `${rect.top - areaRect.top + rect.height / 2 - 34}px`;
+  els.scorePopRegion.appendChild(pop);
+  window.setTimeout(() => pop.remove(), 950);
+}
+
 function cleanBurst(rect, theme) {
   const areaRect = els.playArea.getBoundingClientRect();
   const burst = document.createElement("span");
@@ -2453,6 +2661,7 @@ function resumeGame() {
   });
   if (state.activeEvent) state.activeEvent.startedAt += pausedDuration;
   if (state.lastChanceActive) state.lastChanceStartedAt += pausedDuration;
+  if (state.feverActive) state.feverUntil += pausedDuration;
   state.paused = false;
   state.pausedAt = 0;
   els.pauseModal.classList.remove("open");
@@ -2479,6 +2688,7 @@ function endGame(success, reason) {
   state.lastChanceActive = false;
   els.lastChanceAlert.hidden = true;
   els.playArea.classList.remove("last-save-active");
+  els.playArea.classList.remove("fever-active", "phase-pulse");
   els.firstShiftGuide.hidden = true;
   els.powerOverlay.classList.remove("active");
   els.breakerPanel.classList.remove("active");
@@ -2544,10 +2754,11 @@ function endGame(success, reason) {
   updateResultAnalysis();
   renderResultMasterImpact();
   const unlockBanner = document.querySelector("#achievement-unlock-banner");
-  unlockBanner.hidden = unlockedAchievements.length === 0;
-  document.querySelector("#achievement-unlock-text").textContent = unlockedAchievements.length
-    ? `${unlockedAchievements.map((item) => item.title).join(" · ")} 달성!`
-    : "새 업적 달성!";
+  const unlockMessages = [];
+  if (state.starterReward) unlockMessages.push(`${state.starterReward.label} · ◈ ${state.starterReward.coins}`);
+  if (unlockedAchievements.length) unlockMessages.push(`${unlockedAchievements.map((item) => item.title).join(" · ")} 달성`);
+  unlockBanner.hidden = unlockMessages.length === 0;
+  document.querySelector("#achievement-unlock-text").textContent = unlockMessages.length ? `${unlockMessages.join(" / ")}!` : "새 업적 달성!";
   configureResultActions(progressionResult, isNewRecord);
   els.resultDetails.open = window.matchMedia("(min-width: 521px)").matches;
   updateRecordUi();
@@ -2788,6 +2999,8 @@ function updateResultAnalysis() {
   document.querySelector("#result-peak-queue").textContent = String(state.peakQueue);
   document.querySelector("#result-first-action").textContent = state.firstActionMs === null ? "–" : `${(state.firstActionMs / 1000).toFixed(1)}초`;
   document.querySelector("#result-wrong-actions").textContent = `${state.wrongActions}회`;
+  document.querySelector("#result-perfects").textContent = `${state.perfects}회`;
+  document.querySelector("#result-fevers").textContent = `${state.feverCount}회`;
   document.querySelector("#result-last-save").textContent = state.lastChanceSaved ? "구조 성공" : state.lastChanceUsed ? "구조 실패" : "미사용";
   document.querySelector("#result-advice").textContent = resultAdvice(responseAverage, refundDirt, refundCount);
 }
@@ -2816,6 +3029,7 @@ function resultAdvice(responseAverage, refundDirt, refundCount) {
   if (responseAverage !== null && responseAverage > 4) return "매장 사건 대응이 조금 늦었어요. 렌치·세제 보충통과 차단기 위치를 먼저 확인하세요.";
   if (happyGuestRate() < 80) return "손님 대기 시간이 길었어요. 오염 없는 빈 기계를 빠르게 유지해 보세요.";
   if (state.maxCombo < 6) return "영업은 안정적이었어요. 다음에는 오염 발생 직후 처리해 6콤보에 도전해 보세요.";
+  if (state.perfects < 3) return `오염 표시 후 ${(PERFECT_WINDOW_MS / 1000).toFixed(1)}초 안에 처리하면 PERFECT가 쌓이고 3연속에서 FEVER가 시작됩니다.`;
   return "환불과 대기 줄을 잘 관리했어요. 다음 영업에서는 최고 점수 갱신을 노려보세요!";
 }
 
@@ -2979,7 +3193,8 @@ function defaultProgression() {
     weekly: freshWeeklyState(),
     cosmetics: { weeklyBadges: [] },
     tutorial: { completed: false, rewarded: false },
-    onboarding: { firstShiftComplete: false, hintsDismissed: false, guidedShifts: 0 },
+    onboarding: { firstShiftComplete: false, hintsDismissed: false, guidedShifts: 0, shiftRewardsClaimed: [] },
+    regulars: { visits: {} },
     manager: { xp: 0, reputation: 0 },
     records: defaultModeRecords(),
     quick: { records: {}, claimedMilestones: [], today: freshDailyQuickState(), streak: { count: 0, best: 0, lastCompletedDate: null } },
@@ -3030,6 +3245,14 @@ function migrateProgressionData(saved) {
     migrated.onboarding = { ...(migrated.onboarding || saved.onboarding || {}), guidedShifts: Math.min(3, Math.max(0, Number(saved.stats?.shifts) || 0)) };
     migrated.quick = { ...(migrated.quick || saved.quick || {}), today: freshDailyQuickState(), streak: { count: 0, best: 0, lastCompletedDate: null } };
   }
+  if (version < 11) {
+    const completedShifts = Math.max(0, Number(saved.stats?.shifts) || 0);
+    migrated.onboarding = {
+      ...(migrated.onboarding || saved.onboarding || {}),
+      shiftRewardsClaimed: FIRST_TEN_SHIFT_REWARDS.filter((reward) => reward.shift <= completedShifts).map((reward) => reward.shift),
+    };
+    migrated.regulars = { visits: {} };
+  }
   migrated.schemaVersion = Math.max(version, DATA_SCHEMA_VERSION);
   return migrated;
 }
@@ -3072,6 +3295,7 @@ function loadProgression() {
       cosmetics: { ...fallback.cosmetics, ...(saved.cosmetics || {}) },
       tutorial: { ...fallback.tutorial, ...(saved.tutorial || {}) },
       onboarding: { ...fallback.onboarding, ...(saved.onboarding || {}) },
+      regulars: { visits: saved.regulars?.visits && typeof saved.regulars.visits === "object" ? { ...saved.regulars.visits } : {} },
       manager: {
         xp: Math.max(0, Number(saved.manager?.xp) || 0),
         reputation: Math.max(0, Number(saved.manager?.reputation) || 0),
@@ -3111,6 +3335,8 @@ function loadProgression() {
         isDailyQuick: Boolean(item?.isDailyQuick),
         firstActionMs: item?.firstActionMs == null || !Number.isFinite(Number(item.firstActionMs)) ? null : Math.max(0, Number(item.firstActionMs)),
         wrongActions: Math.max(0, Number(item?.wrongActions) || 0),
+        perfects: Math.max(0, Number(item?.perfects) || 0),
+        feverCount: Math.max(0, Number(item?.feverCount) || 0),
         stainsMissed: Math.max(0, Number(item?.stainsMissed) || 0),
         lastChanceUsed: Boolean(item?.lastChanceUsed),
         lastChanceSaved: Boolean(item?.lastChanceSaved),
@@ -3135,6 +3361,13 @@ function loadProgression() {
     progression.quick.records = normalizedQuickRecords;
     ensureDailyQuickState(progression);
     progression.onboarding.guidedShifts = Math.min(3, Math.max(0, Number(progression.onboarding.guidedShifts) || 0));
+    progression.onboarding.shiftRewardsClaimed = Array.isArray(progression.onboarding.shiftRewardsClaimed)
+      ? [...new Set(progression.onboarding.shiftRewardsClaimed.map(Number).filter((shift) => FIRST_TEN_SHIFT_REWARDS.some((reward) => reward.shift === shift)))]
+      : [];
+    const validRegularIds = FAMILIAR_GUESTS.map((guest) => guest.id);
+    progression.regulars.visits = Object.fromEntries(Object.entries(progression.regulars.visits)
+      .filter(([id]) => validRegularIds.includes(id))
+      .map(([id, visits]) => [id, Math.max(0, Number(visits) || 0)]));
     progression.quick.today.attempts = Math.max(0, Number(progression.quick.today.attempts) || 0);
     progression.quick.today.bestScore = Math.max(0, Number(progression.quick.today.bestScore) || 0);
     progression.quick.today.bestStars = Math.min(3, Math.max(0, Number(progression.quick.today.bestStars) || 0));
@@ -3237,13 +3470,17 @@ function renderCodex() {
           return `<small>${unlocked ? "달성 완료" : `${Math.min(value, target)} / ${target}`}</small>`;
         })()
       : "";
+    const familiarGuest = category === "customers" ? FAMILIAR_GUESTS.find((guest) => guest.codexId === entry.id) : null;
+    const familiarVisitText = familiarGuest && unlocked
+      ? `<small>누적 방문 ${Math.max(0, Number(state.progression.regulars.visits[familiarGuest.id]) || 0)}회</small>`
+      : "";
     card.innerHTML = `
       <span class="codex-entry-icon">${showDetails ? entry.icon : "?"}</span>
       <div>
         <small class="codex-entry-tag">${showDetails ? entry.tag : "UNKNOWN"}</small>
         <h3>${showDetails ? entry.title : "미발견"}</h3>
         <p>${showDetails ? entry.description : "영업 중 직접 발견하면 자세한 정보가 열립니다."}</p>
-        ${upgradeLevel || achievementProgressText}
+        ${upgradeLevel || achievementProgressText || familiarVisitText}
       </div>
       <em>${unlocked ? "발견" : "LOCK"}</em>
     `;
@@ -3423,6 +3660,8 @@ function recordShiftHistory(success, rank, reason) {
     isDailyQuick: state.isDailyQuick,
     firstActionMs: state.firstActionMs,
     wrongActions: state.wrongActions,
+    perfects: state.perfects,
+    feverCount: state.feverCount,
     stainsMissed: state.stainsMissed,
     lastChanceUsed: state.lastChanceUsed,
     lastChanceSaved: state.lastChanceSaved,
@@ -3434,11 +3673,18 @@ function recordShiftHistory(success, rank, reason) {
   state.progression.recentShifts = [entry, ...state.progression.recentShifts].slice(0, 10);
 }
 
+function starterRewardForShift(progression, completedShift) {
+  if (completedShift > 10) return null;
+  const claimed = Array.isArray(progression.onboarding.shiftRewardsClaimed) ? progression.onboarding.shiftRewardsClaimed : [];
+  return FIRST_TEN_SHIFT_REWARDS.find((reward) => reward.shift === completedShift && !claimed.includes(reward.shift)) || null;
+}
+
 function finalizeProgression(success, rank, reason) {
   const progression = state.progression;
   const previousLevel = managerLevelInfo().level;
   const completedObjectives = state.objectiveResults.filter((result) => result.completed).length;
   state.quickResult = updateQuickProgress(success, rank);
+  state.starterReward = success ? starterRewardForShift(progression, progression.stats.shifts + 1) : null;
   state.earningsBreakdown = {
     service: state.served * CONFIG.economy.servedCoins,
     happiness: state.happyGuests * CONFIG.economy.happyCoins,
@@ -3448,11 +3694,13 @@ function finalizeProgression(success, rank, reason) {
     objectives: state.objectiveRewardCoins,
     allObjectives: success && state.objectiveResults.length > 0 && completedObjectives === state.objectiveResults.length ? CONFIG.economy.allObjectivesBonus : 0,
     quickStars: state.quickResult?.rewardCoins || 0,
+    starter: state.starterReward?.coins || 0,
     penalty: state.refunds * CONFIG.economy.refundPenalty,
   };
   state.shiftCoins = Math.max(0, Object.entries(state.earningsBreakdown).reduce((total, [key, value]) => total + (key === "penalty" ? -value : value), 0));
   progression.wallet += state.shiftCoins;
   progression.stats.shifts += success ? 1 : 0;
+  if (state.starterReward) progression.onboarding.shiftRewardsClaimed.push(state.starterReward.shift);
   if (state.quickScenario) progression.stats.quickShifts = Math.max(0, Number(progression.stats.quickShifts) || 0) + 1;
   progression.stats.cleaned += state.cleaned;
   progression.stats.served += state.served;
@@ -4442,10 +4690,11 @@ function stopBgm() {
 function playMusicStep() {
   if (!state.sound || !state.running || state.paused) return;
   const melody = [261.63, 329.63, 392, 329.63, 293.66, 349.23, 440, 349.23];
-  const note = melody[state.musicStep % melody.length];
+  const note = melody[state.musicStep % melody.length] * (state.feverActive ? 1.5 : 1);
   playTone(note, 0.58, "triangle", 0.009, 0, "bgm");
   if (state.musicStep % 4 === 0) playTone(note / 2, 0.8, "sine", 0.0055, 0, "bgm");
   if (state.musicStep % 8 === 7) playTone(note * 2, 0.22, "sine", 0.004, 0.18, "bgm");
+  if (state.feverActive && state.musicStep % 2 === 0) playTone(note * 1.25, 0.2, "sine", 0.0045, 0.08, "bgm");
   state.musicStep += 1;
 }
 
@@ -4458,6 +4707,17 @@ function playCleanSound(tool, combo = 0) {
   if ([CONFIG.combo.tierTwo, CONFIG.combo.tierThree, CONFIG.combo.tierFour].includes(combo)) {
     playTone(root * 2, 0.22, "sine", 0.038, 0.19);
   }
+}
+
+function playPerfectSound() {
+  playTone(987.77, 0.09, "triangle", 0.035);
+  playTone(1318.51, 0.14, "sine", 0.026, 0.055);
+}
+
+function playFeverJingle() {
+  [659.25, 830.61, 987.77, 1318.51].forEach((tone, index) => {
+    playTone(tone, 0.18, index % 2 ? "triangle" : "sine", 0.035, index * 0.075);
+  });
 }
 
 function playRefundSound() {
